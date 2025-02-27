@@ -14,4 +14,7 @@ categories = ["graphics"]
 
 [dependencies]
 
+[build-dependencies]
+bp3d-os = { version = "1.0.0-rc.4.1.0", features = ["fs"] }
+
 [features]
