@@ -1,49 +1,8 @@
-diff --git a/src/lib_init.c b/src/lib_init.c
-index 01cecf2f..0cfb3dbf 100644
---- a/src/lib_init.c
-+++ b/src/lib_init.c
-@@ -19,23 +19,13 @@ static const luaL_Reg lj_lib_load[] = {
-   { "",			luaopen_base },
-   { LUA_LOADLIBNAME,	luaopen_package },
-   { LUA_TABLIBNAME,	luaopen_table },
--  { LUA_IOLIBNAME,	luaopen_io },
--  { LUA_OSLIBNAME,	luaopen_os },
-   { LUA_STRLIBNAME,	luaopen_string },
-   { LUA_MATHLIBNAME,	luaopen_math },
--  { LUA_DBLIBNAME,	luaopen_debug },
-   { LUA_BITLIBNAME,	luaopen_bit },
-   { LUA_JITLIBNAME,	luaopen_jit },
-   { NULL,		NULL }
- };
- 
--static const luaL_Reg lj_lib_preload[] = {
--#if LJ_HASFFI
--  { LUA_FFILIBNAME,	luaopen_ffi },
--#endif
--  { NULL,		NULL }
--};
--
- LUALIB_API void luaL_openlibs(lua_State *L)
- {
-   const luaL_Reg *lib;
-@@ -44,12 +34,5 @@ LUALIB_API void luaL_openlibs(lua_State *L)
-     lua_pushstring(L, lib->name);
-     lua_call(L, 1, 0);
-   }
--  luaL_findtable(L, LUA_REGISTRYINDEX, "_PRELOAD",
--		 sizeof(lj_lib_preload)/sizeof(lj_lib_preload[0])-1);
--  for (lib = lj_lib_preload; lib->func; lib++) {
--    lua_pushcfunction(L, lib->func);
--    lua_setfield(L, -2, lib->name);
--  }
--  lua_pop(L, 1);
- }
- 
 diff --git a/src/lib_jit.c b/src/lib_jit.c
-index fd8e585b..3f232958 100644
+index fd8e585b..d22b8332 100644
 --- a/src/lib_jit.c
 +++ b/src/lib_jit.c
-@@ -40,480 +40,12 @@
+@@ -40,582 +40,8 @@
  
  #define LJLIB_MODULE_jit
  
@@ -420,20 +379,20 @@ index fd8e585b..3f232958 100644
 -
 -#endif
 -
--#include "lj_libdef.h"
--
+ #include "lj_libdef.h"
+ 
 -static int luaopen_jit_util(lua_State *L)
 -{
 -  LJ_LIB_REG(L, NULL, jit_util);
 -  return 1;
 -}
 -
- /* -- jit.opt module ------------------------------------------------------ */
- 
- #if LJ_HASJIT
- 
- #define LJLIB_MODULE_jit_opt
- 
+-/* -- jit.opt module ------------------------------------------------------ */
+-
+-#if LJ_HASJIT
+-
+-#define LJLIB_MODULE_jit_opt
+-
 -/* Parse optimization level. */
 -static int jitopt_level(jit_State *J, const char *str)
 -{
@@ -521,13 +480,16 @@ index fd8e585b..3f232958 100644
 -  return 0;
 -}
 -
- #include "lj_libdef.h"
- 
- #endif
-@@ -524,96 +56,8 @@ LJLIB_CF(jit_opt_start)
- 
- #define LJLIB_MODULE_jit_profile
- 
+-#include "lj_libdef.h"
+-
+-#endif
+-
+-/* -- jit.profile module -------------------------------------------------- */
+-
+-#if LJ_HASPROFILE
+-
+-#define LJLIB_MODULE_jit_profile
+-
 -/* Not loaded by default, use: local profile = require("jit.profile") */
 -
 -#define KEY_PROFILE_THREAD	(U64x(80000000,00000000)|'t')
@@ -610,18 +572,20 @@ index fd8e585b..3f232958 100644
 -  return 1;
 -}
 -
- #include "lj_libdef.h"
- 
+-#include "lj_libdef.h"
+-
 -static int luaopen_jit_profile(lua_State *L)
 -{
 -  LJ_LIB_REG(L, NULL, jit_profile);
 -  return 1;
 -}
 -
- #endif
- 
+-#endif
+-
  /* -- JIT compiler initialization ----------------------------------------- */
-@@ -723,22 +167,6 @@ LUALIB_API int luaopen_jit(lua_State *L)
+ 
+ #if LJ_HASJIT
+@@ -723,22 +149,6 @@ LUALIB_API int luaopen_jit(lua_State *L)
  #if LJ_HASJIT
    jit_init(L);
  #endif
@@ -644,3 +608,52 @@ index fd8e585b..3f232958 100644
    return 1;
  }
  
+diff --git a/src/lj_ffrecord.c b/src/lj_ffrecord.c
+index 9ea81e54..292e27dc 100644
+--- a/src/lj_ffrecord.c
++++ b/src/lj_ffrecord.c
+@@ -173,7 +173,7 @@ static void LJ_FASTCALL recff_nyi(jit_State *J, RecordFFData *rd)
+ 	switch (J->fn->c.ffid) {
+ 	case FF_error:
+ 	case FF_debug_sethook:
+-	case FF_jit_flush:
++	//case FF_jit_flush:
+ 	  break;  /* Don't stitch across special builtins. */
+ 	default:
+ 	  recff_stitch(J);  /* Use trace stitching. */
+diff --git a/src/luajit.c b/src/luajit.c
+index a725db1c..5095ae36 100644
+--- a/src/luajit.c
++++ b/src/luajit.c
+@@ -134,24 +134,15 @@ static void print_version(void)
+   fputs(LUAJIT_VERSION " -- " LUAJIT_COPYRIGHT ". " LUAJIT_URL "\n", stdout);
+ }
+ 
++#include "lj_dispatch.h"
++#include "lj_jit.h"
++
+ static void print_jit_status(lua_State *L)
+ {
+-  int n;
+-  const char *s;
+-  lua_getfield(L, LUA_REGISTRYINDEX, "_LOADED");
+-  lua_getfield(L, -1, "jit");  /* Get jit.* module table. */
+-  lua_remove(L, -2);
+-  lua_getfield(L, -1, "status");
+-  lua_remove(L, -2);
+-  n = lua_gettop(L);
+-  lua_call(L, 0, LUA_MULTRET);
+-  fputs(lua_toboolean(L, n) ? "JIT: ON" : "JIT: OFF", stdout);
+-  for (n++; (s = lua_tostring(L, n)); n++) {
+-    putc(' ', stdout);
+-    fputs(s, stdout);
+-  }
+-  putc('\n', stdout);
+-  lua_settop(L, 0);  /* clear stack */
++  jit_State *J = L2J(L);
++  fputs(J->flags & JIT_F_ON ? "JIT: ON" : "JIT: OFF", stdout);
++  fputs(J->flags & JIT_F_OPT_DEFAULT ? " OPT: DEFAULT" : " OPT: OFF", stdout);
++  fprintf(stdout, "\n");
+ }
+ 
+ static void createargtable(lua_State *L, char **argv, int argc, int argf)
