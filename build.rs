@@ -119,6 +119,6 @@ fn main() {
     build_luajit(&out_path);
 
     // Attempt to setup linkage.
-    println!("cargo:rustc-link-search=native={}", out_path.display());
+    println!("cargo:rustc-link-search=native={}", out_path.join("src").display());
     println!("cargo:rustc-link-lib=static=luajit");
 }
