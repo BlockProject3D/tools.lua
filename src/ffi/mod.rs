@@ -27,4 +27,4 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 pub mod lua;
-mod laux;
+pub mod laux;
