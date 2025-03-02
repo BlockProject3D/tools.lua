@@ -95,13 +95,17 @@ fn main() {
     let out = std::env::var_os("OUT_DIR").expect("Failed to acquire output directory");
     let out_path = Path::new(&out).join("luajit-build");
 
-    // Apply patch to LuaJIT source code.
+    // Apply patches to LuaJIT source code.
     let path = bp3d_os::fs::get_absolute_path("./").expect("Failed to acquire current path");
     let result = run_command_in_luajit("Failed to patch LuaJIT", "git", &[OsStr::new("apply"), path.join("patch/lib_init.patch").as_os_str()]);
     if !result.success() {
         panic!("Failed to patch LuaJIT");
     }
     let result = run_command_in_luajit("Failed to patch LuaJIT", "git", &[OsStr::new("apply"), path.join("patch/lj_disable_jit.patch").as_os_str()]);
+    if !result.success() {
+        panic!("Failed to patch LuaJIT");
+    }
+    let result = run_command_in_luajit("Failed to patch LuaJIT", "git", &[OsStr::new("apply"), path.join("patch/disable_lua_load.patch").as_os_str()]);
     if !result.success() {
         panic!("Failed to patch LuaJIT");
     }
