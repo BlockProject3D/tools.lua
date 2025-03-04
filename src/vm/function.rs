@@ -28,7 +28,7 @@
 
 use std::slice;
 use crate::ffi::laux::{luaL_checkinteger, luaL_checklstring, luaL_checknumber};
-use crate::ffi::lua::{lua_pushinteger, lua_pushlstring, lua_pushnumber};
+use crate::ffi::lua::{lua_pushboolean, lua_pushinteger, lua_pushlstring, lua_pushnumber};
 use crate::util::{lua_rust_error, SimpleDrop};
 use crate::vm::Stack;
 
@@ -128,3 +128,10 @@ macro_rules! impl_float {
 }
 
 impl_float!(f32, f64);
+
+impl IntoParam for bool {
+    fn into_param(self, stack: &Stack) -> u16 {
+        unsafe { lua_pushboolean(stack.as_ptr(), if self { 1 } else { 0 }) };
+        1
+    }
+}

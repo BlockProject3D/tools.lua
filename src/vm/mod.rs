@@ -28,5 +28,6 @@
 
 mod core;
 pub mod function;
+pub mod value;
 
 pub use core::*;
