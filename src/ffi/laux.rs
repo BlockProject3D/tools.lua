@@ -27,7 +27,7 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use std::ffi::{c_char, c_int, c_void};
-use crate::ffi::lua::{Integer, Number, State, Type};
+use crate::ffi::lua::{Integer, Number, State, ThreadStatus, Type};
 
 //--------------------
 // State manipulation
@@ -99,7 +99,7 @@ extern "C" {
 // Loading lua code
 //------------------
 extern "C" {
-    pub fn luaL_loadfile(l: State, filename: *const c_char) -> c_int;
-    pub fn luaL_loadbuffer(l: State, buff: *const c_char, sz: usize, name: *const c_char) -> c_int;
-    pub fn luaL_loadstring(l: State, s: *const c_char) -> c_int;
+    pub fn luaL_loadfile(l: State, filename: *const c_char) -> ThreadStatus;
+    pub fn luaL_loadbuffer(l: State, buff: *const c_char, sz: usize, name: *const c_char) -> ThreadStatus;
+    pub fn luaL_loadstring(l: State, s: *const c_char) -> ThreadStatus;
 }

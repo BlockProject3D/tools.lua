@@ -26,33 +26,12 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::fmt::{Display, Formatter};
-use std::str::Utf8Error;
-use bp3d_util::simple_error;
 use crate::ffi::lua::{lua_tolstring, lua_type, lua_tointeger, lua_tonumber, Type, lua_toboolean};
 use crate::vm::function::IntoParam;
 use crate::vm::{Stack, Vm};
+use crate::vm::error::{Error, TypeError};
 
-#[derive(Debug, Copy, Clone)]
-pub struct TypeError {
-    pub expected: Type,
-    pub actual: Type
-}
-
-impl Display for TypeError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "expected {:?}, got {:?}", self.expected, self.actual)
-    }
-}
-
-simple_error! {
-    pub Error {
-        InvalidUtf8(Utf8Error) => "invalid UTF8 string: {}",
-        TypeError(TypeError) => "type error: {}"
-    }
-}
-
-pub trait FromLua: Sized {
+pub trait FromLua<'a>: Sized {
     /// Attempt to read the value at the specified index in the given [Vm].
     ///
     /// # Arguments
@@ -61,22 +40,29 @@ pub trait FromLua: Sized {
     /// * `index`: the index at which to try reading the value from.
     ///
     /// returns: Result<Self, Error>
-    fn from_lua(vm: &Vm, index: i32) -> Result<Self, Error>;
+    fn from_lua(vm: &'a Vm, index: i32) -> crate::vm::Result<Self>;
+
+    /// Returns the number of values to be expected on the lua stack, after reading this value.
+    fn num_values() -> u16 {
+        1
+    }
 }
 
 pub trait IntoLua: Sized {
     /// Attempt to push self onto the top of the stack in the given [Vm].
+    ///
+    /// Returns the number values pushed into the lua stack.
     ///
     /// # Arguments
     ///
     /// * `vm`: the [Vm] to push into.
     ///
     /// returns: Result<Self, Error>
-    fn into_lua(self, vm: &Vm) -> Result<(), Error>;
+    fn into_lua(self, vm: &Vm) -> crate::vm::Result<u16>;
 }
 
-impl FromLua for &str {
-    fn from_lua(vm: &Vm, index: i32) -> Result<Self, Error> {
+impl<'a> FromLua<'a> for &'a str {
+    fn from_lua(vm: &Vm, index: i32) -> crate::vm::Result<Self> {
         let l = vm.as_ptr();
         unsafe {
             let ty = lua_type(l, index);
@@ -98,8 +84,8 @@ impl FromLua for &str {
 
 macro_rules! impl_from_lua {
     ($t: ty, $expected: ident, $func: ident, $($ret: tt)*) => {
-        impl FromLua for $t {
-            fn from_lua(vm: &Vm, index: i32) -> Result<Self, Error> {
+        impl FromLua<'static> for $t {
+            fn from_lua(vm: &Vm, index: i32) -> crate::vm::Result<Self> {
                 let l = vm.as_ptr();
                 unsafe {
                     let ty = lua_type(l, index);
@@ -135,9 +121,8 @@ impl_from_lua!(f64, Number, lua_tonumber, as _);
 impl_from_lua!(bool, Boolean, lua_toboolean, == 1);
 
 impl<T: IntoParam> IntoLua for T {
-    fn into_lua(self, vm: &Vm) -> Result<(), Error> {
+    fn into_lua(self, vm: &Vm) -> Result<u16, Error> {
         let stack = unsafe { Stack::wrap(vm.as_ptr(), 0) };
-        self.into_param(&stack);
-        Ok(())
+        Ok(self.into_param(&stack))
     }
 }

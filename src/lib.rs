@@ -28,7 +28,6 @@
 
 pub mod ffi;
 pub mod vm;
-pub mod util;
 
 macro_rules! declare_lib {
     (

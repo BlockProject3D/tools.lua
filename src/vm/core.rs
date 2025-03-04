@@ -28,7 +28,10 @@
 
 use std::cell::Cell;
 use crate::ffi::laux::{luaL_newstate, luaL_openlibs};
-use crate::ffi::lua::State;
+use crate::ffi::lua::{lua_close, lua_pcall, State, ThreadStatus};
+use crate::vm::error::Error;
+use crate::vm::util::LoadCode;
+use crate::vm::value::FromLua;
 
 pub struct Stack {
     l: State,
@@ -82,5 +85,42 @@ impl Vm {
 
     pub fn as_ptr(&self) -> State {
         self.l
+    }
+
+    pub fn run_code<'a, R: FromLua<'a>>(&'a mut self, code: impl LoadCode) -> crate::vm::Result<R> {
+        let l = self.as_ptr();
+        let res = code.load_code(l);
+        match res {
+            ThreadStatus::Ok => (),
+            ThreadStatus::ErrSyntax => {
+                let str: &str = FromLua::from_lua(self, -1)?;
+                return Err(Error::Syntax(str.into()))
+            }
+            ThreadStatus::ErrMem => return Err(Error::Memory),
+            _ => return Err(Error::Unknown)
+        };
+        unsafe {
+            let res = lua_pcall(l, 0, R::num_values() as _, 0);
+            match res {
+                ThreadStatus::Ok => (),
+                ThreadStatus::ErrRun => {
+                    let str: &str = FromLua::from_lua(self, -1)?;
+                    return Err(Error::Runtime(str.into()))
+                }
+                ThreadStatus::ErrMem => return Err(Error::Memory),
+                ThreadStatus::ErrErr => return Err(Error::Error),
+                _ => return Err(Error::Unknown)
+            };
+        }
+        FromLua::from_lua(self, -1)
+    }
+}
+
+impl Drop for Vm {
+    fn drop(&mut self) {
+        unsafe {
+            println!("Closing Lua VM...");
+            lua_close(self.l);
+        }
     }
 }

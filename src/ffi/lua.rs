@@ -40,6 +40,7 @@ pub const fn upvalueindex(i: c_int) -> c_int {
 }
 
 #[repr(i32)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ThreadStatus {
     Ok = 0,
     Yield = 1,
@@ -60,7 +61,7 @@ pub type Reader = extern "C" fn(l: State, ud: *mut c_void, sz: usize) -> *const 
 pub type Writer = extern "C" fn(l: State, p: *const c_void, sz: usize, ud: *mut c_void) -> c_int;
 
 #[repr(i32)]
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Type {
     None = -1,
     Nil = 0,
@@ -176,9 +177,9 @@ extern "C" {
 //-----------------------------------------------------
 extern "C" {
     pub fn lua_call(l: State, nargs: c_int, nresults: c_int);
-    pub fn lua_pcall(l: State, nargs: c_int, nresults: c_int, errfunc: c_int) -> c_int;
+    pub fn lua_pcall(l: State, nargs: c_int, nresults: c_int, errfunc: c_int) -> ThreadStatus;
     pub fn lua_cpcall(l: State, func: CFunction, ud: *mut c_void) -> c_int;
-    pub fn lua_load(l: State, reader: Reader, dt: *mut c_void, chunkname: *const c_char) -> c_int;
+    pub fn lua_load(l: State, reader: Reader, dt: *mut c_void, chunkname: *const c_char) -> ThreadStatus;
 
     pub fn lua_dump(l: State, writer: Writer, data: *mut c_void) -> c_int;
 }

@@ -27,7 +27,9 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use std::error::Error;
-use crate::ffi::lua::{lua_error, lua_pushlstring, State};
+use std::ffi::{CStr, CString};
+use crate::ffi::laux::luaL_loadstring;
+use crate::ffi::lua::{lua_error, lua_pushlstring, State, ThreadStatus};
 
 pub unsafe trait SimpleDrop {}
 
@@ -45,4 +47,28 @@ pub unsafe fn lua_rust_error<E: Error>(l: State, error: E) -> ! {
     lua_error(l);
     // If this is reached, then lua_error has silently failed.
     std::unreachable!()
+}
+
+pub trait LoadCode {
+    fn load_code(&self, l: State) -> ThreadStatus;
+}
+
+impl LoadCode for &CStr {
+    fn load_code(&self, l: State) -> ThreadStatus {
+        unsafe {
+            luaL_loadstring(l, self.as_ptr())
+        }
+    }
+}
+
+impl LoadCode for &str {
+    fn load_code(&self, l: State) -> ThreadStatus {
+        let s = CString::new(*self);
+        match s {
+            Ok(v) => {
+                (&*v).load_code(l)
+            }
+            Err(_) => ThreadStatus::ErrSyntax
+        }
+    }
 }

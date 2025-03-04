@@ -29,7 +29,7 @@
 use std::slice;
 use crate::ffi::laux::{luaL_checkinteger, luaL_checklstring, luaL_checknumber};
 use crate::ffi::lua::{lua_pushboolean, lua_pushinteger, lua_pushlstring, lua_pushnumber};
-use crate::util::{lua_rust_error, SimpleDrop};
+use crate::vm::util::{lua_rust_error, SimpleDrop};
 use crate::vm::Stack;
 
 /// This trait represents a function return value.

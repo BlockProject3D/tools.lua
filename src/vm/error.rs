@@ -26,51 +26,31 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use bp3d_lua::vm::function::{FromParam, IntoParam};
-use bp3d_lua::ffi::lua::{lua_pushcclosure, lua_setfield, State, GLOBALSINDEX};
-use bp3d_lua::vm::{Stack, Vm};
+use std::fmt::{Display, Formatter};
+use std::str::Utf8Error;
+use bp3d_util::simple_error;
+use crate::ffi::lua::Type;
 
-struct ValueWithDrop;
-impl ValueWithDrop {
-    pub fn print(&self) {
-        println!("ValueWithDrop")
+#[derive(Debug, Copy, Clone)]
+pub struct TypeError {
+    pub expected: Type,
+    pub actual: Type
+}
+
+impl Display for TypeError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "expected {:?}, got {:?}", self.expected, self.actual)
     }
 }
-impl Drop for ValueWithDrop {
-    fn drop(&mut self) {
-        println!("Dropping!");
+
+simple_error! {
+    pub Error {
+        InvalidUtf8(Utf8Error) => "invalid UTF8 string: {}",
+        TypeError(TypeError) => "type error: {}",
+        Syntax(String) => "syntax error: {}",
+        Runtime(String) => "runtime error: {}",
+        Memory => "memory allocation error",
+        Unknown => "unknown error",
+        Error => "error in error handler"
     }
-}
-
-fn safe_test_c_function(name: &str, value: f64) -> String {
-    let drop = ValueWithDrop;
-    drop.print();
-    format!("Hello {} ({})", name, value)
-}
-
-extern "C-unwind" fn test_c_function(l: State) -> i32 {
-    let stack = unsafe { Stack::wrap(l, 1) };
-    let name: &str = FromParam::from_param(&stack);
-    let value = f64::from_param(&stack);
-    let res = safe_test_c_function(name, value);
-    res.into_param(&stack) as _
-}
-
-extern "C" fn test_error_handler(l: State) -> i32 {
-    println!("An error has occured from lua VM");
-    //luaL_traceback(L, L, lua_tostring(L, 1), 1);
-    1
-}
-
-#[test]
-fn test_vm_destructor() {
-    let mut vm = Vm::new();
-    unsafe {
-        lua_pushcclosure(vm.as_ptr(), test_c_function, 0);
-        lua_setfield(vm.as_ptr(), GLOBALSINDEX, c"test_c_function".as_ptr());
-    }
-    assert!(vm.run_code::<&str>(c"return test_c_function('this is a test\\xFF', 0.42)").is_err());
-    assert!(vm.run_code::<&str>(c"return test_c_function('this is a test', 0.42)").is_ok());
-    let s = vm.run_code::<&str>(c"return test_c_function('this is a test', 0.42)").unwrap();
-    assert_eq!(s, "Hello this is a test (0.42)");
 }

@@ -29,5 +29,9 @@
 mod core;
 pub mod function;
 pub mod value;
+pub mod error;
+mod util;
 
 pub use core::*;
+
+pub type Result<T> = std::result::Result<T, error::Error>;
