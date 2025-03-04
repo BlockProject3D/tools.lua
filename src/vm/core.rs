@@ -41,6 +41,7 @@ impl Stack {
     /// # Arguments
     ///
     /// * `l`: the raw lua state to wrap.
+    /// * `start`: the index at which to start reading values from the lua stack.
     ///
     /// returns: Stack
     ///
@@ -48,10 +49,10 @@ impl Stack {
     ///
     /// This struct SHALL only exist in a [CFunction](crate::ffi::lua::CFunction). Usage in any other
     /// context is UB.
-    pub unsafe fn wrap(l: State) -> Stack {
+    pub unsafe fn wrap(l: State, start: i32) -> Stack {
         Stack {
             l,
-            index: Cell::new(1)
+            index: Cell::new(start)
         }
     }
 

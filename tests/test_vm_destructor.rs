@@ -50,7 +50,7 @@ fn safe_test_c_function(name: &str, value: f64) -> String {
 }
 
 extern "C-unwind" fn test_c_function(l: State) -> i32 {
-    let stack = unsafe { Stack::wrap(l) };
+    let stack = unsafe { Stack::wrap(l, 1) };
     let name: &str = FromParam::from_param(&stack);
     let value = f64::from_param(&stack);
     let res = safe_test_c_function(name, value);

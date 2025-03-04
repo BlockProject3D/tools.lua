@@ -136,7 +136,7 @@ impl_from_lua!(bool, Boolean, lua_toboolean, == 1);
 
 impl<T: IntoParam> IntoLua for T {
     fn into_lua(self, vm: &Vm) -> Result<(), Error> {
-        let stack = unsafe { Stack::wrap(vm.as_ptr()) };
+        let stack = unsafe { Stack::wrap(vm.as_ptr(), 0) };
         self.into_param(&stack);
         Ok(())
     }
