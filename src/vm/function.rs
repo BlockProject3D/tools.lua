@@ -28,16 +28,31 @@
 
 use std::slice;
 use crate::ffi::laux::{luaL_checkinteger, luaL_checklstring, luaL_checknumber};
+use crate::ffi::lua::{lua_pushinteger, lua_pushlstring, lua_pushnumber};
 use crate::util::{lua_rust_error, SimpleDrop};
 use crate::vm::Stack;
 
+/// This trait represents a function return value.
+pub trait IntoParam: Sized + SimpleDrop {
+    /// Turns self into a function return parameter.
+    ///
+    /// This function returns the number of parameters pushed onto the lua stack.
+    ///
+    /// # Arguments
+    ///
+    /// * `stack`: the stack to push this value to.
+    ///
+    /// returns: u16
+    fn into_param(self, stack: &Stack) -> u16;
+}
+
 /// This trait represents a function parameter.
 pub trait FromParam: Sized + SimpleDrop {
-    fn from_lua(stack: &Stack) -> Self;
+    fn from_param(stack: &Stack) -> Self;
 }
 
 impl FromParam for &str {
-    fn from_lua(stack: &Stack) -> Self {
+    fn from_param(stack: &Stack) -> Self {
         unsafe {
             let mut len: usize = 0;
             let str = luaL_checklstring(stack.as_ptr(), stack.pop(), &mut len as _);
@@ -52,13 +67,31 @@ impl FromParam for &str {
     }
 }
 
+impl IntoParam for &str {
+    fn into_param(self, stack: &Stack) -> u16 {
+        unsafe {
+            lua_pushlstring(stack.as_ptr(), self.as_ptr() as _, self.len());
+        }
+        1
+    }
+}
+
 macro_rules! impl_integer {
     ($($t: ty),*) => {
         $(
             impl FromParam for $t {
-                fn from_lua(stack: &Stack) -> Self {
+                fn from_param(stack: &Stack) -> Self {
                     unsafe {
                         luaL_checkinteger(stack.as_ptr(), stack.pop()) as _
+                    }
+                }
+            }
+
+            impl IntoParam for $t {
+                fn into_param(self, stack: &Stack) -> u16 {
+                    unsafe {
+                        lua_pushinteger(stack.as_ptr(), self as _);
+                        1
                     }
                 }
             }
@@ -67,37 +100,31 @@ macro_rules! impl_integer {
 }
 
 #[cfg(target_pointer_width = "64")]
-impl FromParam for i64 {
-    fn from_lua(stack: &Stack) -> Self {
-        unsafe {
-            luaL_checkinteger(stack.as_ptr(), stack.pop()) as _
-        }
-    }
-}
-
-#[cfg(target_pointer_width = "64")]
-impl FromParam for u64 {
-    fn from_lua(stack: &Stack) -> Self {
-        unsafe {
-            luaL_checkinteger(stack.as_ptr(), stack.pop()) as _
-        }
-    }
-}
+impl_integer!(i64, u64);
 
 impl_integer!(i8, u8, i16, u16, i32, u32);
 
-impl FromParam for f64 {
-    fn from_lua(stack: &Stack) -> Self {
-        unsafe {
-            luaL_checknumber(stack.as_ptr(), stack.pop()) as _
-        }
-    }
+macro_rules! impl_float {
+    ($($t: ty),*) => {
+        $(
+            impl FromParam for $t {
+                fn from_param(stack: &Stack) -> Self {
+                    unsafe {
+                        luaL_checknumber(stack.as_ptr(), stack.pop()) as _
+                    }
+                }
+            }
+
+            impl IntoParam for $t {
+                fn into_param(self, stack: &Stack) -> u16 {
+                    unsafe {
+                        lua_pushnumber(stack.as_ptr(), self as _);
+                        1
+                    }
+                }
+            }
+        )*
+    };
 }
 
-impl FromParam for f32 {
-    fn from_lua(stack: &Stack) -> Self {
-        unsafe {
-            luaL_checknumber(stack.as_ptr(), stack.pop()) as _
-        }
-    }
-}
+impl_float!(f32, f64);

@@ -26,9 +26,9 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use bp3d_lua::value::FromParam;
-use bp3d_lua::ffi::laux::{luaL_checkinteger, luaL_checklstring, luaL_checknumber, luaL_error, luaL_loadstring};
-use bp3d_lua::ffi::lua::{lua_call, lua_error, lua_gettop, lua_isstring, lua_pcall, lua_pushcclosure, lua_pushfstring, lua_pushlstring, lua_pushnumber, lua_remove, lua_setfield, lua_settop, lua_tolstring, lua_type, Number, State, GLOBALSINDEX};
+use bp3d_lua::vm::function::{FromParam, IntoParam};
+use bp3d_lua::ffi::laux::luaL_loadstring;
+use bp3d_lua::ffi::lua::{lua_isstring, lua_pcall, lua_pushcclosure, lua_setfield, lua_tolstring, lua_type, State, GLOBALSINDEX};
 use bp3d_lua::vm::{Stack, Vm};
 
 struct ValueWithDrop;
@@ -43,18 +43,18 @@ impl Drop for ValueWithDrop {
     }
 }
 
-fn safe_test_c_function(name: &str, value: f64) {
+fn safe_test_c_function(name: &str, value: f64) -> String {
     let drop = ValueWithDrop;
     drop.print();
-    println!("Hello {} ({})", name, value);
+    format!("Hello {} ({})", name, value)
 }
 
 extern "C-unwind" fn test_c_function(l: State) -> i32 {
     let stack = unsafe { Stack::wrap(l) };
-    let name: &str = FromParam::from_lua(&stack);
-    let value = f64::from_lua(&stack);
-    safe_test_c_function(name, value);
-    1
+    let name: &str = FromParam::from_param(&stack);
+    let value = f64::from_param(&stack);
+    let res = safe_test_c_function(name, value);
+    res.into_param(&stack) as _
 }
 
 extern "C" fn test_error_handler(l: State) -> i32 {
@@ -69,7 +69,7 @@ fn test_vm_destructor() {
     unsafe {
         lua_pushcclosure(vm.as_ptr(), test_c_function, 0);
         lua_setfield(vm.as_ptr(), GLOBALSINDEX, c"test_c_function".as_ptr());
-        assert_eq!(luaL_loadstring(vm.as_ptr(), c"return test_c_function('this is a test', 0.42)".as_ptr()), 0);
+        assert_eq!(luaL_loadstring(vm.as_ptr(), c"return test_c_function('this is a test\\xFF', 0.42)".as_ptr()), 0);
         let i = lua_pcall(vm.as_ptr(), 0, 0, 0);
         if i != 0 {
             println!("{:?}", lua_type(vm.as_ptr(), -1));

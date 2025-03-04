@@ -26,34 +26,7 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-pub mod ffi;
-pub mod vm;
-pub mod util;
+mod core;
+pub mod function;
 
-macro_rules! declare_lib {
-    (
-        pub lib $($namespace: ident)*.$name: ident {
-            $(
-                pub fn $fn_name: ident ($($arg_name: ident: $arg_ty: ty),*) -> $ret_ty: ty $code: block
-            )*
-        }
-    ) => {
-        const LIB_NAME: &str = stringify!($($namespace.)*$name);
-        fn register_lib() {
-            $(
-                {
-                    const FN_NAME: &str = stringify!($fn_name);
-                    let args = &[$(std::any::TypeId::of::<$arg_ty>()),*];
-                }
-            )*
-        }
-    };
-}
-
-declare_lib! {
-    pub lib bp3d.math {
-        pub fn test(a: f32, b: f32) -> f32 {
-
-        }
-    }
-}
+pub use core::*;
