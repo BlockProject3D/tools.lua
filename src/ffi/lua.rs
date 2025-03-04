@@ -50,15 +50,17 @@ pub enum ThreadStatus {
 }
 
 #[repr(transparent)]
+#[derive(Clone, Copy)]
 pub struct State(*mut c_void);
 
-pub type CFunction = extern "C" fn(l: State) -> i32;
+pub type CFunction = extern "C-unwind" fn(l: State) -> i32;
 
 pub type Reader = extern "C" fn(l: State, ud: *mut c_void, sz: usize) -> *const c_char;
 
 pub type Writer = extern "C" fn(l: State, p: *const c_void, sz: usize, ud: *mut c_void) -> c_int;
 
 #[repr(i32)]
+#[derive(Clone, Copy, Debug)]
 pub enum Type {
     None = -1,
     Nil = 0,
