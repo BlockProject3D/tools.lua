@@ -73,4 +73,5 @@ fn test_vm_destructor() {
     assert!(vm.run_code::<&str>(c"return test_c_function('this is a test', 0.42)").is_ok());
     let s = vm.run_code::<&str>(c"return test_c_function('this is a test', 0.42)").unwrap();
     assert_eq!(s, "Hello this is a test (0.42)");
+    assert!(vm.run_code::<bool>(c"return test_c_function('this is a test', 0.42)").is_err());
 }

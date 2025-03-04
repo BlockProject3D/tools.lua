@@ -84,7 +84,7 @@ impl<'a> FromLua<'a> for &'a str {
 
 macro_rules! impl_from_lua {
     ($t: ty, $expected: ident, $func: ident, $($ret: tt)*) => {
-        impl FromLua<'static> for $t {
+        impl FromLua<'_> for $t {
             fn from_lua(vm: &Vm, index: i32) -> crate::vm::Result<Self> {
                 let l = vm.as_ptr();
                 unsafe {
