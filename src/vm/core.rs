@@ -36,6 +36,18 @@ pub struct Stack {
 }
 
 impl Stack {
+    /// Creates a new [Stack] by wrapping an existing lua VM.
+    ///
+    /// # Arguments
+    ///
+    /// * `l`: the raw lua state to wrap.
+    ///
+    /// returns: Stack
+    ///
+    /// # Safety
+    ///
+    /// This struct SHALL only exist in a [CFunction](crate::ffi::lua::CFunction). Usage in any other
+    /// context is UB.
     pub unsafe fn wrap(l: State) -> Stack {
         Stack {
             l,
