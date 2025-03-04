@@ -26,35 +26,23 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-pub mod ffi;
-pub mod vm;
-pub mod value;
-pub mod util;
+use std::error::Error;
+use crate::ffi::lua::{lua_error, lua_pushlstring, State};
 
-macro_rules! declare_lib {
-    (
-        pub lib $($namespace: ident)*.$name: ident {
-            $(
-                pub fn $fn_name: ident ($($arg_name: ident: $arg_ty: ty),*) -> $ret_ty: ty $code: block
-            )*
-        }
-    ) => {
-        const LIB_NAME: &str = stringify!($($namespace.)*$name);
-        fn register_lib() {
-            $(
-                {
-                    const FN_NAME: &str = stringify!($fn_name);
-                    let args = &[$(std::any::TypeId::of::<$arg_ty>()),*];
-                }
-            )*
-        }
-    };
-}
+pub unsafe trait SimpleDrop {}
 
-declare_lib! {
-    pub lib bp3d.math {
-        pub fn test(a: f32, b: f32) -> f32 {
+unsafe impl<T: Copy> SimpleDrop for T {}
 
-        }
-    }
+pub unsafe fn lua_rust_error<E: Error>(l: State, error: E) -> ! {
+    // At this point the function is assumed to be a non-POF (error and String).
+    let s = format!("rust error: {}", error);
+    lua_pushlstring(l, s.as_ptr() as _, s.len());
+    // Drop both the error and the error string.
+    // Very important as lua_error does not return.
+    drop(error);
+    drop(s);
+    // Now the function should be back what Rust calls a POF.
+    lua_error(l);
+    // If this is reached, then lua_error has silently failed.
+    std::unreachable!()
 }

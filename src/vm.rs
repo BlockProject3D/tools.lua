@@ -26,35 +26,48 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-pub mod ffi;
-pub mod vm;
-pub mod value;
-pub mod util;
+use std::cell::Cell;
+use crate::ffi::laux::{luaL_newstate, luaL_openlibs};
+use crate::ffi::lua::State;
 
-macro_rules! declare_lib {
-    (
-        pub lib $($namespace: ident)*.$name: ident {
-            $(
-                pub fn $fn_name: ident ($($arg_name: ident: $arg_ty: ty),*) -> $ret_ty: ty $code: block
-            )*
-        }
-    ) => {
-        const LIB_NAME: &str = stringify!($($namespace.)*$name);
-        fn register_lib() {
-            $(
-                {
-                    const FN_NAME: &str = stringify!($fn_name);
-                    let args = &[$(std::any::TypeId::of::<$arg_ty>()),*];
-                }
-            )*
-        }
-    };
+pub struct Stack {
+    l: State,
+    index: Cell<i32>
 }
 
-declare_lib! {
-    pub lib bp3d.math {
-        pub fn test(a: f32, b: f32) -> f32 {
-
+impl Stack {
+    pub unsafe fn wrap(l: State) -> Stack {
+        Stack {
+            l,
+            index: Cell::new(1)
         }
+    }
+
+    pub fn as_ptr(&self) -> State {
+        self.l
+    }
+
+    pub fn pop(&self) -> i32 {
+        let i = self.index.get();
+        self.index.set(i + 1);
+        i
+    }
+}
+
+pub struct Vm {
+    l: State
+}
+
+impl Vm {
+    pub fn new() -> Vm {
+        let l = unsafe { luaL_newstate() };
+        unsafe { luaL_openlibs(l) };
+        Vm {
+            l
+        }
+    }
+
+    pub fn as_ptr(&self) -> State {
+        self.l
     }
 }
