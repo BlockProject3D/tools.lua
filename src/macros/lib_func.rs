@@ -26,43 +26,19 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use bp3d_lua::decl_lib_func;
-use bp3d_lua::vm::Vm;
-use bp3d_lua::vm::value::RFunction;
-
-struct ValueWithDrop;
-impl ValueWithDrop {
-    pub fn print(&self) {
-        println!("ValueWithDrop")
+#[macro_export]
+macro_rules! decl_lib_func {
+    (
+        fn $fn_name: ident ($($arg_name: ident: $arg_ty: ty),*) -> $ret_ty: ty $code: block
+    ) => {
+        pub extern "C-unwind" fn $fn_name(l: $crate::ffi::lua::State) -> i32 {
+            fn _func($($arg_name: $arg_ty),*) -> $ret_ty $code
+            use $crate::vm::function::FromParam;
+            use $crate::vm::function::IntoParam;
+            let stack = unsafe { $crate::vm::Stack::wrap(l, 1) };
+            $(let $arg_name: $arg_ty = unsafe { FromParam::from_param(&stack) };)*
+            let ret = _func($($arg_name),*);
+            ret.into_param(&stack) as _
+        }
     }
-}
-impl Drop for ValueWithDrop {
-    fn drop(&mut self) {
-        println!("Dropping!");
-    }
-}
-
-decl_lib_func! {
-    fn test_c_function(name: &str, value: f64) -> String {
-        let drop = ValueWithDrop;
-        drop.print();
-        format!("Hello {} ({})", name, value)
-    }
-}
-
-#[test]
-fn test_vm_destructor() {
-    let mut vm = Vm::new();
-    vm.set_global("test_c_function", RFunction(test_c_function)).unwrap();
-    let time = std::time::Instant::now();
-    let res = vm.run_code::<&str>(c"return test_c_function('this is a test\\xFF', 0.42)");
-    assert!(res.is_err());
-    let err = res.unwrap_err().into_runtime();
-    assert_eq!(err.msg(), "rust error: invalid utf-8 sequence of 1 bytes from index 14");
-    assert!(vm.run_code::<&str>(c"return test_c_function('this is a test', 0.42)").is_ok());
-    let s = vm.run_code::<&str>(c"return test_c_function('this is a test', 0.42)").unwrap();
-    assert_eq!(s, "Hello this is a test (0.42)");
-    assert!(vm.run_code::<bool>(c"return test_c_function('this is a test', 0.42)").is_err());
-    let time = time.elapsed();
-    println!("time: {:?}", time);
 }

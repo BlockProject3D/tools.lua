@@ -48,20 +48,30 @@ pub trait IntoParam: Sized + SimpleDrop {
 
 /// This trait represents a function parameter.
 pub trait FromParam: Sized + SimpleDrop {
-    fn from_param(stack: &Stack) -> Self;
+    /// Reads this value from the given lua stack.
+    ///
+    /// # Arguments
+    ///
+    /// * `stack`: the stack to read from.
+    ///
+    /// returns: Self
+    ///
+    /// # Safety
+    ///
+    /// Calling this function outside the body of a CFunction is UB. Calling this function in a
+    /// non-POF segment of that CFunction is also UB.
+    unsafe fn from_param(stack: &Stack) -> Self;
 }
 
 impl FromParam for &str {
-    fn from_param(stack: &Stack) -> Self {
-        unsafe {
-            let mut len: usize = 0;
-            let str = luaL_checklstring(stack.as_ptr(), stack.pop(), &mut len as _);
-            let slice = slice::from_raw_parts(str as *const u8, len);
-            match std::str::from_utf8(slice){
-                Ok(v) => v,
-                Err(e) => {
-                    lua_rust_error(stack.as_ptr(), e);
-                }
+    unsafe fn from_param(stack: &Stack) -> Self {
+        let mut len: usize = 0;
+        let str = luaL_checklstring(stack.as_ptr(), stack.pop(), &mut len as _);
+        let slice = slice::from_raw_parts(str as *const u8, len);
+        match std::str::from_utf8(slice){
+            Ok(v) => v,
+            Err(e) => {
+                lua_rust_error(stack.as_ptr(), e);
             }
         }
     }
@@ -80,10 +90,8 @@ macro_rules! impl_integer {
     ($($t: ty),*) => {
         $(
             impl FromParam for $t {
-                fn from_param(stack: &Stack) -> Self {
-                    unsafe {
-                        luaL_checkinteger(stack.as_ptr(), stack.pop()) as _
-                    }
+                unsafe fn from_param(stack: &Stack) -> Self {
+                    luaL_checkinteger(stack.as_ptr(), stack.pop()) as _
                 }
             }
 
@@ -108,10 +116,8 @@ macro_rules! impl_float {
     ($($t: ty),*) => {
         $(
             impl FromParam for $t {
-                fn from_param(stack: &Stack) -> Self {
-                    unsafe {
-                        luaL_checknumber(stack.as_ptr(), stack.pop()) as _
-                    }
+                unsafe fn from_param(stack: &Stack) -> Self {
+                    luaL_checknumber(stack.as_ptr(), stack.pop()) as _
                 }
             }
 
