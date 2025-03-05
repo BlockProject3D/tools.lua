@@ -44,6 +44,8 @@ extern "C" {
     pub fn luaL_error(l: State, fmt: *const c_char, ...) -> c_int;
     pub fn luaL_typerror(l: State, narg: c_int, tname: *const c_char) -> c_int;
     pub fn luaL_argerror(l: State, numarg: c_int, extramsg: *const c_char) -> c_int;
+
+    pub fn luaL_traceback(l: State, l1: State, msg: *const c_char, level: c_int);
 }
 
 //---------------

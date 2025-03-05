@@ -14,6 +14,7 @@ categories = ["graphics"]
 
 [dependencies]
 bp3d-util = { version = "1.4.0", features = ["simple-error"] }
+log = "0.4.26"
 
 [build-dependencies]
 bp3d-os = { version = "1.0.0-rc.4.1.1", features = ["fs"] }

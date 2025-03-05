@@ -56,12 +56,6 @@ extern "C-unwind" fn test_c_function(l: State) -> i32 {
     res.into_param(&stack) as _
 }
 
-extern "C" fn test_error_handler(l: State) -> i32 {
-    println!("An error has occured from lua VM");
-    //luaL_traceback(L, L, lua_tostring(L, 1), 1);
-    1
-}
-
 #[test]
 fn test_vm_destructor() {
     let mut vm = Vm::new();
@@ -69,7 +63,10 @@ fn test_vm_destructor() {
         lua_pushcclosure(vm.as_ptr(), test_c_function, 0);
         lua_setfield(vm.as_ptr(), GLOBALSINDEX, c"test_c_function".as_ptr());
     }
-    assert!(vm.run_code::<&str>(c"return test_c_function('this is a test\\xFF', 0.42)").is_err());
+    let res = vm.run_code::<&str>(c"return test_c_function('this is a test\\xFF', 0.42)");
+    assert!(res.is_err());
+    let err = res.unwrap_err().into_runtime();
+    assert_eq!(err.msg(), "rust error: invalid utf-8 sequence of 1 bytes from index 14");
     assert!(vm.run_code::<&str>(c"return test_c_function('this is a test', 0.42)").is_ok());
     let s = vm.run_code::<&str>(c"return test_c_function('this is a test', 0.42)").unwrap();
     assert_eq!(s, "Hello this is a test (0.42)");

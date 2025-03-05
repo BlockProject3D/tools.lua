@@ -29,6 +29,7 @@
 use std::fmt::{Display, Formatter};
 use std::str::Utf8Error;
 use bp3d_util::simple_error;
+use log::trace;
 use crate::ffi::lua::Type;
 
 #[derive(Debug, Copy, Clone)]
@@ -43,14 +44,57 @@ impl Display for TypeError {
     }
 }
 
+#[derive(Debug, Clone)]
+pub struct RuntimeError {
+    traceback: String,
+    index: usize
+}
+
+impl RuntimeError {
+    pub fn new(traceback: String) -> Self {
+        let id = traceback.find('\n').unwrap();
+        Self {
+            traceback,
+            index: id
+        }
+    }
+
+    pub fn msg(&self) -> &str {
+        &self.traceback[..self.index]
+    }
+
+    pub fn stacktrace(&self) -> &str {
+        &self.traceback[self.index + 1..]
+    }
+
+    pub fn traceback(&self) -> &str {
+        &self.traceback
+    }
+}
+
+impl Display for RuntimeError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.msg())
+    }
+}
+
 simple_error! {
     pub Error {
         InvalidUtf8(Utf8Error) => "invalid UTF8 string: {}",
         TypeError(TypeError) => "type error: {}",
         Syntax(String) => "syntax error: {}",
-        Runtime(String) => "runtime error: {}",
+        Runtime(RuntimeError) => "runtime error: {}",
         Memory => "memory allocation error",
         Unknown => "unknown error",
         Error => "error in error handler"
+    }
+}
+
+impl Error {
+    pub fn into_runtime(self) -> RuntimeError {
+        match self {
+            Error::Runtime(e) => e,
+            _ => panic!("error is not a runtime error")
+        }
     }
 }
