@@ -26,7 +26,7 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use crate::ffi::lua::{lua_tolstring, lua_type, lua_tointeger, lua_tonumber, Type, lua_toboolean};
+use crate::ffi::lua::{lua_tolstring, lua_type, lua_tointeger, lua_tonumber, Type, lua_toboolean, CFunction, lua_pushcclosure};
 use crate::vm::function::IntoParam;
 use crate::vm::{Stack, Vm};
 use crate::vm::error::{Error, TypeError};
@@ -124,5 +124,17 @@ impl<T: IntoParam> IntoLua for T {
     fn into_lua(self, vm: &Vm) -> Result<u16, Error> {
         let stack = unsafe { Stack::wrap(vm.as_ptr(), 0) };
         Ok(self.into_param(&stack))
+    }
+}
+
+pub struct RFunction(pub CFunction);
+
+impl IntoLua for RFunction {
+    fn into_lua(self, vm: &Vm) -> crate::vm::Result<u16> {
+        let l = vm.as_ptr();
+        unsafe {
+            lua_pushcclosure(l, self.0, 0);
+        }
+        Ok(1)
     }
 }

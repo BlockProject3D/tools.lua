@@ -86,7 +86,8 @@ simple_error! {
         Runtime(RuntimeError) => "runtime error: {}",
         Memory => "memory allocation error",
         Unknown => "unknown error",
-        Error => "error in error handler"
+        Error => "error in error handler",
+        Null => "string contains a null character"
     }
 }
 

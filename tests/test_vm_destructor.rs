@@ -27,8 +27,9 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use bp3d_lua::vm::function::{FromParam, IntoParam};
-use bp3d_lua::ffi::lua::{lua_pushcclosure, lua_setfield, State, GLOBALSINDEX};
+use bp3d_lua::ffi::lua::State;
 use bp3d_lua::vm::{Stack, Vm};
+use bp3d_lua::vm::value::RFunction;
 
 struct ValueWithDrop;
 impl ValueWithDrop {
@@ -59,10 +60,8 @@ extern "C-unwind" fn test_c_function(l: State) -> i32 {
 #[test]
 fn test_vm_destructor() {
     let mut vm = Vm::new();
-    unsafe {
-        lua_pushcclosure(vm.as_ptr(), test_c_function, 0);
-        lua_setfield(vm.as_ptr(), GLOBALSINDEX, c"test_c_function".as_ptr());
-    }
+    vm.set_global("test_c_function", RFunction(test_c_function)).unwrap();
+    let time = std::time::Instant::now();
     let res = vm.run_code::<&str>(c"return test_c_function('this is a test\\xFF', 0.42)");
     assert!(res.is_err());
     let err = res.unwrap_err().into_runtime();
@@ -71,4 +70,6 @@ fn test_vm_destructor() {
     let s = vm.run_code::<&str>(c"return test_c_function('this is a test', 0.42)").unwrap();
     assert_eq!(s, "Hello this is a test (0.42)");
     assert!(vm.run_code::<bool>(c"return test_c_function('this is a test', 0.42)").is_err());
+    let time = time.elapsed();
+    println!("time: {:?}", time);
 }

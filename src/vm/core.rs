@@ -26,13 +26,14 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use std::borrow::Borrow;
 use std::cell::Cell;
-use std::ffi::c_int;
+use std::ffi::{c_int, CString};
 use crate::ffi::laux::{luaL_callmeta, luaL_newstate, luaL_openlibs, luaL_traceback};
-use crate::ffi::lua::{lua_close, lua_gettop, lua_isstring, lua_pcall, lua_pushcclosure, lua_pushlstring, lua_remove, lua_tolstring, lua_type, State, ThreadStatus, Type};
+use crate::ffi::lua::{lua_close, lua_gettop, lua_isstring, lua_pcall, lua_pushcclosure, lua_pushlstring, lua_remove, lua_setfield, lua_tolstring, lua_type, State, ThreadStatus, Type, GLOBALSINDEX};
 use crate::vm::error::{Error, RuntimeError};
 use crate::vm::util::LoadCode;
-use crate::vm::value::FromLua;
+use crate::vm::value::{FromLua, IntoLua};
 
 pub struct Stack {
     l: State,
@@ -116,6 +117,15 @@ impl Vm {
 
     pub fn as_ptr(&self) -> State {
         self.l
+    }
+
+    pub fn set_global(&mut self, name: impl Borrow<str>, value: impl IntoLua) -> crate::vm::Result<()> {
+        value.into_lua(self)?;
+        let cstr = CString::new(name.borrow()).map_err(|_| Error::Null)?;
+        unsafe {
+            lua_setfield(self.as_ptr(), GLOBALSINDEX, cstr.as_ptr());
+        }
+        Ok(())
     }
 
     pub fn run_code<'a, R: FromLua<'a>>(&'a mut self, code: impl LoadCode) -> crate::vm::Result<R> {
