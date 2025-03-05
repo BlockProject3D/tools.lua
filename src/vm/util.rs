@@ -26,6 +26,7 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use std::borrow::Cow;
 use std::error::Error;
 use std::ffi::{CStr, CString};
 use crate::ffi::laux::luaL_loadstring;
@@ -70,5 +71,35 @@ impl LoadCode for &str {
             }
             Err(_) => ThreadStatus::ErrSyntax
         }
+    }
+}
+
+pub trait AnyStr {
+    fn to_str(&self) -> crate::vm::Result<Cow<CStr>>;
+}
+
+impl AnyStr for String {
+    fn to_str(&self) -> crate::vm::Result<Cow<CStr>> {
+        let cstr = CString::new(&**self).map_err(|_| crate::vm::error::Error::Null)?;
+        Ok(Cow::Owned(cstr))
+    }
+}
+
+impl AnyStr for &str {
+    fn to_str(&self) -> crate::vm::Result<Cow<CStr>> {
+        let cstr = CString::new(&**self).map_err(|_| crate::vm::error::Error::Null)?;
+        Ok(Cow::Owned(cstr))
+    }
+}
+
+impl AnyStr for CString {
+    fn to_str(&self) -> crate::vm::Result<Cow<CStr>> {
+        Ok(Cow::Borrowed(&**self))
+    }
+}
+
+impl AnyStr for &CStr {
+    fn to_str(&self) -> crate::vm::Result<Cow<CStr>> {
+        Ok(Cow::Borrowed(&**self))
     }
 }

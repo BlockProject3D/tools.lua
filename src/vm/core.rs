@@ -26,17 +26,27 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::borrow::Borrow;
 use std::cell::Cell;
-use std::ffi::{c_int, CString};
+use std::ffi::c_int;
+use std::ops::Deref;
 use crate::ffi::laux::{luaL_callmeta, luaL_newstate, luaL_openlibs, luaL_traceback};
 use crate::ffi::lua::{lua_close, lua_gettop, lua_isstring, lua_pcall, lua_pushcclosure, lua_pushlstring, lua_remove, lua_setfield, lua_tolstring, lua_type, State, ThreadStatus, Type, GLOBALSINDEX};
 use crate::vm::error::{Error, RuntimeError};
-use crate::vm::util::LoadCode;
+use crate::vm::util::{AnyStr, LoadCode};
 use crate::vm::value::{FromLua, IntoLua};
 
+pub struct LuaState(State);
+
+impl Deref for LuaState {
+    type Target = State;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
 pub struct Stack {
-    l: State,
+    l: LuaState,
     index: Cell<i32>
 }
 
@@ -56,13 +66,17 @@ impl Stack {
     /// context is UB.
     pub unsafe fn wrap(l: State, start: i32) -> Stack {
         Stack {
-            l,
+            l: LuaState(l),
             index: Cell::new(start)
         }
     }
 
+    pub fn as_state(&self) -> &LuaState {
+        &self.l
+    }
+
     pub fn as_ptr(&self) -> State {
-        self.l
+        *self.l
     }
 
     pub fn pop(&self) -> i32 {
@@ -103,7 +117,7 @@ extern "C-unwind" fn error_handler(l: State) -> c_int {
 }
 
 pub struct Vm {
-    l: State
+    l: LuaState
 }
 
 impl Vm {
@@ -111,19 +125,24 @@ impl Vm {
         let l = unsafe { luaL_newstate() };
         unsafe { luaL_openlibs(l) };
         Vm {
-            l
+            l: LuaState(l)
+        }
+    }
+
+    pub unsafe fn from_raw(l: State) -> Self {
+        Self {
+            l: LuaState(l)
         }
     }
 
     pub fn as_ptr(&self) -> State {
-        self.l
+        *self.l
     }
 
-    pub fn set_global(&mut self, name: impl Borrow<str>, value: impl IntoLua) -> crate::vm::Result<()> {
-        value.into_lua(self)?;
-        let cstr = CString::new(name.borrow()).map_err(|_| Error::Null)?;
+    pub fn set_global(&mut self, name: impl AnyStr, value: impl IntoLua) -> crate::vm::Result<()> {
+        value.into_lua(&self.l)?;
         unsafe {
-            lua_setfield(self.as_ptr(), GLOBALSINDEX, cstr.as_ptr());
+            lua_setfield(self.as_ptr(), GLOBALSINDEX, name.to_str()?.as_ptr());
         }
         Ok(())
     }
@@ -144,7 +163,7 @@ impl Vm {
             ThreadStatus::Ok => (),
             ThreadStatus::ErrSyntax => {
                 // If we've got an error, read it and clear the stack.
-                let str: &str = FromLua::from_lua(self, -1)?;
+                let str: &str = FromLua::from_lua(&self.l, -1)?;
                 unsafe { lua_remove(l, -1) };
                 return Err(Error::Syntax(str.into()))
             }
@@ -163,7 +182,7 @@ impl Vm {
                 ThreadStatus::ErrRun => {
                     // We've got a runtime error when executing the function so read the full stack
                     // trace produced by luaL_traceback and remove it from the stack.
-                    let full_traceback: &str = FromLua::from_lua(self, -1)?;
+                    let full_traceback: &str = FromLua::from_lua(&self.l, -1)?;
                     lua_remove(l, -1);
                     return Err(Error::Runtime(RuntimeError::new(full_traceback.into())));
                 }
@@ -173,7 +192,7 @@ impl Vm {
             };
         }
         // Read and return the result of the function from the stack.
-        FromLua::from_lua(self, -1)
+        FromLua::from_lua(&self.l, -1)
     }
 }
 
@@ -181,7 +200,7 @@ impl Drop for Vm {
     fn drop(&mut self) {
         unsafe {
             println!("Closing Lua VM...");
-            lua_close(self.l);
+            lua_close(*self.l);
         }
     }
 }

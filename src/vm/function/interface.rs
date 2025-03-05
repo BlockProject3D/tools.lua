@@ -26,43 +26,36 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use bp3d_lua::decl_lib_func;
-use bp3d_lua::vm::Vm;
-use bp3d_lua::vm::value::RFunction;
+use crate::vm::Stack;
+use crate::vm::util::SimpleDrop;
 
-struct ValueWithDrop;
-impl ValueWithDrop {
-    pub fn print(&self) {
-        println!("ValueWithDrop")
-    }
-}
-impl Drop for ValueWithDrop {
-    fn drop(&mut self) {
-        println!("Dropping!");
-    }
-}
-
-decl_lib_func! {
-    fn test_c_function(name: &str, value: f64) -> String {
-        let drop = ValueWithDrop;
-        drop.print();
-        format!("Hello {} ({})", name, value)
-    }
+/// This trait represents a function return value.
+pub trait IntoParam: Sized {
+    /// Turns self into a function return parameter.
+    ///
+    /// This function returns the number of parameters pushed onto the lua stack.
+    ///
+    /// # Arguments
+    ///
+    /// * `stack`: the stack to push this value to.
+    ///
+    /// returns: u16
+    fn into_param(self, stack: &Stack) -> u16;
 }
 
-#[test]
-fn test_vm_destructor() {
-    let mut vm = Vm::new();
-    vm.set_global(c"test_c_function", RFunction(test_c_function)).unwrap();
-    let time = std::time::Instant::now();
-    let res = vm.run_code::<&str>(c"return test_c_function('this is a test\\xFF', 0.42)");
-    assert!(res.is_err());
-    let err = res.unwrap_err().into_runtime();
-    assert_eq!(err.msg(), "rust error: invalid utf-8 sequence of 1 bytes from index 14");
-    assert!(vm.run_code::<&str>(c"return test_c_function('this is a test', 0.42)").is_ok());
-    let s = vm.run_code::<&str>(c"return test_c_function('this is a test', 0.42)").unwrap();
-    assert_eq!(s, "Hello this is a test (0.42)");
-    assert!(vm.run_code::<bool>(c"return test_c_function('this is a test', 0.42)").is_err());
-    let time = time.elapsed();
-    println!("time: {:?}", time);
+/// This trait represents a function parameter.
+pub trait FromParam<'a>: Sized + SimpleDrop {
+    /// Reads this value from the given lua stack.
+    ///
+    /// # Arguments
+    ///
+    /// * `stack`: the stack to read from.
+    ///
+    /// returns: Self
+    ///
+    /// # Safety
+    ///
+    /// Calling this function outside the body of a CFunction is UB. Calling this function in a
+    /// non-POF segment of that CFunction is also UB.
+    unsafe fn from_param(stack: &'a Stack) -> Self;
 }

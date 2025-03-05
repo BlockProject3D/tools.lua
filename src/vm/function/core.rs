@@ -26,45 +26,28 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use std::error::Error;
 use std::slice;
 use crate::ffi::laux::{luaL_checkinteger, luaL_checklstring, luaL_checknumber};
-use crate::ffi::lua::{lua_pushboolean, lua_pushinteger, lua_pushlstring, lua_pushnumber};
-use crate::vm::util::{lua_rust_error, SimpleDrop};
+use crate::ffi::lua::{lua_pushboolean, lua_pushinteger, lua_pushlstring, lua_pushnil, lua_pushnumber, lua_type, Type};
+use crate::vm::function::{FromParam, IntoParam};
+use crate::vm::util::{lua_rust_error};
 use crate::vm::Stack;
 
-/// This trait represents a function return value.
-pub trait IntoParam: Sized + SimpleDrop {
-    /// Turns self into a function return parameter.
-    ///
-    /// This function returns the number of parameters pushed onto the lua stack.
-    ///
-    /// # Arguments
-    ///
-    /// * `stack`: the stack to push this value to.
-    ///
-    /// returns: u16
-    fn into_param(self, stack: &Stack) -> u16;
+impl<'a, T: FromParam<'a> + Copy> FromParam<'a> for Option<T> {
+    unsafe fn from_param(stack: &'a Stack) -> Self {
+        let l = stack.as_ptr();
+        let ty = lua_type(l, stack.pop());
+        if ty == Type::Nil || ty == Type::None {
+            None
+        } else {
+            Some(T::from_param(stack))
+        }
+    }
 }
 
-/// This trait represents a function parameter.
-pub trait FromParam: Sized + SimpleDrop {
-    /// Reads this value from the given lua stack.
-    ///
-    /// # Arguments
-    ///
-    /// * `stack`: the stack to read from.
-    ///
-    /// returns: Self
-    ///
-    /// # Safety
-    ///
-    /// Calling this function outside the body of a CFunction is UB. Calling this function in a
-    /// non-POF segment of that CFunction is also UB.
-    unsafe fn from_param(stack: &Stack) -> Self;
-}
-
-impl FromParam for &str {
-    unsafe fn from_param(stack: &Stack) -> Self {
+impl<'a> FromParam<'a> for &'a str {
+    unsafe fn from_param(stack: &'a Stack) -> Self {
         let mut len: usize = 0;
         let str = luaL_checklstring(stack.as_ptr(), stack.pop(), &mut len as _);
         let slice = slice::from_raw_parts(str as *const u8, len);
@@ -89,7 +72,7 @@ impl IntoParam for &str {
 macro_rules! impl_integer {
     ($($t: ty),*) => {
         $(
-            impl FromParam for $t {
+            impl FromParam<'_> for $t {
                 unsafe fn from_param(stack: &Stack) -> Self {
                     luaL_checkinteger(stack.as_ptr(), stack.pop()) as _
                 }
@@ -115,7 +98,7 @@ impl_integer!(i8, u8, i16, u16, i32, u32);
 macro_rules! impl_float {
     ($($t: ty),*) => {
         $(
-            impl FromParam for $t {
+            impl FromParam<'_> for $t {
                 unsafe fn from_param(stack: &Stack) -> Self {
                     luaL_checknumber(stack.as_ptr(), stack.pop()) as _
                 }
@@ -139,5 +122,32 @@ impl IntoParam for bool {
     fn into_param(self, stack: &Stack) -> u16 {
         unsafe { lua_pushboolean(stack.as_ptr(), if self { 1 } else { 0 }) };
         1
+    }
+}
+
+impl<T: IntoParam, E: Error> IntoParam for Result<T, E> {
+    fn into_param(self, stack: &Stack) -> u16 {
+        match self {
+            Ok(v) => v.into_param(stack),
+            Err(e) => {
+                unsafe {
+                    lua_rust_error(stack.as_ptr(), e);
+                }
+            }
+        }
+    }
+}
+
+impl<T: IntoParam> IntoParam for Option<T> {
+    fn into_param(self, stack: &Stack) -> u16 {
+        match self {
+            None => {
+                unsafe {
+                    lua_pushnil(stack.as_ptr());
+                    1
+                }
+            }
+            Some(v) => v.into_param(stack)
+        }
     }
 }

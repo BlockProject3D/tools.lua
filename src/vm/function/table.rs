@@ -26,75 +26,56 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::fmt::{Display, Formatter};
-use std::str::Utf8Error;
-use bp3d_util::simple_error;
-use crate::ffi::lua::Type;
+use crate::ffi::laux::luaL_checktype;
+use crate::ffi::lua::{lua_getfield, lua_setfield, lua_settop, Type};
+use crate::vm::function::FromParam;
+use crate::vm::{LuaState, Stack};
+use crate::vm::util::AnyStr;
+use crate::vm::value::{FromLua, IntoLua};
 
-#[derive(Debug, Copy, Clone)]
-pub struct TypeError {
-    pub expected: Type,
-    pub actual: Type
+#[derive(Copy, Clone)]
+pub struct Table<'a> {
+    vm: &'a LuaState,
+    index: i32
 }
 
-impl Display for TypeError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "expected {:?}, got {:?}", self.expected, self.actual)
+impl<'a> Table<'a> {
+    pub fn set_field(&mut self, name: impl AnyStr, value: impl IntoLua) -> crate::vm::Result<()> {
+        unsafe {
+            let nums = value.into_lua(self.vm)?;
+            if nums > 1 {
+                // Clear the stack.
+                lua_settop(**self.vm, -(nums as i32)-1);
+                //FIXME: Better error type
+                return Err(crate::vm::error::Error::Unknown)
+            }
+            lua_setfield(**self.vm, self.index, name.to_str()?.as_ptr());
+        }
+        Ok(())
     }
-}
 
-#[derive(Debug, Clone)]
-pub struct RuntimeError {
-    traceback: String,
-    index: usize
-}
-
-impl RuntimeError {
-    pub fn new(traceback: String) -> Self {
-        let id = traceback.find('\n').unwrap();
-        Self {
-            traceback,
-            index: id
+    pub fn get_field<'b, T: FromLua<'b>>(&'b self, name: impl AnyStr) -> crate::vm::Result<T> {
+        if T::num_values() > 1 {
+            //FIXME: Better error type
+            return Err(crate::vm::error::Error::Unknown)
+        }
+        unsafe {
+            lua_getfield(**self.vm, self.index, name.to_str()?.as_ptr());
+            let ret = T::from_lua(self.vm, -1);
+            // Clear the value returned by lua_getfield.
+            lua_settop(**self.vm, -2);
+            ret
         }
     }
-
-    pub fn msg(&self) -> &str {
-        &self.traceback[..self.index]
-    }
-
-    pub fn stacktrace(&self) -> &str {
-        &self.traceback[self.index + 1..]
-    }
-
-    pub fn traceback(&self) -> &str {
-        &self.traceback
-    }
 }
 
-impl Display for RuntimeError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        f.write_str(self.msg())
-    }
-}
-
-simple_error! {
-    pub Error {
-        InvalidUtf8(Utf8Error) => "invalid UTF8 string: {}",
-        TypeError(TypeError) => "type error: {}",
-        Syntax(String) => "syntax error: {}",
-        Runtime(RuntimeError) => "runtime error: {}",
-        Memory => "memory allocation error",
-        Unknown => "unknown error",
-        Error => "error in error handler",
-        Null => "string contains a null character"
-    }
-}
-
-impl Error {
-    pub fn into_runtime(self) -> RuntimeError {
-        match self {
-            Error::Runtime(e) => e,
-            _ => panic!("error is not a runtime error")
+impl<'a> FromParam<'a> for Table<'a> {
+    unsafe fn from_param(stack: &'a Stack) -> Self {
+        let index = stack.pop();
+        luaL_checktype(stack.as_ptr(), index, Type::Table);
+        Table {
+            vm: stack.as_state(),
+            index
         }
     }
 }
