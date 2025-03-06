@@ -27,7 +27,7 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::ffi::laux::luaL_checktype;
-use crate::ffi::lua::{lua_getfield, lua_setfield, lua_settop, Type};
+use crate::ffi::lua::{lua_getfield, lua_gettop, lua_setfield, lua_settop, Type};
 use crate::vm::function::FromParam;
 use crate::vm::{LuaState, Stack};
 use crate::vm::util::AnyStr;
@@ -39,7 +39,18 @@ pub struct Table<'a> {
     index: i32
 }
 
-impl<'a> Table<'a> {
+pub struct Scope<'a> {
+    vm: &'a LuaState,
+    index: i32,
+    initial_top: i32
+}
+
+impl<'a> Scope<'a> {
+    fn new(vm: &'a LuaState, index: i32) -> Self {
+        let initial_top = unsafe { lua_gettop(**vm) };
+        Self { vm, index, initial_top }
+    }
+
     pub fn set_field(&mut self, name: impl AnyStr, value: impl IntoLua) -> crate::vm::Result<()> {
         unsafe {
             let nums = value.into_lua(self.vm)?;
@@ -61,11 +72,24 @@ impl<'a> Table<'a> {
         }
         unsafe {
             lua_getfield(**self.vm, self.index, name.to_str()?.as_ptr());
-            let ret = T::from_lua(self.vm, -1);
-            // Clear the value returned by lua_getfield.
-            lua_settop(**self.vm, -2);
-            ret
+            T::from_lua(self.vm, -1)
         }
+    }
+}
+
+impl Drop for Scope<'_> {
+    fn drop(&mut self) {
+        let top = unsafe { lua_gettop(**self.vm) };
+        let count = top - self.initial_top;
+        // Pop count values off the stack to ensure the stack is cleared after all table
+        // manipulations are finished.
+        unsafe { lua_settop(**self.vm, -count-1) };
+    }
+}
+
+impl<'a> Table<'a> {
+    pub fn lock(&mut self) -> Scope {
+        Scope::new(self.vm, self.index)
     }
 }
 

@@ -28,5 +28,6 @@
 
 mod interface;
 mod core;
+pub mod table;
 
 pub use interface::*;
