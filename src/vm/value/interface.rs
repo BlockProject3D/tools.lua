@@ -26,18 +26,19 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use crate::vm::LuaState;
+use crate::ffi::lua::CFunction;
+use crate::vm::Vm;
 
 pub trait FromLua<'a>: Sized {
-    /// Attempt to read the value at the specified index in the given [LuaState].
+    /// Attempt to read the value at the specified index in the given [Vm].
     ///
     /// # Arguments
     ///
-    /// * `vm`: the [LuaState] to read from.
+    /// * `vm`: the [Vm] to read from.
     /// * `index`: the index at which to try reading the value from.
     ///
     /// returns: Result<Self, Error>
-    fn from_lua(vm: &'a LuaState, index: i32) -> crate::vm::Result<Self>;
+    fn from_lua(vm: &'a Vm, index: i32) -> crate::vm::Result<Self>;
 
     /// Returns the number of values to be expected on the lua stack, after reading this value.
     fn num_values() -> u16 {
@@ -46,14 +47,16 @@ pub trait FromLua<'a>: Sized {
 }
 
 pub trait IntoLua: Sized {
-    /// Attempt to push self onto the top of the stack in the given [LuaState].
+    /// Attempt to push self onto the top of the stack in the given [Vm].
     ///
     /// Returns the number values pushed into the lua stack.
     ///
     /// # Arguments
     ///
-    /// * `vm`: the [LuaState] to push into.
+    /// * `vm`: the [Vm] to push into.
     ///
     /// returns: Result<Self, Error>
-    fn into_lua(self, vm: &LuaState) -> crate::vm::Result<u16>;
+    fn into_lua(self, vm: &Vm) -> crate::vm::Result<u16>;
 }
+
+pub struct RFunction(pub CFunction);

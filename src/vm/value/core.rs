@@ -26,15 +26,15 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use crate::ffi::lua::{lua_tolstring, lua_type, lua_tointeger, lua_tonumber, Type, lua_toboolean, CFunction, lua_pushcclosure};
+use crate::ffi::lua::{lua_tolstring, lua_type, lua_tointeger, lua_tonumber, Type, lua_toboolean, lua_pushcclosure};
 use crate::vm::function::IntoParam;
-use crate::vm::{LuaState, Stack};
+use crate::vm::Vm;
 use crate::vm::error::{Error, TypeError};
-use crate::vm::value::{FromLua, IntoLua};
+use crate::vm::value::{FromLua, IntoLua, RFunction};
 
 impl<'a> FromLua<'a> for &'a str {
-    fn from_lua(vm: &LuaState, index: i32) -> crate::vm::Result<Self> {
-        let l = **vm;
+    fn from_lua(vm: &Vm, index: i32) -> crate::vm::Result<Self> {
+        let l = vm.as_ptr();
         unsafe {
             let ty = lua_type(l, index);
             match ty {
@@ -44,7 +44,7 @@ impl<'a> FromLua<'a> for &'a str {
                     let slice = std::slice::from_raw_parts(s as _, len);
                     std::str::from_utf8(slice).map_err(Error::InvalidUtf8)
                 },
-                _ => Err(Error::TypeError(TypeError {
+                _ => Err(Error::Type(TypeError {
                     expected: Type::String,
                     actual: ty
                 }))
@@ -56,13 +56,13 @@ impl<'a> FromLua<'a> for &'a str {
 macro_rules! impl_from_lua {
     ($t: ty, $expected: ident, $func: ident, $($ret: tt)*) => {
         impl FromLua<'_> for $t {
-            fn from_lua(vm: &LuaState, index: i32) -> crate::vm::Result<Self> {
-                let l = **vm;
+            fn from_lua(vm: &Vm, index: i32) -> crate::vm::Result<Self> {
+                let l = vm.as_ptr();
                 unsafe {
                     let ty = lua_type(l, index);
                     match ty {
                         Type::$expected => Ok($func(l, index) $($ret)*),
-                        _ => Err(Error::TypeError(TypeError {
+                        _ => Err(Error::Type(TypeError {
                             expected: Type::$expected,
                             actual: ty
                         }))
@@ -92,17 +92,14 @@ impl_from_lua!(f64, Number, lua_tonumber, as _);
 impl_from_lua!(bool, Boolean, lua_toboolean, == 1);
 
 impl<T: IntoParam> IntoLua for T {
-    fn into_lua(self, vm: &LuaState) -> Result<u16, Error> {
-        let stack = unsafe { Stack::wrap(**vm, 0) };
-        Ok(self.into_param(&stack))
+    fn into_lua(self, vm: &Vm) -> Result<u16, Error> {
+        Ok(self.into_param(vm))
     }
 }
 
-pub struct RFunction(pub CFunction);
-
 impl IntoLua for RFunction {
-    fn into_lua(self, vm: &LuaState) -> crate::vm::Result<u16> {
-        let l = **vm;
+    fn into_lua(self, vm: &Vm) -> crate::vm::Result<u16> {
+        let l = vm.as_ptr();
         unsafe {
             lua_pushcclosure(l, self.0, 0);
         }

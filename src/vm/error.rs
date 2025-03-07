@@ -80,7 +80,7 @@ impl Display for RuntimeError {
 simple_error! {
     pub Error {
         InvalidUtf8(Utf8Error) => "invalid UTF8 string: {}",
-        TypeError(TypeError) => "type error: {}",
+        Type(TypeError) => "type error: {}",
         Syntax(String) => "syntax error: {}",
         Runtime(RuntimeError) => "runtime error: {}",
         Memory => "memory allocation error",

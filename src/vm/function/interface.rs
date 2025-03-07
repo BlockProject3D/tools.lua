@@ -26,7 +26,7 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use crate::vm::Stack;
+use crate::vm::Vm;
 use crate::vm::util::SimpleDrop;
 
 /// This trait represents a function return value.
@@ -37,10 +37,10 @@ pub trait IntoParam: Sized {
     ///
     /// # Arguments
     ///
-    /// * `stack`: the stack to push this value to.
+    /// * `vm`: the [Vm] to push this value to.
     ///
     /// returns: u16
-    fn into_param(self, stack: &Stack) -> u16;
+    fn into_param(self, vm: &Vm) -> u16;
 }
 
 /// This trait represents a function parameter.
@@ -49,7 +49,8 @@ pub trait FromParam<'a>: Sized + SimpleDrop {
     ///
     /// # Arguments
     ///
-    /// * `stack`: the stack to read from.
+    /// * `vm`: the [Vm] to read from.
+    /// * `index`: index of the parameter to read.
     ///
     /// returns: Self
     ///
@@ -57,5 +58,5 @@ pub trait FromParam<'a>: Sized + SimpleDrop {
     ///
     /// Calling this function outside the body of a CFunction is UB. Calling this function in a
     /// non-POF segment of that CFunction is also UB.
-    unsafe fn from_param(stack: &'a Stack) -> Self;
+    unsafe fn from_param(vm: &'a Vm, index: i32) -> Self;
 }

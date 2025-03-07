@@ -32,38 +32,38 @@ use crate::ffi::laux::{luaL_checkinteger, luaL_checklstring, luaL_checknumber};
 use crate::ffi::lua::{lua_pushboolean, lua_pushinteger, lua_pushlstring, lua_pushnil, lua_pushnumber, lua_type, Type};
 use crate::vm::function::{FromParam, IntoParam};
 use crate::vm::util::{lua_rust_error};
-use crate::vm::Stack;
+use crate::vm::Vm;
 
 impl<'a, T: FromParam<'a> + Copy> FromParam<'a> for Option<T> {
-    unsafe fn from_param(stack: &'a Stack) -> Self {
-        let l = stack.as_ptr();
-        let ty = lua_type(l, stack.pop());
+    unsafe fn from_param(vm: &'a Vm, index: i32) -> Self {
+        let l = vm.as_ptr();
+        let ty = lua_type(l, index);
         if ty == Type::Nil || ty == Type::None {
             None
         } else {
-            Some(T::from_param(stack))
+            Some(T::from_param(vm, index))
         }
     }
 }
 
 impl<'a> FromParam<'a> for &'a str {
-    unsafe fn from_param(stack: &'a Stack) -> Self {
+    unsafe fn from_param(vm: &'a Vm, index: i32) -> Self {
         let mut len: usize = 0;
-        let str = luaL_checklstring(stack.as_ptr(), stack.pop(), &mut len as _);
+        let str = luaL_checklstring(vm.as_ptr(), index, &mut len as _);
         let slice = slice::from_raw_parts(str as *const u8, len);
         match std::str::from_utf8(slice){
             Ok(v) => v,
             Err(e) => {
-                lua_rust_error(stack.as_ptr(), e);
+                lua_rust_error(vm.as_ptr(), e);
             }
         }
     }
 }
 
 impl IntoParam for &str {
-    fn into_param(self, stack: &Stack) -> u16 {
+    fn into_param(self, vm: &Vm) -> u16 {
         unsafe {
-            lua_pushlstring(stack.as_ptr(), self.as_ptr() as _, self.len());
+            lua_pushlstring(vm.as_ptr(), self.as_ptr() as _, self.len());
         }
         1
     }
@@ -73,15 +73,15 @@ macro_rules! impl_integer {
     ($($t: ty),*) => {
         $(
             impl FromParam<'_> for $t {
-                unsafe fn from_param(stack: &Stack) -> Self {
-                    luaL_checkinteger(stack.as_ptr(), stack.pop()) as _
+                unsafe fn from_param(vm: &Vm, index: i32) -> Self {
+                    luaL_checkinteger(vm.as_ptr(), index) as _
                 }
             }
 
             impl IntoParam for $t {
-                fn into_param(self, stack: &Stack) -> u16 {
+                fn into_param(self, vm: &Vm) -> u16 {
                     unsafe {
-                        lua_pushinteger(stack.as_ptr(), self as _);
+                        lua_pushinteger(vm.as_ptr(), self as _);
                         1
                     }
                 }
@@ -99,15 +99,15 @@ macro_rules! impl_float {
     ($($t: ty),*) => {
         $(
             impl FromParam<'_> for $t {
-                unsafe fn from_param(stack: &Stack) -> Self {
-                    luaL_checknumber(stack.as_ptr(), stack.pop()) as _
+                unsafe fn from_param(vm: &Vm, index: i32) -> Self {
+                    luaL_checknumber(vm.as_ptr(), index) as _
                 }
             }
 
             impl IntoParam for $t {
-                fn into_param(self, stack: &Stack) -> u16 {
+                fn into_param(self, vm: &Vm) -> u16 {
                     unsafe {
-                        lua_pushnumber(stack.as_ptr(), self as _);
+                        lua_pushnumber(vm.as_ptr(), self as _);
                         1
                     }
                 }
@@ -119,19 +119,19 @@ macro_rules! impl_float {
 impl_float!(f32, f64);
 
 impl IntoParam for bool {
-    fn into_param(self, stack: &Stack) -> u16 {
-        unsafe { lua_pushboolean(stack.as_ptr(), if self { 1 } else { 0 }) };
+    fn into_param(self, vm: &Vm) -> u16 {
+        unsafe { lua_pushboolean(vm.as_ptr(), if self { 1 } else { 0 }) };
         1
     }
 }
 
 impl<T: IntoParam, E: Error> IntoParam for Result<T, E> {
-    fn into_param(self, stack: &Stack) -> u16 {
+    fn into_param(self, vm: &Vm) -> u16 {
         match self {
-            Ok(v) => v.into_param(stack),
+            Ok(v) => v.into_param(vm),
             Err(e) => {
                 unsafe {
-                    lua_rust_error(stack.as_ptr(), e);
+                    lua_rust_error(vm.as_ptr(), e);
                 }
             }
         }
@@ -139,15 +139,21 @@ impl<T: IntoParam, E: Error> IntoParam for Result<T, E> {
 }
 
 impl<T: IntoParam> IntoParam for Option<T> {
-    fn into_param(self, stack: &Stack) -> u16 {
+    fn into_param(self, vm: &Vm) -> u16 {
         match self {
             None => {
                 unsafe {
-                    lua_pushnil(stack.as_ptr());
+                    lua_pushnil(vm.as_ptr());
                     1
                 }
             }
-            Some(v) => v.into_param(stack)
+            Some(v) => v.into_param(vm)
         }
+    }
+}
+
+impl IntoParam for () {
+    fn into_param(self, _: &Vm) -> u16 {
+        0
     }
 }

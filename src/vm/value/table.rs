@@ -27,27 +27,28 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::ffi::laux::luaL_checktype;
-use crate::ffi::lua::{lua_getfield, lua_gettop, lua_setfield, lua_settop, Type};
+use crate::ffi::lua::{lua_getfield, lua_gettop, lua_setfield, lua_settop, lua_type, Type};
 use crate::vm::function::FromParam;
-use crate::vm::{LuaState, Stack};
+use crate::vm::Vm;
+use crate::vm::error::TypeError;
 use crate::vm::util::AnyStr;
 use crate::vm::value::{FromLua, IntoLua};
 
 #[derive(Copy, Clone)]
 pub struct Table<'a> {
-    vm: &'a LuaState,
+    vm: &'a Vm,
     index: i32
 }
 
 pub struct Scope<'a> {
-    vm: &'a LuaState,
+    vm: &'a Vm,
     index: i32,
     initial_top: i32
 }
 
 impl<'a> Scope<'a> {
-    fn new(vm: &'a LuaState, index: i32) -> Self {
-        let initial_top = unsafe { lua_gettop(**vm) };
+    fn new(vm: &'a Vm, index: i32) -> Self {
+        let initial_top = unsafe { lua_gettop(vm.as_ptr()) };
         Self { vm, index, initial_top }
     }
 
@@ -56,11 +57,11 @@ impl<'a> Scope<'a> {
             let nums = value.into_lua(self.vm)?;
             if nums > 1 {
                 // Clear the stack.
-                lua_settop(**self.vm, -(nums as i32)-1);
+                lua_settop(self.vm.as_ptr(), -(nums as i32)-1);
                 //FIXME: Better error type
                 return Err(crate::vm::error::Error::Unknown)
             }
-            lua_setfield(**self.vm, self.index, name.to_str()?.as_ptr());
+            lua_setfield(self.vm.as_ptr(), self.index, name.to_str()?.as_ptr());
         }
         Ok(())
     }
@@ -71,7 +72,7 @@ impl<'a> Scope<'a> {
             return Err(crate::vm::error::Error::Unknown)
         }
         unsafe {
-            lua_getfield(**self.vm, self.index, name.to_str()?.as_ptr());
+            lua_getfield(self.vm.as_ptr(), self.index, name.to_str()?.as_ptr());
             T::from_lua(self.vm, -1)
         }
     }
@@ -79,11 +80,11 @@ impl<'a> Scope<'a> {
 
 impl Drop for Scope<'_> {
     fn drop(&mut self) {
-        let top = unsafe { lua_gettop(**self.vm) };
+        let top = unsafe { lua_gettop(self.vm.as_ptr()) };
         let count = top - self.initial_top;
         // Pop count values off the stack to ensure the stack is cleared after all table
         // manipulations are finished.
-        unsafe { lua_settop(**self.vm, -count-1) };
+        unsafe { lua_settop(self.vm.as_ptr(), -count-1) };
     }
 }
 
@@ -94,12 +95,25 @@ impl<'a> Table<'a> {
 }
 
 impl<'a> FromParam<'a> for Table<'a> {
-    unsafe fn from_param(stack: &'a Stack) -> Self {
-        let index = stack.pop();
-        luaL_checktype(stack.as_ptr(), index, Type::Table);
+    unsafe fn from_param(vm: &'a Vm, index: i32) -> Self {
+        luaL_checktype(vm.as_ptr(), index, Type::Table);
         Table {
-            vm: stack.as_state(),
+            vm,
             index
+        }
+    }
+}
+
+impl<'a> FromLua<'a> for Table<'a> {
+    fn from_lua(vm: &'a Vm, index: i32) -> crate::vm::Result<Self> {
+        let ty = unsafe { lua_type(vm.as_ptr(), index) };
+        if ty == Type::Table {
+            Ok(Table { vm, index })
+        } else {
+            Err(crate::vm::error::Error::Type(TypeError {
+                expected: Type::Table,
+                actual: ty
+            }))
         }
     }
 }
