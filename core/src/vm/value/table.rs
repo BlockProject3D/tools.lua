@@ -26,8 +26,9 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use log::__private_api::Value;
 use crate::ffi::laux::luaL_checktype;
-use crate::ffi::lua::{lua_createtable, lua_getfield, lua_gettop, lua_pushvalue, lua_setfield, lua_settop, lua_type, Type};
+use crate::ffi::lua::{lua_createtable, lua_getfield, lua_gettop, lua_pushvalue, lua_rawgeti, lua_rawseti, lua_setfield, lua_settop, lua_type, Type};
 use crate::vm::function::{FromParam, IntoParam};
 use crate::vm::Vm;
 use crate::vm::error::TypeError;
@@ -57,8 +58,7 @@ impl<'a> Scope<'a> {
             if nums > 1 {
                 // Clear the stack.
                 lua_settop(self.vm.as_ptr(), -(nums as i32)-1);
-                //FIXME: Better error type
-                return Err(crate::vm::error::Error::Unknown)
+                return Err(crate::vm::error::Error::MultiValue);
             }
             lua_setfield(self.vm.as_ptr(), self.index, name.to_str()?.as_ptr());
         }
@@ -67,11 +67,33 @@ impl<'a> Scope<'a> {
 
     pub fn get_field<'b, T: FromLua<'b>>(&'b self, name: impl AnyStr) -> crate::vm::Result<T> {
         if T::num_values() > 1 {
-            //FIXME: Better error type
-            return Err(crate::vm::error::Error::Unknown)
+            return Err(crate::vm::error::Error::MultiValue);
         }
         unsafe {
             lua_getfield(self.vm.as_ptr(), self.index, name.to_str()?.as_ptr());
+            T::from_lua(self.vm, -1)
+        }
+    }
+
+    pub fn set(&mut self, i: i32, value: impl IntoLua) -> crate::vm::Result<()> {
+        unsafe {
+            let nums = value.into_lua(self.vm)?;
+            if nums > 1 {
+                // Clear the stack.
+                lua_settop(self.vm.as_ptr(), -(nums as i32)-1);
+                return Err(crate::vm::error::Error::MultiValue);
+            }
+            lua_rawseti(self.vm.as_ptr(), self.index, i);
+        }
+        Ok(())
+    }
+
+    pub fn get<'b, T: FromLua<'b>>(&'b self, i: i32) -> crate::vm::Result<T> {
+        if T::num_values() > 1 {
+            return Err(crate::vm::error::Error::MultiValue);
+        }
+        unsafe {
+            lua_rawgeti(self.vm.as_ptr(), self.index, i);
             T::from_lua(self.vm, -1)
         }
     }

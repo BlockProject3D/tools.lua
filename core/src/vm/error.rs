@@ -86,7 +86,8 @@ simple_error! {
         Memory => "memory allocation error",
         Unknown => "unknown error",
         Error => "error in error handler",
-        Null => "string contains a null character"
+        Null => "string contains a null character",
+        MultiValue => "only one value is supported by this API"
     }
 }
 
