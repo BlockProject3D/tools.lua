@@ -29,6 +29,23 @@
 #[macro_export]
 macro_rules! decl_lib_func {
     (
+        fn $fn_name: ident ($name: ident: &Vm, $($arg_name: ident: $arg_ty: ty),*) -> $ret_ty: ty $code: block
+    ) => {
+        pub extern "C-unwind" fn $fn_name(l: $crate::ffi::lua::State) -> i32 {
+            fn _func($name: &$crate::vm::Vm, $($arg_name: $arg_ty),*) -> $ret_ty $code
+            use $crate::vm::function::FromParam;
+            use $crate::vm::function::IntoParam;
+            let vm = unsafe { $crate::vm::Vm::from_raw(l) };
+            let mut index = 1;
+            $(
+                let $arg_name: $arg_ty = unsafe { FromParam::from_param(&vm, index) };
+                index += 1;
+            )*
+            let ret = _func(&vm, $($arg_name),*);
+            ret.into_param(&vm) as _
+        }
+    };
+    (
         fn $fn_name: ident ($($arg_name: ident: $arg_ty: ty),*) -> $ret_ty: ty $code: block
     ) => {
         pub extern "C-unwind" fn $fn_name(l: $crate::ffi::lua::State) -> i32 {
@@ -45,21 +62,4 @@ macro_rules! decl_lib_func {
             ret.into_param(&vm) as _
         }
     };
-    (
-        fn $fn_name: ident (vm: &mut Vm, $($arg_name: ident: $arg_ty: ty),*) -> $ret_ty: ty $code: block
-    ) => {
-        pub extern "C-unwind" fn $fn_name(l: $crate::ffi::lua::State) -> i32 {
-            fn _func(vm: &mut crate::vm::Vm, $($arg_name: $arg_ty),*) -> $ret_ty $code
-            use $crate::vm::function::FromParam;
-            use $crate::vm::function::IntoParam;
-            let mut vm = unsafe { $crate::vm::Vm::from_raw(l) };
-            let mut index = 1;
-            $(
-                let $arg_name: $arg_ty = unsafe { FromParam::from_param(&vm, index) };
-                index += 1;
-            )*
-            let ret = _func(&mut vm, $($arg_name),*);
-            ret.into_param(&vm) as _
-        }
-    }
 }
