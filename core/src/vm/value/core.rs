@@ -106,3 +106,13 @@ impl IntoLua for RFunction {
         Ok(1)
     }
 }
+
+impl FromLua<'_> for () {
+    fn from_lua(_vm: &Vm, _: i32) -> crate::vm::Result<()> {
+        Ok(())
+    }
+
+    fn num_values() -> u16 {
+        0
+    }
+}
