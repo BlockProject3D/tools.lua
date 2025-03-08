@@ -64,4 +64,19 @@ fn tables() {
     vm.clear();
     let new_top_1 = vm.top();
     assert_eq!(new_top, new_top_1);
+    let mut tbl: Table = vm.get_global("myTable").unwrap();
+    {
+        let scope = tbl.lock();
+        let v: f64 = scope.get_field(c"a").unwrap();
+        assert_eq!(v, 0.42);
+    }
+    let v = vm.run_code::<&str>(c"return myTable.b").unwrap();
+    assert_eq!(v, "My great string");
+    {
+        let scope = tbl.lock();
+        let v: f64 = scope.get_field(c"a").unwrap();
+        assert_eq!(v, 0.42);
+    }
+    assert_eq!(v, "My great string");
+    assert_eq!(vm.top(), new_top + 2);
 }
