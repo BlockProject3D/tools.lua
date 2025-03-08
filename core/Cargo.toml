@@ -1,0 +1,24 @@
+[package]
+name = "bp3d-lua"
+version = "0.2.0"
+authors = ["Yuri Edward <yuri6037@outlook.com>"]
+edition = "2021"
+description = "Lua wrapper and base library for BP3D."
+license = "BSD-3-Clause"
+repository = "https://gitlab.com/bp3d/lua"
+readme = "./README.MD"
+keywords = ["lua"]
+categories = ["graphics"]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+bp3d-util = { version = "1.4.0", features = ["simple-error"] }
+log = "0.4.26"
+
+[build-dependencies]
+bp3d-os = { version = "1.0.0-rc.4.1.1", features = ["fs"] }
+phf = { version = "0.11.3", features = ["macros"] }
+cc = "1.2.15"
+
+[features]

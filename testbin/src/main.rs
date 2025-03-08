@@ -26,19 +26,19 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use std::time::Duration;
+use mlua::Lua;
 use bp3d_lua::decl_lib_func;
-use bp3d_lua::vm::Vm;
+use bp3d_lua::vm::RootVm;
 use bp3d_lua::vm::value::RFunction;
 
 struct ValueWithDrop;
 impl ValueWithDrop {
     pub fn print(&self) {
-        println!("ValueWithDrop")
     }
 }
 impl Drop for ValueWithDrop {
     fn drop(&mut self) {
-        println!("Dropping!");
     }
 }
 
@@ -50,19 +50,54 @@ decl_lib_func! {
     }
 }
 
-#[test]
-fn test_vm_destructor() {
-    let mut vm = Vm::new();
+fn test_vm_destructor() -> Duration {
+    let mut vm = RootVm::new();
     vm.set_global(c"test_c_function", RFunction(test_c_function)).unwrap();
     let time = std::time::Instant::now();
-    let res = vm.run_code::<&str>(c"return test_c_function('this is a test\\xFF', 0.42)");
-    assert!(res.is_err());
-    let err = res.unwrap_err().into_runtime();
-    assert_eq!(err.msg(), "rust error: invalid utf-8 sequence of 1 bytes from index 14");
-    assert!(vm.run_code::<&str>(c"return test_c_function('this is a test', 0.42)").is_ok());
-    let s = vm.run_code::<&str>(c"return test_c_function('this is a test', 0.42)").unwrap();
-    assert_eq!(s, "Hello this is a test (0.42)");
-    assert!(vm.run_code::<bool>(c"return test_c_function('this is a test', 0.42)").is_err());
+    for _ in 0..20000 {
+        let res = vm.run_code::<&str>(c"return test_c_function('this is a test\\xFF', 0.42)");
+        assert!(res.is_err());
+        assert!(vm.run_code::<&str>(c"return test_c_function('this is a test', 0.42)").is_ok());
+        let s = vm.run_code::<&str>(c"return test_c_function('this is a test', 0.42)").unwrap();
+        assert_eq!(s, "Hello this is a test (0.42)");
+        vm.clear();
+    }
     let time = time.elapsed();
-    println!("time: {:?}", time);
+    time
+}
+
+fn test_vm_mlua() -> Duration {
+    let lua = Lua::new();
+    let f = lua.create_function(|_, (name, value): (String, f64)| {
+        let drop = ValueWithDrop;
+        drop.print();
+        Ok(format!("Hello {} ({})", name, value))
+    }).unwrap();
+    lua.globals().set("test_c_function", f).unwrap();
+    let time = std::time::Instant::now();
+    for _ in 0..20000 {
+        let res: mlua::Result<String> = lua.load("return test_c_function('this is a test\\xFF', 0.42)").call(());
+        assert!(res.is_err());
+        assert!(lua.load("return test_c_function('this is a test', 0.42)").call::<String>(()).is_ok());
+        let s: String = lua.load("return test_c_function('this is a test', 0.42)").call(()).unwrap();
+        assert_eq!(s, "Hello this is a test (0.42)");
+    }
+    let time = time.elapsed();
+    time
+}
+
+fn main() {
+    const RUNS: u32 = 10;
+    let mut lua = Duration::new(0, 0);
+    let mut mlua = Duration::new(0, 0);
+    for _ in 0..RUNS {
+        lua += test_vm_destructor();
+        mlua += test_vm_mlua();
+    }
+    lua = lua / RUNS;
+    mlua = mlua / RUNS;
+    println!("average tools.lua: {:?}", lua);
+    println!("average mlua: {:?}", mlua);
+    assert!(lua < mlua);
+    println!("average diff: {:?}", mlua - lua);
 }
