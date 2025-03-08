@@ -28,8 +28,9 @@
 
 use std::error::Error;
 use std::slice;
-use crate::ffi::laux::{luaL_checkinteger, luaL_checklstring, luaL_checknumber};
+use crate::ffi::laux::luaL_checklstring;
 use crate::ffi::lua::{lua_pushboolean, lua_pushinteger, lua_pushlstring, lua_pushnil, lua_pushnumber, lua_type, Type};
+use crate::ffi::ext::{lua_ext_fast_checknumber, lua_ext_fast_checkinteger};
 use crate::vm::function::{FromParam, IntoParam};
 use crate::vm::util::{lua_rust_error};
 use crate::vm::Vm;
@@ -74,7 +75,7 @@ macro_rules! impl_integer {
         $(
             impl FromParam<'_> for $t {
                 unsafe fn from_param(vm: &Vm, index: i32) -> Self {
-                    luaL_checkinteger(vm.as_ptr(), index) as _
+                    lua_ext_fast_checkinteger(vm.as_ptr(), index) as _
                 }
             }
 
@@ -100,7 +101,7 @@ macro_rules! impl_float {
         $(
             impl FromParam<'_> for $t {
                 unsafe fn from_param(vm: &Vm, index: i32) -> Self {
-                    luaL_checknumber(vm.as_ptr(), index) as _
+                    lua_ext_fast_checknumber(vm.as_ptr(), index) as _
                 }
             }
 

@@ -26,9 +26,9 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use log::__private_api::Value;
+use crate::ffi::ext::{lua_ext_tab_len, MSize};
 use crate::ffi::laux::luaL_checktype;
-use crate::ffi::lua::{lua_createtable, lua_getfield, lua_gettop, lua_pushvalue, lua_rawgeti, lua_rawseti, lua_setfield, lua_settop, lua_type, Type};
+use crate::ffi::lua::{lua_createtable, lua_getfield, lua_gettop, lua_next, lua_pushnil, lua_pushvalue, lua_rawgeti, lua_rawseti, lua_setfield, lua_settop, lua_type, Type};
 use crate::vm::function::{FromParam, IntoParam};
 use crate::vm::Vm;
 use crate::vm::error::TypeError;
@@ -124,6 +124,27 @@ impl<'a> Table<'a> {
 
     pub fn lock(&mut self) -> Scope {
         Scope::new(self.vm, self.index)
+    }
+
+    pub fn len(&self) -> usize {
+        let mut size: MSize = 0;
+        let ret = unsafe { lua_ext_tab_len(self.vm.as_ptr(), self.index, &mut size) };
+        if ret == 0 {
+            return size as _;
+        }
+        let mut count = 0;
+        unsafe {
+            lua_pushnil(self.vm.as_ptr());
+            while lua_next(self.vm.as_ptr(), self.index) != 0 {
+                lua_settop(self.vm.as_ptr(), -2);
+                count += 1;
+            }
+        }
+        count
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
     }
 }
 

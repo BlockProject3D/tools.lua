@@ -109,6 +109,10 @@ fn main() {
     if !result.success() {
         panic!("Failed to patch LuaJIT");
     }
+    let result = run_command_in_luajit("Failed to patch LuaJIT", "git", &[OsStr::new("apply"), path.join("patch/lua_ext.patch").as_os_str()]);
+    if !result.success() {
+        panic!("Failed to patch LuaJIT");
+    }
 
     // Copy the source directory to the build directory.
     println!("{}", out_path.display());

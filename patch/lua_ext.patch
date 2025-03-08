@@ -1,0 +1,49 @@
+diff --git a/src/lj_api.c b/src/lj_api.c
+index e9fc25b4..7e21f135 100644
+--- a/src/lj_api.c
++++ b/src/lj_api.c
+@@ -1317,3 +1317,44 @@ LUA_API void lua_setallocf(lua_State *L, lua_Alloc f, void *ud)
+   g->allocf = f;
+ }
+ 
++/*------------*/
++/* Extensions */
++/*------------*/
++
++LUALIB_API int lua_ext_tab_len(lua_State* L, int idx, MSize* outsize)
++{
++    TValue* o = index2adr(L, idx);
++    GCtab* tab = tabV(o);
++    if (LJ_LIKELY(tab->hmask == 0))
++        return lj_tab_len(tab);
++    // Return an error as the table has a hash part.
++    return -1;
++}
++
++LUALIB_API lua_Number lua_ext_fast_checknumber(lua_State *L, int idx)
++{
++  cTValue *o = index2adr(L, idx);
++  if (LJ_LIKELY(tvisnumber(o)))
++    return numberVnum(o);
++  else
++    lj_err_argt(L, idx, LUA_TNUMBER);
++  return 0;
++}
++
++LUALIB_API lua_Integer lua_ext_fast_checkinteger(lua_State *L, int idx)
++{
++  cTValue *o = index2adr(L, idx);
++  lua_Number n;
++  if (LJ_LIKELY(tvisint(o))) {
++    return intV(o);
++  } else if (LJ_LIKELY(tvisnum(o))) {
++    n = numV(o);
++  } else {
++    lj_err_argt(L, idx, LUA_TNUMBER);
++  }
++#if LJ_64
++  return (lua_Integer)n;
++#else
++  return lj_num2int(n);
++#endif
++}

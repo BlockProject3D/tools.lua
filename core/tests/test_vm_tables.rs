@@ -47,6 +47,7 @@ fn tables() {
         assert_eq!(s, "My great string");
         scope.set_field(c"sub", new_table).unwrap();
     }
+    assert_eq!(tbl.len(), 3);
     vm.set_global(c"myTable", tbl).unwrap();
     let new_top = vm.top();
     assert_eq!(top, new_top);
@@ -65,6 +66,7 @@ fn tables() {
     let new_top_1 = vm.top();
     assert_eq!(new_top, new_top_1);
     let mut tbl: Table = vm.get_global("myTable").unwrap();
+    assert_eq!(tbl.len(), 3);
     {
         let scope = tbl.lock();
         let v: f64 = scope.get_field(c"a").unwrap();
