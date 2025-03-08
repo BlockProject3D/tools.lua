@@ -29,7 +29,7 @@
 use std::ffi::c_int;
 use std::ops::{Deref, DerefMut};
 use crate::ffi::laux::{luaL_callmeta, luaL_newstate, luaL_openlibs, luaL_traceback};
-use crate::ffi::lua::{lua_close, lua_gettop, lua_isstring, lua_pcall, lua_pushcclosure, lua_pushlstring, lua_remove, lua_setfield, lua_settop, lua_tolstring, lua_type, State, ThreadStatus, Type, GLOBALSINDEX};
+use crate::ffi::lua::{lua_close, lua_getfield, lua_gettop, lua_isstring, lua_pcall, lua_pushcclosure, lua_pushlstring, lua_remove, lua_setfield, lua_settop, lua_tolstring, lua_type, State, ThreadStatus, Type, GLOBALSINDEX};
 use crate::vm::error::{Error, RuntimeError};
 use crate::vm::util::{AnyStr, LoadCode};
 use crate::vm::value::{FromLua, IntoLua};
@@ -75,6 +75,16 @@ impl Vm {
         }
     }
 
+    /// Returns the absolute stack index for the given index.
+    #[inline]
+    pub fn absolute(&self, index: i32) -> i32 {
+        if index < 0 {
+            unsafe { lua_gettop(self.l) + index + 1 }
+        } else {
+            index
+        }
+    }
+
     /// Returns the top of the lua stack.
     #[inline]
     pub fn top(&self) -> i32 {
@@ -82,6 +92,7 @@ impl Vm {
     }
 
     /// Clears the lua stack.
+    #[inline]
     pub fn clear(&mut self) {
         unsafe { lua_settop(self.l, 0); }
     }
@@ -99,7 +110,14 @@ impl Vm {
         Ok(())
     }
 
-    pub fn run_code<'a, R: FromLua<'a>>(&'a mut self, code: impl LoadCode) -> crate::vm::Result<R> {
+    pub fn get_global<'a, R: FromLua<'a>>(&'a self, name: impl AnyStr) -> crate::vm::Result<R> {
+        unsafe {
+            lua_getfield(self.as_ptr(), GLOBALSINDEX, name.to_str()?.as_ptr());
+        }
+        R::from_lua(self, -1)
+    }
+
+    pub fn run_code<'a, R: FromLua<'a>>(&'a self, code: impl LoadCode) -> crate::vm::Result<R> {
         let l = self.as_ptr();
         // Push error handler and the get the stack position of it.
         let handler_pos = unsafe {
