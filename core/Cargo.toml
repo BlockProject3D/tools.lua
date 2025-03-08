@@ -6,7 +6,7 @@ edition = "2021"
 description = "Lua wrapper and base library for BP3D."
 license = "BSD-3-Clause"
 repository = "https://gitlab.com/bp3d/lua"
-readme = "./README.MD"
+readme = "../README.MD"
 keywords = ["lua"]
 categories = ["graphics"]
 
