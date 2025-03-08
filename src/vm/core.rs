@@ -29,7 +29,7 @@
 use std::ffi::c_int;
 use std::ops::{Deref, DerefMut};
 use crate::ffi::laux::{luaL_callmeta, luaL_newstate, luaL_openlibs, luaL_traceback};
-use crate::ffi::lua::{lua_close, lua_gettop, lua_isstring, lua_pcall, lua_pushcclosure, lua_pushlstring, lua_remove, lua_setfield, lua_tolstring, lua_type, State, ThreadStatus, Type, GLOBALSINDEX};
+use crate::ffi::lua::{lua_close, lua_gettop, lua_isstring, lua_pcall, lua_pushcclosure, lua_pushlstring, lua_remove, lua_setfield, lua_settop, lua_tolstring, lua_type, State, ThreadStatus, Type, GLOBALSINDEX};
 use crate::vm::error::{Error, RuntimeError};
 use crate::vm::util::{AnyStr, LoadCode};
 use crate::vm::value::{FromLua, IntoLua};
@@ -75,12 +75,23 @@ impl Vm {
         }
     }
 
+    /// Returns the top of the lua stack.
+    #[inline]
+    pub fn top(&self) -> i32 {
+        unsafe { lua_gettop(self.l) }
+    }
+
+    /// Clears the lua stack.
+    pub fn clear(&mut self) {
+        unsafe { lua_settop(self.l, 0); }
+    }
+
     #[inline]
     pub fn as_ptr(&self) -> State {
         self.l
     }
 
-    pub fn set_global(&mut self, name: impl AnyStr, value: impl IntoLua) -> crate::vm::Result<()> {
+    pub fn set_global(&self, name: impl AnyStr, value: impl IntoLua) -> crate::vm::Result<()> {
         value.into_lua(self)?;
         unsafe {
             lua_setfield(self.as_ptr(), GLOBALSINDEX, name.to_str()?.as_ptr());
