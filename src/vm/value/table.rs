@@ -27,14 +27,13 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::ffi::laux::luaL_checktype;
-use crate::ffi::lua::{lua_getfield, lua_gettop, lua_setfield, lua_settop, lua_type, Type};
-use crate::vm::function::FromParam;
+use crate::ffi::lua::{lua_createtable, lua_getfield, lua_gettop, lua_pushvalue, lua_setfield, lua_settop, lua_type, Type};
+use crate::vm::function::{FromParam, IntoParam};
 use crate::vm::Vm;
 use crate::vm::error::TypeError;
-use crate::vm::util::AnyStr;
+use crate::vm::util::{AnyStr, SimpleDrop};
 use crate::vm::value::{FromLua, IntoLua};
 
-#[derive(Copy, Clone)]
 pub struct Table<'a> {
     vm: &'a Vm,
     index: i32
@@ -89,10 +88,24 @@ impl Drop for Scope<'_> {
 }
 
 impl<'a> Table<'a> {
+    pub fn new(vm: &'a Vm) -> Self {
+        unsafe { lua_createtable(vm.as_ptr(), 0, 0) };
+        let index = unsafe { lua_gettop(vm.as_ptr()) };
+        Self { vm, index }
+    }
+
+    pub fn with_capacity(vm: &'a Vm, array_capacity: usize, non_array_capcity: usize) -> Self {
+        unsafe { lua_createtable(vm.as_ptr(), array_capacity as _, non_array_capcity as _) };
+        let index = unsafe { lua_gettop(vm.as_ptr()) };
+        Self { vm, index }
+    }
+
     pub fn lock(&mut self) -> Scope {
         Scope::new(self.vm, self.index)
     }
 }
+
+unsafe impl<'a> SimpleDrop for Table<'a> {}
 
 impl<'a> FromParam<'a> for Table<'a> {
     unsafe fn from_param(vm: &'a Vm, index: i32) -> Self {
@@ -115,5 +128,15 @@ impl<'a> FromLua<'a> for Table<'a> {
                 actual: ty
             }))
         }
+    }
+}
+
+impl IntoParam for Table<'_> {
+    fn into_param(self, vm: &Vm) -> u16 {
+        let top = unsafe { lua_gettop(vm.as_ptr()) };
+        if top != self.index {
+            unsafe { lua_pushvalue(vm.as_ptr(), self.index) };
+        }
+        1
     }
 }
