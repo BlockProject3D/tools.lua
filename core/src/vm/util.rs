@@ -32,9 +32,20 @@ use std::ffi::{CStr, CString};
 use crate::ffi::laux::luaL_loadstring;
 use crate::ffi::lua::{lua_error, lua_pushlstring, State, ThreadStatus};
 
+pub trait LuaType {
+    /// Returns the closest rust type matching this lua value.
+    fn lua_type() -> &'static str {
+        std::any::type_name::<Self>()
+    }
+}
+
+impl<T> LuaType for Option<T> {}
+
 pub unsafe trait SimpleDrop {}
 
-unsafe impl<T: Copy> SimpleDrop for T {}
+unsafe impl<T: SimpleDrop> SimpleDrop for Option<T> {}
+unsafe impl<T: SimpleDrop, R: SimpleDrop> SimpleDrop for Result<T, R> {}
+unsafe impl<T> SimpleDrop for &T {}
 
 pub unsafe fn lua_rust_error<E: Error>(l: State, error: E) -> ! {
     // At this point the function is assumed to be a non-POF (error and String).

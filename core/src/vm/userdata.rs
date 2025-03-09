@@ -26,22 +26,23 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::any::TypeId;
 use std::ffi::CStr;
 use crate::ffi::lua::CFunction;
 use crate::vm::util::LuaType;
 
 pub struct Function {
     is_mutable: bool,
-    args: Vec<TypeId>,
+    args: Vec<&'static str>,
+    name: &'static CStr,
     func: CFunction
 }
 
 impl Function {
-    pub fn new(func: CFunction) -> Function {
+    pub fn new(name: &'static CStr, func: CFunction) -> Function {
         Function {
             is_mutable: false,
             args: Vec::new(),
+            name,
             func
         }
     }

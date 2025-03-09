@@ -29,3 +29,10 @@
 mod lib_func;
 mod userdata_func;
 mod userdata;
+
+#[macro_export]
+macro_rules! c_stringify {
+    ($str: ident) => {
+        unsafe { std::ffi::CStr::from_ptr(concat!(stringify!($str), "\0").as_ptr() as _) }
+    };
+}

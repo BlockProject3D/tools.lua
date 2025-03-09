@@ -28,14 +28,15 @@
 
 use std::error::Error;
 use std::slice;
-use crate::ffi::laux::luaL_checklstring;
-use crate::ffi::lua::{lua_pushboolean, lua_pushinteger, lua_pushlstring, lua_pushnil, lua_pushnumber, lua_type, Type};
+use crate::ffi::laux::{luaL_checklstring, luaL_checkudata};
+use crate::ffi::lua::{lua_pushboolean, lua_pushinteger, lua_pushlstring, lua_pushnil, lua_pushnumber, lua_type, Integer, Number, Type};
 use crate::ffi::ext::{lua_ext_fast_checknumber, lua_ext_fast_checkinteger};
 use crate::vm::function::{FromParam, IntoParam};
-use crate::vm::util::{lua_rust_error};
+use crate::vm::userdata::UserData;
+use crate::vm::util::{lua_rust_error, LuaType, SimpleDrop};
 use crate::vm::Vm;
 
-impl<'a, T: FromParam<'a> + Copy> FromParam<'a> for Option<T> {
+impl<'a, T: FromParam<'a> + SimpleDrop> FromParam<'a> for Option<T> {
     unsafe fn from_param(vm: &'a Vm, index: i32) -> Self {
         let l = vm.as_ptr();
         let ty = lua_type(l, index);
@@ -46,6 +47,8 @@ impl<'a, T: FromParam<'a> + Copy> FromParam<'a> for Option<T> {
         }
     }
 }
+
+impl LuaType for &str {}
 
 impl<'a> FromParam<'a> for &'a str {
     unsafe fn from_param(vm: &'a Vm, index: i32) -> Self {
@@ -61,6 +64,8 @@ impl<'a> FromParam<'a> for &'a str {
     }
 }
 
+unsafe impl SimpleDrop for &str {}
+
 impl IntoParam for &str {
     fn into_param(self, vm: &Vm) -> u16 {
         unsafe {
@@ -73,6 +78,14 @@ impl IntoParam for &str {
 macro_rules! impl_integer {
     ($($t: ty),*) => {
         $(
+            unsafe impl SimpleDrop for $t {}
+
+            impl LuaType for $t {
+                fn lua_type() -> &'static str {
+                    std::any::type_name::<Integer>()
+                }
+            }
+
             impl FromParam<'_> for $t {
                 unsafe fn from_param(vm: &Vm, index: i32) -> Self {
                     lua_ext_fast_checkinteger(vm.as_ptr(), index) as _
@@ -99,6 +112,14 @@ impl_integer!(i8, u8, i16, u16, i32, u32);
 macro_rules! impl_float {
     ($($t: ty),*) => {
         $(
+            unsafe impl SimpleDrop for $t {}
+
+            impl LuaType for $t {
+                fn lua_type() -> &'static str {
+                    std::any::type_name::<Number>()
+                }
+            }
+
             impl FromParam<'_> for $t {
                 unsafe fn from_param(vm: &Vm, index: i32) -> Self {
                     lua_ext_fast_checknumber(vm.as_ptr(), index) as _
@@ -156,5 +177,18 @@ impl<T: IntoParam> IntoParam for Option<T> {
 impl IntoParam for () {
     fn into_param(self, _: &Vm) -> u16 {
         0
+    }
+}
+
+impl<T: UserData> LuaType for &T {
+    fn lua_type() -> &'static str {
+        unsafe { T::CLASS_NAME.to_str().unwrap_unchecked() }
+    }
+}
+
+impl<'a, T: UserData> FromParam<'a> for &'a T {
+    unsafe fn from_param(vm: &'a Vm, index: i32) -> &'a T {
+        let obj_ptr = unsafe { luaL_checkudata(vm.as_ptr(), index, T::CLASS_NAME.as_ptr()) } as *const T;
+        unsafe { &*obj_ptr }
     }
 }

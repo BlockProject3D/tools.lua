@@ -32,7 +32,7 @@ use crate::ffi::lua::{lua_createtable, lua_getfield, lua_gettop, lua_next, lua_p
 use crate::vm::function::{FromParam, IntoParam};
 use crate::vm::Vm;
 use crate::vm::error::TypeError;
-use crate::vm::util::{AnyStr, SimpleDrop};
+use crate::vm::util::{AnyStr, LuaType, SimpleDrop};
 use crate::vm::value::{FromLua, IntoLua};
 
 pub struct Table<'a> {
@@ -184,3 +184,5 @@ impl IntoParam for Table<'_> {
         1
     }
 }
+
+impl LuaType for Table<'_> {}

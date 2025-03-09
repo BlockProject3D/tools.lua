@@ -27,7 +27,7 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::vm::Vm;
-use crate::vm::util::SimpleDrop;
+use crate::vm::util::{LuaType, SimpleDrop};
 
 /// This trait represents a function return value.
 pub trait IntoParam: Sized {
@@ -44,7 +44,7 @@ pub trait IntoParam: Sized {
 }
 
 /// This trait represents a function parameter.
-pub trait FromParam<'a>: Sized + SimpleDrop {
+pub trait FromParam<'a>: Sized + SimpleDrop + LuaType {
     /// Reads this value from the given lua stack.
     ///
     /// # Arguments

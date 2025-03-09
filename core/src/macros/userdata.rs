@@ -42,7 +42,7 @@ macro_rules! decl_userdata {
         )*
 
         impl $crate::vm::userdata::UserData for $obj_name {
-            const CLASS_NAME: &'static std::ffi::CStr = unsafe { std::ffi::CStr::from_ptr(concat!(stringify!($obj_name), "\0").as_ptr() as _) };
+            const CLASS_NAME: &'static std::ffi::CStr = $crate::c_stringify!($obj_name);
         }
 
         unsafe impl $crate::vm::userdata::UserDataImmutable for $obj_name {}
@@ -65,7 +65,7 @@ macro_rules! decl_userdata_mut {
         )*
 
         impl $crate::vm::userdata::UserData for $obj_name {
-            const CLASS_NAME: &'static std::ffi::CStr = unsafe { std::ffi::CStr::from_ptr(concat!(stringify!($obj_name), "\0").as_ptr() as _) };
+            const CLASS_NAME: &'static std::ffi::CStr = $crate::c_stringify!($obj_name);
         }
     };
 }

@@ -38,9 +38,10 @@ macro_rules! decl_userdata_func {
                     let self_ptr = unsafe { $crate::ffi::laux::luaL_checkudata(l, 0, <$obj_name as $crate::vm::userdata::UserData>::CLASS_NAME.as_ptr()) };
                     0
                 }
-                let mut f = $crate::vm::userdata::Function::new(_cfunc);
+                let mut f = $crate::vm::userdata::Function::new($crate::c_stringify!($fn_name), _cfunc);
                 f.mutable();
-                //$($(f.arg::<$arg_type>();)*)?
+                f.arg::<&$obj_name>();
+                $($(f.arg::<$arg_type>();)*)?
                 f
             }
         }
@@ -55,9 +56,10 @@ macro_rules! decl_userdata_func {
                     let self_ptr = unsafe { $crate::ffi::laux::luaL_checkudata(l, 0, <$obj_name as $crate::vm::userdata::UserData>::CLASS_NAME.as_ptr()) };
                     0
                 }
-                let mut f = $crate::vm::userdata::Function::new(_cfunc);
+                let mut f = $crate::vm::userdata::Function::new($crate::c_stringify!($fn_name), _cfunc);
                 f.mutable();
-                //$($(f.arg::<$arg_type>();)*)?
+                f.arg::<&$obj_name>();
+                $($(f.arg::<$arg_type>();)*)?
                 f
             }
         }
@@ -72,8 +74,9 @@ macro_rules! decl_userdata_func {
                     let self_ptr = unsafe { $crate::ffi::laux::luaL_checkudata(l, 0, <$obj_name as $crate::vm::userdata::UserData>::CLASS_NAME.as_ptr()) };
                     0
                 }
-                let mut f = $crate::vm::userdata::Function::new(_cfunc);
-                //$($(f.arg::<$arg_type>();)*)?
+                let mut f = $crate::vm::userdata::Function::new($crate::c_stringify!($fn_name), _cfunc);
+                f.arg::<&$obj_name>();
+                $($(f.arg::<$arg_type>();)*)?
                 f
             }
         }
@@ -88,8 +91,9 @@ macro_rules! decl_userdata_func {
                     let self_ptr = unsafe { $crate::ffi::laux::luaL_checkudata(l, 0, <$obj_name as $crate::vm::userdata::UserData>::CLASS_NAME.as_ptr()) };
                     0
                 }
-                let mut f = $crate::vm::userdata::Function::new(_cfunc);
-                //$($(f.arg::<$arg_type>();)*)?
+                let mut f = $crate::vm::userdata::Function::new($crate::c_stringify!($fn_name), _cfunc);
+                f.arg::<&$obj_name>();
+                $($(f.arg::<$arg_type>();)*)?
                 f
             }
         }
