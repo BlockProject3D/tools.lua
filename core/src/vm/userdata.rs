@@ -26,13 +26,44 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-mod core;
-pub mod function;
-pub mod value;
-pub mod error;
-pub mod util;
-pub mod userdata;
+use std::any::TypeId;
+use std::ffi::CStr;
+use crate::ffi::lua::CFunction;
+use crate::vm::util::LuaType;
 
-pub use core::*;
+pub struct Function {
+    is_mutable: bool,
+    args: Vec<TypeId>,
+    func: CFunction
+}
 
-pub type Result<T> = std::result::Result<T, error::Error>;
+impl Function {
+    pub fn new(func: CFunction) -> Function {
+        Function {
+            is_mutable: false,
+            args: Vec::new(),
+            func
+        }
+    }
+
+    pub fn mutable(&mut self) -> &mut Self {
+        self.is_mutable = true;
+        self
+    }
+
+    pub fn arg<T: LuaType>(&mut self) -> &mut Self {
+        self.args.push(T::lua_type());
+        self
+    }
+}
+
+pub trait UserData: Sized {
+    const CLASS_NAME: &'static CStr;
+
+    //fn register(registry: &Registry<Self>);
+}
+
+//TODO: Implement FromLua on UserData only when that userdata is also UserDataImmutable
+//TODO: most likely need another luajit hack to allow returning errors from luaL_checkudata instead
+// of unwinding
+pub unsafe trait UserDataImmutable: UserData {}

@@ -26,13 +26,46 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-mod core;
-pub mod function;
-pub mod value;
-pub mod error;
-pub mod util;
-pub mod userdata;
+#[macro_export]
+macro_rules! decl_userdata {
+    (
+        impl $obj_name: ident {
+            $(
+                $vis: vis fn $fn_name: ident(this: &$obj_name2: ident$($tokens: tt)*) -> $ret_ty: ty $code: block
+            )*
+        }
+    ) => {
+        $(
+            $crate::decl_userdata_func! {
+                $vis fn $fn_name(this: &$obj_name$($tokens)*) -> $ret_ty $code
+            }
+        )*
 
-pub use core::*;
+        impl $crate::vm::userdata::UserData for $obj_name {
+            const CLASS_NAME: &'static std::ffi::CStr = unsafe { std::ffi::CStr::from_ptr(concat!(stringify!($obj_name), "\0").as_ptr() as _) };
+        }
 
-pub type Result<T> = std::result::Result<T, error::Error>;
+        unsafe impl $crate::vm::userdata::UserDataImmutable for $obj_name {}
+    };
+}
+
+#[macro_export]
+macro_rules! decl_userdata_mut {
+    (
+        impl $obj_name: ident {
+            $(
+                $vis: vis fn $fn_name: ident($($tokens: tt)*) -> $ret_ty: ty $code: block
+            )*
+        }
+    ) => {
+        $(
+            $crate::decl_userdata_func! {
+                $vis fn $fn_name($($tokens)*) -> $ret_ty $code
+            }
+        )*
+
+        impl $crate::vm::userdata::UserData for $obj_name {
+            const CLASS_NAME: &'static std::ffi::CStr = unsafe { std::ffi::CStr::from_ptr(concat!(stringify!($obj_name), "\0").as_ptr() as _) };
+        }
+    };
+}
