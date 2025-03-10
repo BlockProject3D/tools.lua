@@ -66,6 +66,7 @@ extern "C" {
     pub fn luaL_checkany(l: State, narg: c_int);
 
     pub fn luaL_checkudata(l: State, ud: c_int, tname: *const c_char) -> *mut c_void;
+    pub fn luaL_testudata(l: State, ud: c_int, tname: *const c_char) -> *mut c_void;
 }
 
 //------------------------

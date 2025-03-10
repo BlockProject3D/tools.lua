@@ -150,6 +150,4 @@ pub trait UserData: Sized {
     fn register(registry: &Registry<Self>) -> Result<(), Error>;
 }
 
-//TODO: Implement FromLua on UserData only when that userdata is also UserDataImmutable
-//TODO: luaL_testudata to avoid unwinding with luaL_checkudata
 pub unsafe trait UserDataImmutable: UserData {}

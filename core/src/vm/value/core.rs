@@ -26,10 +26,12 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use crate::ffi::laux::luaL_testudata;
 use crate::ffi::lua::{lua_tolstring, lua_type, lua_tointeger, lua_tonumber, Type, lua_toboolean, lua_pushcclosure};
 use crate::vm::function::IntoParam;
 use crate::vm::Vm;
 use crate::vm::error::{Error, TypeError};
+use crate::vm::userdata::UserDataImmutable;
 use crate::vm::value::{FromLua, IntoLua, RFunction};
 
 impl<'a> FromLua<'a> for &'a str {
@@ -114,5 +116,18 @@ impl FromLua<'_> for () {
 
     fn num_values() -> u16 {
         0
+    }
+}
+
+impl<'a, T: UserDataImmutable> FromLua<'a> for &'a T {
+    fn from_lua(vm: &'a Vm, index: i32) -> crate::vm::Result<Self> {
+        let this_ptr = unsafe { luaL_testudata(vm.as_ptr(), index, T::CLASS_NAME.as_ptr()) } as *const T;
+        if this_ptr.is_null() {
+            return Err(Error::Type(TypeError {
+                expected: Type::Userdata,
+                actual: unsafe { lua_type(vm.as_ptr(), index) },
+            }));
+        }
+        Ok(unsafe { &*this_ptr })
     }
 }
