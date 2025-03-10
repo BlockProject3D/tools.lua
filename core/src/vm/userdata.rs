@@ -39,7 +39,8 @@ simple_error! {
         ArgsEmpty => "no arguments specified in function, please add at least one argument matching the type of self",
         MutViolation(&'static CStr) => "violation of the unique type rule for mutable method {:?}",
         Gc => "__gc meta-method is reserved for internal use, if you need Vm access in drop, please use LuaDrop",
-        AlreadyRegistered(&'static CStr) => "class name {:?} has already been registered"
+        AlreadyRegistered(&'static CStr) => "class name {:?} has already been registered",
+        Alignment(usize) => "too strict alignment required ({} bytes), max is 8 bytes"
     }
 }
 
@@ -119,6 +120,9 @@ impl<'a, T: UserData> Registry<'a, T> {
         let res = unsafe { luaL_newmetatable(vm.as_ptr(), T::CLASS_NAME.as_ptr()) };
         if res != 1 {
             return Err(Error::AlreadyRegistered(T::CLASS_NAME));
+        }
+        if align_of::<T>() > 8 {
+            return Err(Error::Alignment(align_of::<T>()));
         }
         Ok(Registry { vm, useless: PhantomData })
     }
