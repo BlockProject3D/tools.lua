@@ -26,7 +26,7 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use bp3d_lua::decl_userdata;
+use bp3d_lua::{decl_userdata, decl_userdata_mut};
 use bp3d_lua::ffi::lua::Number;
 use bp3d_lua::vm::RootVm;
 
@@ -56,9 +56,54 @@ decl_userdata! {
     }
 }
 
+#[derive(Debug)]
+pub struct BrokenObject;
+
+decl_userdata_mut! {
+    impl BrokenObject {
+        // this should blow up at init time
+        fn replace(this: &mut BrokenObject, other: &BrokenObject) -> () {
+            println!("this: {:?}, other: {:?}", this, other)
+        }
+    }
+}
+
+pub struct BrokenObject2(pub u128);
+
+decl_userdata! {
+    impl BrokenObject2 {
+    }
+}
+
+#[derive(Debug)]
+pub struct BrokenObject3;
+
+decl_userdata! {
+    impl BrokenObject3 {
+        fn __gc(this: &BrokenObject3) -> () {
+            println!("{:?}", this);
+        }
+    }
+}
+
 #[test]
 fn test_vm_userdata() {
     let vm = RootVm::new();
-    vm.register_userdata::<MyInt>().unwrap()
-    
+    vm.register_userdata::<MyInt>().unwrap();
+    let res = vm.register_userdata::<BrokenObject>();
+    assert!(res.is_err());
+    let msg = res.unwrap_err().to_string();
+    assert_eq!(msg, "userdata: violation of the unique type rule for mutable method \"replace\"");
+    let res = vm.register_userdata::<BrokenObject2>();
+    assert!(res.is_err());
+    let msg = res.unwrap_err().to_string();
+    assert_eq!(msg, "userdata: too strict alignment required (16 bytes), max is 8 bytes");
+    let res = vm.register_userdata::<BrokenObject3>();
+    assert!(res.is_err());
+    let msg = res.unwrap_err().to_string();
+    assert_eq!(msg, "userdata: __gc meta-method is reserved for internal use, if you need Vm access in drop, please use LuaDrop");
+    let res = vm.register_userdata::<MyInt>();
+    assert!(res.is_err());
+    let msg = res.unwrap_err().to_string();
+    assert_eq!(msg, "userdata: class name \"MyInt\" has already been registered");
 }
