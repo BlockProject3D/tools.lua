@@ -32,14 +32,25 @@ use std::ffi::{CStr, CString};
 use crate::ffi::laux::luaL_loadstring;
 use crate::ffi::lua::{lua_error, lua_pushlstring, State, ThreadStatus};
 
+pub enum TypeName {
+    Some(&'static str),
+    None
+}
+
 pub trait LuaType {
     /// Returns the closest rust type matching this lua value.
-    fn lua_type() -> &'static str {
-        std::any::type_name::<Self>()
+    fn lua_type() -> Vec<TypeName> {
+        vec![TypeName::Some(std::any::type_name::<Self>())]
     }
 }
 
-impl<T> LuaType for Option<T> {}
+impl<T: LuaType> LuaType for Option<T> {
+    fn lua_type() -> Vec<TypeName> {
+        let mut v = T::lua_type();
+        v.push(TypeName::None);
+        v
+    }
+}
 
 pub unsafe trait SimpleDrop {}
 

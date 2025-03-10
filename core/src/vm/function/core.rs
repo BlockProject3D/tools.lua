@@ -33,7 +33,7 @@ use crate::ffi::lua::{lua_pushboolean, lua_pushinteger, lua_pushlstring, lua_pus
 use crate::ffi::ext::{lua_ext_fast_checknumber, lua_ext_fast_checkinteger};
 use crate::vm::function::{FromParam, IntoParam};
 use crate::vm::userdata::UserData;
-use crate::vm::util::{lua_rust_error, LuaType, SimpleDrop};
+use crate::vm::util::{lua_rust_error, LuaType, SimpleDrop, TypeName};
 use crate::vm::Vm;
 
 impl<'a, T: FromParam<'a> + SimpleDrop> FromParam<'a> for Option<T> {
@@ -48,7 +48,7 @@ impl<'a, T: FromParam<'a> + SimpleDrop> FromParam<'a> for Option<T> {
     }
 }
 
-impl LuaType for &str {}
+impl LuaType for &str { }
 
 impl<'a> FromParam<'a> for &'a str {
     unsafe fn from_param(vm: &'a Vm, index: i32) -> Self {
@@ -81,8 +81,8 @@ macro_rules! impl_integer {
             unsafe impl SimpleDrop for $t {}
 
             impl LuaType for $t {
-                fn lua_type() -> &'static str {
-                    std::any::type_name::<Integer>()
+                fn lua_type() -> Vec<TypeName> {
+                    vec![TypeName::Some(std::any::type_name::<Integer>())]
                 }
             }
 
@@ -115,8 +115,8 @@ macro_rules! impl_float {
             unsafe impl SimpleDrop for $t {}
 
             impl LuaType for $t {
-                fn lua_type() -> &'static str {
-                    std::any::type_name::<Number>()
+                fn lua_type() -> Vec<TypeName> {
+                    vec![TypeName::Some(std::any::type_name::<Number>())]
                 }
             }
 
@@ -181,8 +181,8 @@ impl IntoParam for () {
 }
 
 impl<T: UserData> LuaType for &T {
-    fn lua_type() -> &'static str {
-        unsafe { T::CLASS_NAME.to_str().unwrap_unchecked() }
+    fn lua_type() -> Vec<TypeName> {
+        vec![TypeName::Some(unsafe { T::CLASS_NAME.to_str().unwrap_unchecked() })]
     }
 }
 

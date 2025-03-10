@@ -28,11 +28,11 @@
 
 use std::ffi::CStr;
 use crate::ffi::lua::CFunction;
-use crate::vm::util::LuaType;
+use crate::vm::util::{LuaType, TypeName};
 
 pub struct Function {
     is_mutable: bool,
-    args: Vec<&'static str>,
+    args: Vec<TypeName>,
     name: &'static CStr,
     func: CFunction
 }
@@ -53,7 +53,9 @@ impl Function {
     }
 
     pub fn arg<T: LuaType>(&mut self) -> &mut Self {
-        self.args.push(T::lua_type());
+        for ty in T::lua_type() {
+            self.args.push(ty);
+        }
         self
     }
 }
