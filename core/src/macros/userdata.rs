@@ -31,20 +31,20 @@ macro_rules! decl_userdata {
     (
         impl $obj_name: ident {
             $(
-                $vis: vis fn $fn_name: ident(this: &$obj_name2: ident$($tokens: tt)*) -> $ret_ty: ty $code: block
+                $vis: vis fn $fn_name: ident($this: ident: &$obj_name2: ident $($tokens: tt)*) -> $ret_ty: ty $code: block
             )*
         }
     ) => {
         $(
             $crate::decl_userdata_func! {
-                $vis fn $fn_name(this: &$obj_name$($tokens)*) -> $ret_ty $code
+                $vis fn $fn_name($this: &$obj_name $($tokens)*) -> $ret_ty $code
             }
         )*
 
         impl $crate::vm::userdata::UserData for $obj_name {
             const CLASS_NAME: &'static std::ffi::CStr = $crate::c_stringify!($obj_name);
 
-            fn register(registry: &Registry<Self>) -> Result<(), $crate::vm::userdata::Error> {
+            fn register(registry: &$crate::vm::userdata::Registry<Self>) -> Result<(), $crate::vm::userdata::Error> {
                 $(
                     let (name, func) = unsafe { $obj_name::$fn_name().build()? };
                     registry.add_method(name, func);
@@ -75,7 +75,7 @@ macro_rules! decl_userdata_mut {
         impl $crate::vm::userdata::UserData for $obj_name {
             const CLASS_NAME: &'static std::ffi::CStr = $crate::c_stringify!($obj_name);
 
-            fn register(registry: &Registry<Self>) -> Result<(), $crate::vm::userdata::Error> {
+            fn register(registry: &$crate::vm::userdata::Registry<Self>) -> Result<(), $crate::vm::userdata::Error> {
                 $(
                     let (name, func) = unsafe { $obj_name::$fn_name().build()? };
                     registry.add_method(name, func);
