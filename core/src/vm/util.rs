@@ -32,6 +32,7 @@ use std::ffi::{CStr, CString};
 use crate::ffi::laux::luaL_loadstring;
 use crate::ffi::lua::{lua_error, lua_pushlstring, State, ThreadStatus};
 
+#[derive(Debug, PartialEq, Eq)]
 pub enum TypeName {
     Some(&'static str),
     None

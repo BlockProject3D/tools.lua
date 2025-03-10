@@ -36,3 +36,17 @@ macro_rules! c_stringify {
         unsafe { std::ffi::CStr::from_ptr(concat!(stringify!($str), "\0").as_ptr() as _) }
     };
 }
+
+#[macro_export]
+macro_rules! decl_from_param {
+    (
+        $vm: ident, $start_index: literal, $($arg_name: ident: $arg_ty: ty)*
+    ) => {
+        use $crate::vm::function::FromParam;
+        let mut index = $start_index;
+        $(
+            let $arg_name: $arg_ty = unsafe { FromParam::from_param(&$vm, index) };
+            index += 1;
+        )*
+    }
+}

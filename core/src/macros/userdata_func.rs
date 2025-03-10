@@ -33,10 +33,14 @@ macro_rules! decl_userdata_func {
     ) => {
         impl $obj_name {
             $vis fn $fn_name() -> $crate::vm::userdata::Function {
-                fn _func($this: &mut $obj_name, $name: &$crate::vm::Vm$(, $($arg_name: $arg_type),*)?) -> $ret_ty $code
                 extern "C-unwind" fn _cfunc(l: $crate::ffi::lua::State) -> i32 {
-                    let self_ptr = unsafe { $crate::ffi::laux::luaL_checkudata(l, 0, <$obj_name as $crate::vm::userdata::UserData>::CLASS_NAME.as_ptr()) };
-                    0
+                    fn _func($this: &mut $obj_name, $name: &$crate::vm::Vm$(, $($arg_name: $arg_type),*)?) -> $ret_ty $code
+                    use $crate::vm::function::IntoParam;
+                    let this_ptr = unsafe { $crate::ffi::lua::lua_touserdata(l, 1) } as *mut $obj_name;
+                    let vm = unsafe { $crate::vm::Vm::from_raw(l) };
+                    $($crate::decl_from_param!(vm, 2, $($arg_name: $arg_ty)*);)?
+                    let ret = _func(unsafe { &mut *this_ptr }, &vm $(, $($arg_name),*)?);
+                    ret.into_param(&vm) as _
                 }
                 let mut f = $crate::vm::userdata::Function::new($crate::c_stringify!($fn_name), _cfunc);
                 f.mutable();
@@ -51,10 +55,14 @@ macro_rules! decl_userdata_func {
     ) => {
         impl $obj_name {
             $vis fn $fn_name() -> $crate::vm::userdata::Function {
-                fn _func($this: &mut $obj_name$(, $($arg_name: $arg_type),*)?) -> $ret_ty $code
                 extern "C-unwind" fn _cfunc(l: $crate::ffi::lua::State) -> i32 {
-                    let self_ptr = unsafe { $crate::ffi::laux::luaL_checkudata(l, 0, <$obj_name as $crate::vm::userdata::UserData>::CLASS_NAME.as_ptr()) };
-                    0
+                    fn _func($this: &mut $obj_name$(, $($arg_name: $arg_type),*)?) -> $ret_ty $code
+                    use $crate::vm::function::IntoParam;
+                    let this_ptr = unsafe { $crate::ffi::lua::lua_touserdata(l, 1) } as *mut $obj_name;
+                    let vm = unsafe { $crate::vm::Vm::from_raw(l) };
+                    $($crate::decl_from_param!(vm, 2, $($arg_name: $arg_ty)*);)?
+                    let ret = _func(unsafe { &mut *this_ptr }, $(, $($arg_name),*)?);
+                    ret.into_param(&vm) as _
                 }
                 let mut f = $crate::vm::userdata::Function::new($crate::c_stringify!($fn_name), _cfunc);
                 f.mutable();
@@ -69,10 +77,14 @@ macro_rules! decl_userdata_func {
     ) => {
         impl $obj_name {
             $vis fn $fn_name() -> $crate::vm::userdata::Function {
-                fn _func($this: &$obj_name, $name: &$crate::vm::Vm$(, $($arg_name: $arg_type),*)?) -> $ret_ty $code
                 extern "C-unwind" fn _cfunc(l: $crate::ffi::lua::State) -> i32 {
-                    let self_ptr = unsafe { $crate::ffi::laux::luaL_checkudata(l, 0, <$obj_name as $crate::vm::userdata::UserData>::CLASS_NAME.as_ptr()) };
-                    0
+                    fn _func($this: &$obj_name, $name: &$crate::vm::Vm$(, $($arg_name: $arg_type),*)?) -> $ret_ty $code
+                    use $crate::vm::function::IntoParam;
+                    let this_ptr = unsafe { $crate::ffi::lua::lua_touserdata(l, 1) } as *const $obj_name;
+                    let vm = unsafe { $crate::vm::Vm::from_raw(l) };
+                    $($crate::decl_from_param!(vm, 2, $($arg_name: $arg_ty)*);)?
+                    let ret = _func(unsafe { &*this_ptr }, &vm, $(, $($arg_name),*)?);
+                    ret.into_param(&vm) as _
                 }
                 let mut f = $crate::vm::userdata::Function::new($crate::c_stringify!($fn_name), _cfunc);
                 f.arg::<&$obj_name>();
@@ -86,10 +98,14 @@ macro_rules! decl_userdata_func {
     ) => {
         impl $obj_name {
             $vis fn $fn_name() -> $crate::vm::userdata::Function {
-                fn _func($this: &$obj_name$(, $($arg_name: $arg_type),*)?) -> $ret_ty $code
                 extern "C-unwind" fn _cfunc(l: $crate::ffi::lua::State) -> i32 {
-                    let self_ptr = unsafe { $crate::ffi::laux::luaL_checkudata(l, 0, <$obj_name as $crate::vm::userdata::UserData>::CLASS_NAME.as_ptr()) };
-                    0
+                    fn _func($this: &$obj_name$(, $($arg_name: $arg_type),*)?) -> $ret_ty $code
+                    use $crate::vm::function::IntoParam;
+                    let this_ptr = unsafe { $crate::ffi::lua::lua_touserdata(l, 1) } as *const $obj_name;
+                    let vm = unsafe { $crate::vm::Vm::from_raw(l) };
+                    $($crate::decl_from_param!(vm, 2, $($arg_name: $arg_ty)*);)?
+                    let ret = _func(unsafe { &*this_ptr }, $(, $($arg_name),*)?);
+                    ret.into_param(&vm) as _
                 }
                 let mut f = $crate::vm::userdata::Function::new($crate::c_stringify!($fn_name), _cfunc);
                 f.arg::<&$obj_name>();

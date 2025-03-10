@@ -33,14 +33,9 @@ macro_rules! decl_lib_func {
     ) => {
         $vis extern "C-unwind" fn $fn_name(l: $crate::ffi::lua::State) -> i32 {
             fn _func($name: &$crate::vm::Vm$(, $($arg_name: $arg_ty),*)?) -> $ret_ty $code
-            use $crate::vm::function::FromParam;
             use $crate::vm::function::IntoParam;
             let vm = unsafe { $crate::vm::Vm::from_raw(l) };
-            let mut index = 1;
-            $($(
-                let $arg_name: $arg_ty = unsafe { FromParam::from_param(&vm, index) };
-                index += 1;
-            )*)?
+            $($crate::decl_from_param!(vm, 1, $($arg_name: $arg_ty)*);)?
             let ret = _func(&vm $(, $($arg_name),*)?);
             ret.into_param(&vm) as _
         }
@@ -50,14 +45,9 @@ macro_rules! decl_lib_func {
     ) => {
         $vis extern "C-unwind" fn $fn_name(l: $crate::ffi::lua::State) -> i32 {
             fn _func($($arg_name: $arg_ty),*) -> $ret_ty $code
-            use $crate::vm::function::FromParam;
             use $crate::vm::function::IntoParam;
             let vm = unsafe { $crate::vm::Vm::from_raw(l) };
-            let mut index = 1;
-            $(
-                let $arg_name: $arg_ty = unsafe { FromParam::from_param(&vm, index) };
-                index += 1;
-            )*
+            $crate::decl_from_param!(vm, 1, $($arg_name: $arg_ty)*);
             let ret = _func($($arg_name),*);
             ret.into_param(&vm) as _
         }

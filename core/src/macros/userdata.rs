@@ -43,6 +43,14 @@ macro_rules! decl_userdata {
 
         impl $crate::vm::userdata::UserData for $obj_name {
             const CLASS_NAME: &'static std::ffi::CStr = $crate::c_stringify!($obj_name);
+
+            fn register(registry: &Registry<Self>) -> Result<(), $crate::vm::userdata::Error> {
+                $(
+                    let (name, func) = unsafe { $obj_name::$fn_name().build()? };
+                    registry.add_method(name, func);
+                )*
+                Ok(())
+            }
         }
 
         unsafe impl $crate::vm::userdata::UserDataImmutable for $obj_name {}
@@ -66,6 +74,14 @@ macro_rules! decl_userdata_mut {
 
         impl $crate::vm::userdata::UserData for $obj_name {
             const CLASS_NAME: &'static std::ffi::CStr = $crate::c_stringify!($obj_name);
+
+            fn register(registry: &Registry<Self>) -> Result<(), $crate::vm::userdata::Error> {
+                $(
+                    let (name, func) = unsafe { $obj_name::$fn_name().build()? };
+                    registry.add_method(name, func);
+                )*
+                Ok(())
+            }
         }
     };
 }
