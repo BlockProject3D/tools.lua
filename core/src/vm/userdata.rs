@@ -36,10 +36,10 @@ use crate::vm::Vm;
 
 simple_error! {
     pub Error {
-        ArgsEmpty => "no arguments specified in userdata function, please add at least one argument matching the type of self",
+        ArgsEmpty => "no arguments specified in function, please add at least one argument matching the type of self",
         MutViolation(&'static CStr) => "violation of the unique type rule for mutable method {:?}",
         Gc => "__gc meta-method is reserved for internal use, if you need Vm access in drop, please use LuaDrop",
-        AlreadyRegistered(&'static CStr) => "userdata with class name {:?} has already been registered"
+        AlreadyRegistered(&'static CStr) => "class name {:?} has already been registered"
     }
 }
 
@@ -103,7 +103,19 @@ pub struct Registry<'a, T> {
 }
 
 impl<'a, T: UserData> Registry<'a, T> {
-    pub fn new(vm: &'a Vm) -> Result<Self, Error> {
+    /// Creates a new [Registry] from the given Vm.
+    ///
+    /// # Arguments
+    ///
+    /// * `vm`: the vm in which to register the userdata metatable.
+    ///
+    /// returns: Result<Registry<T>, Error>
+    ///
+    /// # Safety
+    ///
+    /// Running operations on the vm after calling this method is UB unless this [Registry] object
+    /// is dropped.
+    pub unsafe fn new(vm: &'a Vm) -> Result<Self, Error> {
         let res = unsafe { luaL_newmetatable(vm.as_ptr(), T::CLASS_NAME.as_ptr()) };
         if res != 1 {
             return Err(Error::AlreadyRegistered(T::CLASS_NAME));

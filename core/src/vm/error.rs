@@ -87,7 +87,8 @@ simple_error! {
         Unknown => "unknown error",
         Error => "error in error handler",
         Null => "string contains a null character",
-        MultiValue => "only one value is supported by this API"
+        MultiValue => "only one value is supported by this API",
+        UserData(crate::vm::userdata::Error) => "userdata: {}"
     }
 }
 
