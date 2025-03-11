@@ -29,6 +29,7 @@
 mod lib_func;
 mod userdata_func;
 mod userdata;
+mod impl_from_param;
 
 #[macro_export]
 macro_rules! c_stringify {
