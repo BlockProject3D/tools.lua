@@ -29,8 +29,8 @@
 use std::ffi::CStr;
 use std::marker::PhantomData;
 use bp3d_util::simple_error;
-use crate::ffi::laux::luaL_newmetatable;
-use crate::ffi::lua::{lua_pushcclosure, lua_setfield, lua_settop, CFunction};
+use crate::ffi::laux::{luaL_checkudata, luaL_newmetatable};
+use crate::ffi::lua::{lua_pushcclosure, lua_pushvalue, lua_setfield, lua_settop, CFunction, State};
 use crate::vm::util::{LuaType, TypeName};
 use crate::vm::Vm;
 
@@ -39,6 +39,7 @@ simple_error! {
         ArgsEmpty => "no arguments specified in function, please add at least one argument matching the type of self",
         MutViolation(&'static CStr) => "violation of the unique type rule for mutable method {:?}",
         Gc => "__gc meta-method is reserved for internal use, if you need Vm access in drop, please use LuaDrop",
+        Index => "__index meta-method is required to be surrendered to luaL_newmetatable, it is impossible to bind custom code to __index",
         AlreadyRegistered(&'static CStr) => "class name {:?} has already been registered",
         Alignment(usize) => "too strict alignment required ({} bytes), max is 8 bytes"
     }
@@ -86,6 +87,9 @@ impl Function {
         if self.name == c"__gc" {
             return Err(Error::Gc);
         }
+        if self.name == c"__index" {
+            return Err(Error::Index);
+        }
         if self.is_mutable {
             let initial = &self.args[0];
             for v in self.args.iter().skip(1) {
@@ -117,14 +121,24 @@ impl<'a, T: UserData> Registry<'a, T> {
     /// Running operations on the vm after calling this method is UB unless this [Registry] object
     /// is dropped.
     pub unsafe fn new(vm: &'a Vm) -> Result<Self, Error> {
-        let res = unsafe { luaL_newmetatable(vm.as_ptr(), T::CLASS_NAME.as_ptr()) };
-        if res != 1 {
-            return Err(Error::AlreadyRegistered(T::CLASS_NAME));
-        }
         if align_of::<T>() > 8 {
             return Err(Error::Alignment(align_of::<T>()));
         }
-        Ok(Registry { vm, useless: PhantomData })
+        let res = unsafe { luaL_newmetatable(vm.as_ptr(), T::CLASS_NAME.as_ptr()) };
+        if res != 1 {
+            unsafe { lua_settop(vm.as_ptr(), -2) };
+            return Err(Error::AlreadyRegistered(T::CLASS_NAME));
+        }
+        let reg = Registry { vm, useless: PhantomData };
+        if std::mem::needs_drop::<T>() {
+            extern "C-unwind" fn run_drop<T: UserData>(l: State) -> i32 {
+                let udata = unsafe { luaL_checkudata(l, 1, T::CLASS_NAME.as_ptr()) } as *mut T;
+                unsafe { std::ptr::drop_in_place(udata) };
+                0
+            }
+            reg.add_method(c"__gc", run_drop::<T>);
+        }
+        Ok(reg)
     }
 
     pub fn add_method(&self, name: &'static CStr, func: CFunction) {
@@ -138,6 +152,8 @@ impl<'a, T: UserData> Registry<'a, T> {
 impl<'a, T> Drop for Registry<'a, T> {
     fn drop(&mut self) {
         unsafe {
+            lua_pushvalue(self.vm.as_ptr(), -1);
+            lua_setfield(self.vm.as_ptr(), -2, c"__index".as_ptr());
             // Pop the userdata metatable from the stack.
             lua_settop(self.vm.as_ptr(), -2);
         }
@@ -151,3 +167,6 @@ pub trait UserData: Sized {
 }
 
 pub unsafe trait UserDataImmutable: UserData {}
+
+//TODO: implement __gc for Drop (std::mem::drop_in_place) and LuaDrop
+//TODO: only implement __gc for std::mem::needs_drop return false

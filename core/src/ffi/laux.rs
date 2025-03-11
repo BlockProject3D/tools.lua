@@ -74,6 +74,7 @@ extern "C" {
 //------------------------
 extern "C" {
     pub fn luaL_newmetatable(l: State, tname: *const c_char) -> c_int;
+    pub fn luaL_setmetatable(l: State, tname: *const c_char);
     pub fn luaL_getmetafield(l: State, obj: c_int, e: *const c_char) -> c_int;
     pub fn luaL_callmeta(l: State, obj: c_int, e: *const c_char) -> c_int;
 }

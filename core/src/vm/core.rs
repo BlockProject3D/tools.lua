@@ -29,7 +29,7 @@
 use std::ffi::c_int;
 use std::ops::{Deref, DerefMut};
 use crate::ffi::laux::{luaL_callmeta, luaL_newstate, luaL_openlibs, luaL_traceback};
-use crate::ffi::lua::{lua_close, lua_getfield, lua_gettop, lua_isstring, lua_pcall, lua_pushcclosure, lua_pushlstring, lua_remove, lua_setfield, lua_settop, lua_tolstring, lua_type, State, ThreadStatus, Type, GLOBALSINDEX};
+use crate::ffi::lua::{lua_close, lua_getfield, lua_gettop, lua_isstring, lua_pcall, lua_pushcclosure, lua_pushlstring, lua_pushnil, lua_remove, lua_setfield, lua_settop, lua_tolstring, lua_type, State, ThreadStatus, Type, GLOBALSINDEX, REGISTRYINDEX};
 use crate::vm::error::{Error, RuntimeError};
 use crate::vm::userdata::{Registry, UserData};
 use crate::vm::util::{AnyStr, LoadCode};
@@ -78,8 +78,17 @@ impl Vm {
 
     pub fn register_userdata<T: UserData>(&self) -> crate::vm::Result<()> {
         let reg = unsafe { Registry::<T>::new(self) }.map_err(Error::UserData)?;
-        T::register(&reg).map_err(Error::UserData)?;
-        Ok(())
+        let res = T::register(&reg).map_err(Error::UserData);
+        match res {
+            Ok(_) => Ok(()),
+            Err(e) => {
+                unsafe {
+                    lua_pushnil(self.l);
+                    lua_setfield(self.l, REGISTRYINDEX, T::CLASS_NAME.as_ptr());
+                }
+                Err(e)
+            }
+        }
     }
 
     /// Returns the absolute stack index for the given index.

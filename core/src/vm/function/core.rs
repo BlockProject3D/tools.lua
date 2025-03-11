@@ -28,8 +28,8 @@
 
 use std::error::Error;
 use std::slice;
-use crate::ffi::laux::{luaL_checklstring, luaL_checkudata};
-use crate::ffi::lua::{lua_pushboolean, lua_pushinteger, lua_pushlstring, lua_pushnil, lua_pushnumber, lua_type, Integer, Number, Type};
+use crate::ffi::laux::{luaL_checklstring, luaL_checkudata, luaL_setmetatable};
+use crate::ffi::lua::{lua_newuserdata, lua_pushboolean, lua_pushinteger, lua_pushlstring, lua_pushnil, lua_pushnumber, lua_type, Integer, Number, Type};
 use crate::ffi::ext::{lua_ext_fast_checknumber, lua_ext_fast_checkinteger};
 use crate::vm::function::{FromParam, IntoParam};
 use crate::vm::userdata::UserData;
@@ -190,5 +190,14 @@ impl<'a, T: UserData> FromParam<'a> for &'a T {
     unsafe fn from_param(vm: &'a Vm, index: i32) -> &'a T {
         let obj_ptr = unsafe { luaL_checkudata(vm.as_ptr(), index, T::CLASS_NAME.as_ptr()) } as *const T;
         unsafe { &*obj_ptr }
+    }
+}
+
+impl<T: UserData> IntoParam for T {
+    fn into_param(self, vm: &Vm) -> u16 {
+        let userdata = unsafe { lua_newuserdata(vm.as_ptr(), size_of::<T>()) } as *mut T;
+        unsafe { userdata.write(self) };
+        unsafe { luaL_setmetatable(vm.as_ptr(), T::CLASS_NAME.as_ptr()) };
+        1
     }
 }
