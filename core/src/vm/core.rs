@@ -93,7 +93,7 @@ impl Vm {
 
     /// Returns the absolute stack index for the given index.
     #[inline]
-    pub fn absolute(&self, index: i32) -> i32 {
+    pub fn get_absolute_index(&self, index: i32) -> i32 {
         if index < 0 {
             unsafe { lua_gettop(self.l) + index + 1 }
         } else {

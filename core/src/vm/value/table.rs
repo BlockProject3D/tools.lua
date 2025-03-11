@@ -163,7 +163,7 @@ impl<'a> FromParam<'a> for Table<'a> {
 impl<'a> FromLua<'a> for Table<'a> {
     fn from_lua(vm: &'a Vm, index: i32) -> crate::vm::Result<Self> {
         let ty = unsafe { lua_type(vm.as_ptr(), index) };
-        let index = vm.absolute(index);
+        let index = vm.get_absolute_index(index);
         if ty == Type::Table {
             Ok(Table { vm, index })
         } else {
