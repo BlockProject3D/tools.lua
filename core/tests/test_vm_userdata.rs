@@ -91,6 +91,17 @@ decl_userdata! {
     }
 }
 
+#[derive(Debug)]
+pub struct BrokenObject4;
+
+decl_userdata! {
+    impl BrokenObject4 {
+        fn __index(this: &BrokenObject3) -> () {
+            println!("{:?}", this);
+        }
+    }
+}
+
 decl_lib_func! {
     fn my_int(i: i64) -> MyInt {
         MyInt(i)
@@ -108,7 +119,7 @@ fn test_vm_userdata_forgot_reg() {
 }
 
 #[test]
-fn test_vm_userdata() {
+fn test_vm_userdata_error_handling() {
     let vm = RootVm::new();
     let top = vm.top();
     vm.register_userdata::<MyInt>().unwrap();
@@ -132,6 +143,19 @@ fn test_vm_userdata() {
     assert!(res.is_err());
     let msg = res.unwrap_err().to_string();
     assert_eq!(msg, "userdata: class name \"MyInt\" has already been registered");
+    assert_eq!(top, vm.top());
+    let res = vm.register_userdata::<BrokenObject4>();
+    assert!(res.is_err());
+    let msg = res.unwrap_err().to_string();
+    assert_eq!(msg, "userdata: __index meta-method is required to be surrendered to luaL_newmetatable, it is impossible to bind custom code to __index");
+    assert_eq!(top, vm.top());
+}
+
+#[test]
+fn test_vm_userdata() {
+    let vm = RootVm::new();
+    let top = vm.top();
+    vm.register_userdata::<MyInt>().unwrap();
     assert_eq!(top, vm.top());
     vm.set_global(c"MyInt", RFunction(my_int)).unwrap();
     assert_eq!(top, vm.top());
