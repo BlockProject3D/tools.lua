@@ -45,3 +45,17 @@ extern "C" {
 extern "C" {
     pub fn lua_ext_tab_len(l: State, idx: c_int, outsize: *mut MSize) -> c_int;
 }
+
+//-----
+// JIT
+//-----
+extern "C" {
+    /// Sets the global mode of the JIT.
+    pub fn lua_ext_setjitmode(l: State, mode: c_int) -> c_int;
+    
+    /// Returns global flags of the JIT.
+    pub fn lua_ext_getjitflags(l: State) -> u32;
+    
+    /// Sets global JIT flags.
+    pub fn lua_ext_setjitflags(l: State, flags: u32) -> c_int;
+}

@@ -1,14 +1,11 @@
 diff --git a/src/lib_jit.c b/src/lib_jit.c
-index fd8e585b..d22b8332 100644
+index fd8e585b..882f4425 100644
 --- a/src/lib_jit.c
 +++ b/src/lib_jit.c
-@@ -40,582 +40,8 @@
- 
- #define LJLIB_MODULE_jit
- 
--static int setjitmode(lua_State *L, int mode)
--{
--  int idx = 0;
+@@ -43,19 +43,15 @@
+ static int setjitmode(lua_State *L, int mode)
+ {
+   int idx = 0;
 -  if (L->base == L->top || tvisnil(L->base)) {  /* jit.on/off/flush([nil]) */
 -    mode |= LUAJIT_MODE_ENGINE;
 -  } else {
@@ -22,37 +19,48 @@ index fd8e585b..d22b8332 100644
 -    else
 -      mode |= LUAJIT_MODE_FUNC;
 -  }
--  if (luaJIT_setmode(L, idx, mode) != 1) {
--    if ((mode & LUAJIT_MODE_MASK) == LUAJIT_MODE_ENGINE)
--      lj_err_caller(L, LJ_ERR_NOJIT);
--  err:
--    lj_err_argt(L, 1, LUA_TFUNCTION);
--  }
--  return 0;
--}
--
--LJLIB_CF(jit_on)
--{
--  return setjitmode(L, LUAJIT_MODE_ON);
--}
--
--LJLIB_CF(jit_off)
--{
--  return setjitmode(L, LUAJIT_MODE_OFF);
--}
--
--LJLIB_CF(jit_flush)
--{
--#if LJ_HASJIT
--  if (L->base < L->top && tvisnumber(L->base)) {
--    int traceno = lj_lib_checkint(L, 1);
--    luaJIT_setmode(L, traceno, LUAJIT_MODE_FLUSH|LUAJIT_MODE_TRACE);
--    return 0;
--  }
--#endif
--  return setjitmode(L, LUAJIT_MODE_FLUSH);
--}
--
++  /* jit.on/off/flush(func|proto, nil|true|false) */
++  if (tvisfunc(L->base) || tvisproto(L->base))
++    idx = 1;
++  else if (!tvistrue(L->base))  /* jit.on/off/flush(true, nil|true|false) */
++    goto err;
++  if (L->base+1 < L->top && tvisbool(L->base+1))
++    mode |= boolV(L->base+1) ? LUAJIT_MODE_ALLFUNC : LUAJIT_MODE_ALLSUBFUNC;
++  else
++    mode |= LUAJIT_MODE_FUNC;
+   if (luaJIT_setmode(L, idx, mode) != 1) {
+     if ((mode & LUAJIT_MODE_MASK) == LUAJIT_MODE_ENGINE)
+       lj_err_caller(L, LJ_ERR_NOJIT);
+@@ -67,16 +63,25 @@ static int setjitmode(lua_State *L, int mode)
+ 
+ LJLIB_CF(jit_on)
+ {
++  if (L->base == L->top || tvisnil(L->base)) {
++    luaL_error(L, "attempt to apply global jit state, this is forbidden by sandbox");
++  }
+   return setjitmode(L, LUAJIT_MODE_ON);
+ }
+ 
+ LJLIB_CF(jit_off)
+ {
++  if (L->base == L->top || tvisnil(L->base)) {
++    luaL_error(L, "attempt to apply global jit state, this is forbidden by sandbox");
++  }
+   return setjitmode(L, LUAJIT_MODE_OFF);
+ }
+ 
+ LJLIB_CF(jit_flush)
+ {
++  if (L->base == L->top || tvisnil(L->base)) {
++    luaL_error(L, "attempt to apply global jit state, this is forbidden by sandbox");
++  }
+ #if LJ_HASJIT
+   if (L->base < L->top && tvisnumber(L->base)) {
+     int traceno = lj_lib_checkint(L, 1);
+@@ -87,535 +92,29 @@ LJLIB_CF(jit_flush)
+   return setjitmode(L, LUAJIT_MODE_FLUSH);
+ }
+ 
 -#if LJ_HASJIT
 -/* Push a string for every flag bit that is set. */
 -static void flagbits_to_strings(lua_State *L, uint32_t flags, uint32_t base,
@@ -117,10 +125,12 @@ index fd8e585b..d22b8332 100644
 -LJLIB_PUSH(top-5) LJLIB_SET(os)
 -LJLIB_PUSH(top-4) LJLIB_SET(arch)
 -LJLIB_PUSH(top-3) LJLIB_SET(version_num)
--LJLIB_PUSH(top-2) LJLIB_SET(version)
--
--#include "lj_libdef.h"
--
++LJLIB_PUSH(top-4) LJLIB_SET(os)
++LJLIB_PUSH(top-3) LJLIB_SET(arch)
+ LJLIB_PUSH(top-2) LJLIB_SET(version)
+ 
+ #include "lj_libdef.h"
+ 
 -/* -- jit.util.* functions ------------------------------------------------ */
 -
 -#define LJLIB_MODULE_jit_util
@@ -173,7 +183,8 @@ index fd8e585b..d22b8332 100644
 -  }
 -  return 1;
 -}
--
++/* -- JIT compiler configuration ----------------------------------------- */
+ 
 -/* local ins, m = jit.util.funcbc(func, pc) */
 -LJLIB_CF(jit_util_funcbc)
 -{
@@ -189,8 +200,10 @@ index fd8e585b..d22b8332 100644
 -    return 2;
 -  }
 -  return 0;
--}
--
++uint32_t lua_ext_getjitflags(lua_State *L, uint32_t flags) {
++    return L2J(L)->flags;
+ }
+ 
 -/* local k = jit.util.funck(func, idx) */
 -LJLIB_CF(jit_util_funck)
 -{
@@ -200,7 +213,13 @@ index fd8e585b..d22b8332 100644
 -    if (idx < (ptrdiff_t)pt->sizekn) {
 -      copyTV(L, L->top-1, proto_knumtv(pt, idx));
 -      return 1;
--    }
++int lua_ext_setjitflags(lua_State *L, uint32_t flags) {
++    jit_State *J = L2J(L);
++    uint32_t current = J->flags;
++    if ((current & JIT_F_ON) != (flags & JIT_F_ON)) {
++        // we have attempted to change the global JIT mode outside of the setjitmode ext function, error.
++        return -1;
+     }
 -  } else {
 -    if (~idx < (ptrdiff_t)pt->sizekgc) {
 -      GCobj *gc = proto_kgc(pt, idx);
@@ -379,8 +398,8 @@ index fd8e585b..d22b8332 100644
 -
 -#endif
 -
- #include "lj_libdef.h"
- 
+-#include "lj_libdef.h"
+-
 -static int luaopen_jit_util(lua_State *L)
 -{
 -  LJ_LIB_REG(L, NULL, jit_util);
@@ -578,22 +597,22 @@ index fd8e585b..d22b8332 100644
 -{
 -  LJ_LIB_REG(L, NULL, jit_profile);
 -  return 1;
--}
--
++    J->flags = flags;
++    return 0;
+ }
+ 
 -#endif
 -
  /* -- JIT compiler initialization ----------------------------------------- */
  
  #if LJ_HASJIT
-@@ -723,22 +149,6 @@ LUALIB_API int luaopen_jit(lua_State *L)
- #if LJ_HASJIT
-   jit_init(L);
+@@ -725,20 +224,9 @@ LUALIB_API int luaopen_jit(lua_State *L)
  #endif
--  lua_pushliteral(L, LJ_OS_NAME);
--  lua_pushliteral(L, LJ_ARCH_NAME);
+   lua_pushliteral(L, LJ_OS_NAME);
+   lua_pushliteral(L, LJ_ARCH_NAME);
 -  lua_pushinteger(L, LUAJIT_VERSION_NUM);  /* Deprecated. */
--  lua_pushliteral(L, LUAJIT_VERSION);
--  LJ_LIB_REG(L, LUA_JITLIBNAME, jit);
+   lua_pushliteral(L, LUAJIT_VERSION);
+   LJ_LIB_REG(L, LUA_JITLIBNAME, jit);
 -#if LJ_HASPROFILE
 -  lj_lib_prereg(L, LUA_JITLIBNAME ".profile", luaopen_jit_profile,
 -		tabref(L->env));
@@ -605,55 +624,36 @@ index fd8e585b..d22b8332 100644
 -  LJ_LIB_REG(L, "jit.opt", jit_opt);
 -#endif
 -  L->top -= 2;
++  L->top -= 1;
    return 1;
  }
  
-diff --git a/src/lj_ffrecord.c b/src/lj_ffrecord.c
-index 9ea81e54..292e27dc 100644
---- a/src/lj_ffrecord.c
-+++ b/src/lj_ffrecord.c
-@@ -173,7 +173,7 @@ static void LJ_FASTCALL recff_nyi(jit_State *J, RecordFFData *rd)
- 	switch (J->fn->c.ffid) {
- 	case FF_error:
- 	case FF_debug_sethook:
--	case FF_jit_flush:
-+	//case FF_jit_flush:
- 	  break;  /* Don't stitch across special builtins. */
- 	default:
- 	  recff_stitch(J);  /* Use trace stitching. */
-diff --git a/src/luajit.c b/src/luajit.c
-index a725db1c..5095ae36 100644
---- a/src/luajit.c
-+++ b/src/luajit.c
-@@ -134,24 +134,15 @@ static void print_version(void)
-   fputs(LUAJIT_VERSION " -- " LUAJIT_COPYRIGHT ". " LUAJIT_URL "\n", stdout);
+diff --git a/src/lj_dispatch.c b/src/lj_dispatch.c
+index 78608316..94f0077e 100644
+--- a/src/lj_dispatch.c
++++ b/src/lj_dispatch.c
+@@ -241,6 +241,24 @@ static void setptmode_all(global_State *g, GCproto *pt, int mode)
  }
+ #endif
  
-+#include "lj_dispatch.h"
-+#include "lj_jit.h"
++int lua_ext_setjitmode(lua_State *L, int mode) {
++    global_State *g = G(L);
++    lj_trace_abort(g);  /* Abort recording on any state change. */
++    /* Avoid pulling the rug from under our own feet. */
++    if ((g->hookmask & HOOK_GC))
++        return -1;
++    if ((mode & LUAJIT_MODE_FLUSH)) {
++        lj_trace_flushall(L);
++    } else {
++        if (!(mode & LUAJIT_MODE_ON))
++            G2J(g)->flags &= ~(uint32_t)JIT_F_ON;
++        else
++            G2J(g)->flags |= (uint32_t)JIT_F_ON;
++        lj_dispatch_update(g);
++    }
++    return 0;
++}
 +
- static void print_jit_status(lua_State *L)
+ /* Public API function: control the JIT engine. */
+ int luaJIT_setmode(lua_State *L, int idx, int mode)
  {
--  int n;
--  const char *s;
--  lua_getfield(L, LUA_REGISTRYINDEX, "_LOADED");
--  lua_getfield(L, -1, "jit");  /* Get jit.* module table. */
--  lua_remove(L, -2);
--  lua_getfield(L, -1, "status");
--  lua_remove(L, -2);
--  n = lua_gettop(L);
--  lua_call(L, 0, LUA_MULTRET);
--  fputs(lua_toboolean(L, n) ? "JIT: ON" : "JIT: OFF", stdout);
--  for (n++; (s = lua_tostring(L, n)); n++) {
--    putc(' ', stdout);
--    fputs(s, stdout);
--  }
--  putc('\n', stdout);
--  lua_settop(L, 0);  /* clear stack */
-+  jit_State *J = L2J(L);
-+  fputs(J->flags & JIT_F_ON ? "JIT: ON" : "JIT: OFF", stdout);
-+  fputs(J->flags & JIT_F_OPT_DEFAULT ? " OPT: DEFAULT" : " OPT: OFF", stdout);
-+  fprintf(stdout, "\n");
- }
- 
- static void createargtable(lua_State *L, char **argv, int argc, int argf)

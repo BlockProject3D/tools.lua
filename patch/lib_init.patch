@@ -1,10 +1,12 @@
 diff --git a/src/lib_init.c b/src/lib_init.c
-index 01cecf2f..0cfb3dbf 100644
+index 01cecf2f..8ed34a94 100644
 --- a/src/lib_init.c
 +++ b/src/lib_init.c
-@@ -19,23 +19,13 @@ static const luaL_Reg lj_lib_load[] = {
+@@ -17,25 +17,14 @@
+ 
+ static const luaL_Reg lj_lib_load[] = {
    { "",			luaopen_base },
-   { LUA_LOADLIBNAME,	luaopen_package },
+-  { LUA_LOADLIBNAME,	luaopen_package },
    { LUA_TABLIBNAME,	luaopen_table },
 -  { LUA_IOLIBNAME,	luaopen_io },
 -  { LUA_OSLIBNAME,	luaopen_os },
@@ -26,7 +28,7 @@ index 01cecf2f..0cfb3dbf 100644
  LUALIB_API void luaL_openlibs(lua_State *L)
  {
    const luaL_Reg *lib;
-@@ -44,12 +34,5 @@ LUALIB_API void luaL_openlibs(lua_State *L)
+@@ -44,12 +33,5 @@ LUALIB_API void luaL_openlibs(lua_State *L)
      lua_pushstring(L, lib->name);
      lua_call(L, 1, 0);
    }
