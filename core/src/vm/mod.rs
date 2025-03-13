@@ -32,6 +32,7 @@ pub mod value;
 pub mod error;
 pub mod util;
 pub mod userdata;
+pub mod closure;
 
 pub use core::*;
 

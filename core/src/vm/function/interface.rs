@@ -56,7 +56,7 @@ pub trait FromParam<'a>: Sized + SimpleDrop + LuaType {
     ///
     /// # Safety
     ///
-    /// Calling this function outside the body of a CFunction is UB. Calling this function in a
-    /// non-POF segment of that CFunction is also UB.
+    /// Calling this function outside the body of a [CFunction](crate::ffi::lua::CFunction) is UB.
+    /// Calling this function in a non-POF segment of that CFunction is also UB.
     unsafe fn from_param(vm: &'a Vm, index: i32) -> Self;
 }

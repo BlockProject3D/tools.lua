@@ -26,44 +26,28 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use bp3d_lua::decl_lib_func;
-use bp3d_lua::vm::RootVm;
-use bp3d_lua::vm::function::types::RFunction;
+use crate::vm::util::SimpleDrop;
+use crate::vm::Vm;
 
-struct ValueWithDrop;
-impl ValueWithDrop {
-    pub fn print(&self) {
-        println!("ValueWithDrop")
-    }
-}
-impl Drop for ValueWithDrop {
-    fn drop(&mut self) {
-        println!("Dropping!");
-    }
-}
-
-decl_lib_func! {
-    fn test_c_function(name: &str, value: f64) -> String {
-        let drop = ValueWithDrop;
-        drop.print();
-        format!("Hello {} ({})", name, value)
-    }
+/// This trait represents a closure parameter.
+pub trait FromUpvalue<'a>: Sized + SimpleDrop {
+    /// Reads this value from the given lua stack.
+    ///
+    /// # Arguments
+    ///
+    /// * `vm`: the [Vm] to read from.
+    /// * `index`: index of the parameter to read.
+    ///
+    /// returns: Self
+    ///
+    /// # Safety
+    ///
+    /// Calling this function outside the body of a [CFunction](crate::ffi::lua::CFunction) is UB.
+    /// Calling this function in a non-POF segment of that CFunction is also UB. Finally, if the
+    /// type of the value at index `index` is not of [Self], calling this function is UB.
+    unsafe fn from_upvalue(vm: &'a Vm, index: i32) -> Self;
 }
 
-#[test]
-fn test_vm_destructor() {
-    let mut vm = RootVm::new();
-    vm.set_global(c"test_c_function", RFunction::wrap(test_c_function)).unwrap();
-    let time = std::time::Instant::now();
-    let res = vm.run_code::<&str>(c"return test_c_function('this is a test\\xFF', 0.42)");
-    assert!(res.is_err());
-    let err = res.unwrap_err().into_runtime();
-    assert_eq!(err.msg(), "rust error: invalid utf-8 sequence of 1 bytes from index 14");
-    assert!(vm.run_code::<&str>(c"return test_c_function('this is a test', 0.42)").is_ok());
-    let s = vm.run_code::<&str>(c"return test_c_function('this is a test', 0.42)").unwrap();
-    assert_eq!(s, "Hello this is a test (0.42)");
-    assert!(vm.run_code::<bool>(c"return test_c_function('this is a test', 0.42)").is_err());
-    vm.clear();
-    let time = time.elapsed();
-    println!("time: {:?}", time);
+pub trait IntoUpvalue {
+    fn into_upvalue(self, vm: &Vm) -> u16;
 }

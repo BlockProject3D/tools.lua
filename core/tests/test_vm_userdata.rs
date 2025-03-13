@@ -29,7 +29,7 @@
 use bp3d_lua::{decl_lib_func, decl_userdata, decl_userdata_mut};
 use bp3d_lua::ffi::lua::Number;
 use bp3d_lua::vm::RootVm;
-use bp3d_lua::vm::value::RFunction;
+use bp3d_lua::vm::function::types::RFunction;
 
 pub struct MyInt(i64);
 
@@ -111,7 +111,7 @@ decl_lib_func! {
 #[test]
 fn test_vm_userdata_forgot_reg() {
     let vm = RootVm::new();
-    vm.set_global(c"MyInt", RFunction(my_int)).unwrap();
+    vm.set_global(c"MyInt", RFunction::wrap(my_int)).unwrap();
     vm.run_code::<()>(c"a = MyInt(123)").unwrap();
     vm.run_code::<()>(c"b = MyInt(456)").unwrap();
     assert!(vm.run_code::<bool>(c"return a < b").is_err());
@@ -157,7 +157,7 @@ fn test_vm_userdata() {
     let top = vm.top();
     vm.register_userdata::<MyInt>().unwrap();
     assert_eq!(top, vm.top());
-    vm.set_global(c"MyInt", RFunction(my_int)).unwrap();
+    vm.set_global(c"MyInt", RFunction::wrap(my_int)).unwrap();
     assert_eq!(top, vm.top());
     vm.run_code::<()>(c"a = MyInt(123)").unwrap();
     vm.run_code::<()>(c"b = MyInt(456)").unwrap();

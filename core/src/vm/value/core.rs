@@ -27,12 +27,12 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::ffi::laux::luaL_testudata;
-use crate::ffi::lua::{lua_tolstring, lua_type, lua_tointeger, lua_tonumber, Type, lua_toboolean, lua_pushcclosure};
+use crate::ffi::lua::{lua_tolstring, lua_type, lua_tointeger, lua_tonumber, Type, lua_toboolean};
 use crate::vm::function::IntoParam;
 use crate::vm::Vm;
 use crate::vm::error::{Error, TypeError};
 use crate::vm::userdata::UserDataImmutable;
-use crate::vm::value::{FromLua, IntoLua, RFunction};
+use crate::vm::value::{FromLua, IntoLua};
 
 impl<'a> FromLua<'a> for &'a str {
     fn from_lua(vm: &Vm, index: i32) -> crate::vm::Result<Self> {
@@ -96,16 +96,6 @@ impl_from_lua!(bool, Boolean, lua_toboolean, == 1);
 impl<T: IntoParam> IntoLua for T {
     fn into_lua(self, vm: &Vm) -> Result<u16, Error> {
         Ok(self.into_param(vm))
-    }
-}
-
-impl IntoLua for RFunction {
-    fn into_lua(self, vm: &Vm) -> crate::vm::Result<u16> {
-        let l = vm.as_ptr();
-        unsafe {
-            lua_pushcclosure(l, self.0, 0);
-        }
-        Ok(1)
     }
 }
 

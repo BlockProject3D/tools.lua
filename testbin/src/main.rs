@@ -30,7 +30,7 @@ use std::time::Duration;
 use mlua::Lua;
 use bp3d_lua::decl_lib_func;
 use bp3d_lua::vm::RootVm;
-use bp3d_lua::vm::value::RFunction;
+use bp3d_lua::vm::function::types::RFunction;
 
 struct ValueWithDrop;
 impl ValueWithDrop {
@@ -52,7 +52,7 @@ decl_lib_func! {
 
 fn test_vm_destructor() -> Duration {
     let mut vm = RootVm::new();
-    vm.set_global(c"test_c_function", RFunction(test_c_function)).unwrap();
+    vm.set_global(c"test_c_function", RFunction::wrap(test_c_function)).unwrap();
     let time = std::time::Instant::now();
     for _ in 0..20000 {
         let res = vm.run_code::<&str>(c"return test_c_function('this is a test\\xFF', 0.42)");

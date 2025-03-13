@@ -178,7 +178,7 @@ impl Vm {
             };
         }
         // Read and return the result of the function from the stack.
-        FromLua::from_lua(self, -1)
+        FromLua::from_lua(self, -(R::num_values() as i32))
     }
 }
 

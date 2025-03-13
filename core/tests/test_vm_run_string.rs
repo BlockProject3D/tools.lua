@@ -28,7 +28,7 @@
 
 use bp3d_lua::decl_lib_func;
 use bp3d_lua::vm::RootVm;
-use bp3d_lua::vm::value::RFunction;
+use bp3d_lua::vm::function::types::RFunction;
 
 decl_lib_func! {
     fn dostring(vm: &Vm, code: &str) -> bp3d_lua::vm::Result<()> {
@@ -44,7 +44,7 @@ fn test_run_string() {
     let res = vm.run_code::<()>(c"dostring('test')");
     assert!(res.is_err());
     assert_eq!(res.unwrap_err().to_string(), "runtime error: [string \"dostring('test')\"]:1: attempt to call global 'dostring' (a nil value)");
-    vm.set_global(c"dostring", RFunction(dostring)).unwrap();
+    vm.set_global(c"dostring", RFunction::wrap(dostring)).unwrap();
     assert!(vm.run_code::<()>(c"dostring('test')").is_err());
     assert!(vm.run_code::<()>(c"dostring('print(\"whatever 123\")')").is_ok());
     assert!(vm.run_code::<()>(c"dostring('root = 42')").is_ok());

@@ -26,7 +26,6 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use crate::ffi::lua::CFunction;
 use crate::vm::Vm;
 
 pub trait FromLua<'a>: Sized {
@@ -58,5 +57,3 @@ pub trait IntoLua: Sized {
     /// returns: Result<Self, Error>
     fn into_lua(self, vm: &Vm) -> crate::vm::Result<u16>;
 }
-
-pub struct RFunction(pub CFunction);

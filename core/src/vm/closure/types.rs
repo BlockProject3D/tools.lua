@@ -26,44 +26,34 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use bp3d_lua::decl_lib_func;
-use bp3d_lua::vm::RootVm;
-use bp3d_lua::vm::function::types::RFunction;
+use crate::ffi::lua::{lua_pushcclosure, CFunction};
+use crate::vm::closure::IntoUpvalue;
+use crate::vm::value::IntoLua;
+use crate::vm::Vm;
 
-struct ValueWithDrop;
-impl ValueWithDrop {
-    pub fn print(&self) {
-        println!("ValueWithDrop")
-    }
-}
-impl Drop for ValueWithDrop {
-    fn drop(&mut self) {
-        println!("Dropping!");
-    }
+pub struct RClosure<T> {
+    func: CFunction,
+    upvalue: T
 }
 
-decl_lib_func! {
-    fn test_c_function(name: &str, value: f64) -> String {
-        let drop = ValueWithDrop;
-        drop.print();
-        format!("Hello {} ({})", name, value)
+impl<T> RClosure<T> {
+    /// Creates a new [RClosure].
+    ///
+    /// # Arguments
+    ///
+    /// * `func`: the [CFunction] to be associated with an upvalue.
+    /// * `upvalue`: the upvalue to bind to the [CFunction].
+    ///
+    /// returns: RClosure<T>
+    pub fn new(func: CFunction, upvalue: T) -> Self {
+        Self { func, upvalue }
     }
 }
 
-#[test]
-fn test_vm_destructor() {
-    let mut vm = RootVm::new();
-    vm.set_global(c"test_c_function", RFunction::wrap(test_c_function)).unwrap();
-    let time = std::time::Instant::now();
-    let res = vm.run_code::<&str>(c"return test_c_function('this is a test\\xFF', 0.42)");
-    assert!(res.is_err());
-    let err = res.unwrap_err().into_runtime();
-    assert_eq!(err.msg(), "rust error: invalid utf-8 sequence of 1 bytes from index 14");
-    assert!(vm.run_code::<&str>(c"return test_c_function('this is a test', 0.42)").is_ok());
-    let s = vm.run_code::<&str>(c"return test_c_function('this is a test', 0.42)").unwrap();
-    assert_eq!(s, "Hello this is a test (0.42)");
-    assert!(vm.run_code::<bool>(c"return test_c_function('this is a test', 0.42)").is_err());
-    vm.clear();
-    let time = time.elapsed();
-    println!("time: {:?}", time);
+impl<T: IntoUpvalue> IntoLua for RClosure<T> {
+    fn into_lua(self, vm: &Vm) -> crate::vm::Result<u16> {
+        let num = self.upvalue.into_upvalue(vm);
+        unsafe { lua_pushcclosure(vm.as_ptr(), self.func, num as _) };
+        Ok(1)
+    }
 }
