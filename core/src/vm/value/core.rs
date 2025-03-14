@@ -121,3 +121,30 @@ impl<'a, T: UserDataImmutable> FromLua<'a> for &'a T {
         Ok(unsafe { &*this_ptr })
     }
 }
+
+macro_rules! count_tts {
+    () => {0};
+    ($_head:tt $($tail:tt)*) => {1 + count_tts!($($tail)*)};
+}
+
+macro_rules! impl_tuple {
+    ($($name: ident: $name2: ident),*) => {
+        impl<'a, $($name: FromLua<'a>),*> FromLua<'a> for ($($name),*) {
+            fn num_values() -> u16 {
+                count_tts!($($name),*)
+            }
+
+            fn from_lua(vm: &'a Vm, mut index: i32) -> crate::vm::Result<($($name),*)> {
+                $(
+                    let $name2: $name = FromLua::from_lua(vm, index)?;
+                    index += 1;
+                )*
+                Ok(($($name2),*))
+            }
+        }
+    };
+}
+
+impl_tuple!(T: t, T1: t1);
+impl_tuple!(T: t, T1: t1, T2: t2);
+impl_tuple!(T: t, T1: t1, T2: t2, T3: t3);
