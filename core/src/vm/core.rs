@@ -183,7 +183,8 @@ impl Vm {
 }
 
 pub struct RootVm {
-    vm: Vm
+    vm: Vm,
+    leaked: Vec<Box<dyn FnOnce()>>
 }
 
 impl RootVm {
@@ -191,8 +192,17 @@ impl RootVm {
         let l = unsafe { luaL_newstate() };
         unsafe { luaL_openlibs(l) };
         RootVm {
-            vm: unsafe { Vm::from_raw(l) }
+            vm: unsafe { Vm::from_raw(l) },
+            leaked: Vec::new()
         }
+    }
+
+    pub fn leak<T: 'static>(&mut self, bx: Box<T>) -> *mut T {
+        let ptr = Box::into_raw(bx);
+        self.leaked.push(Box::new(move || {
+            unsafe { drop(Box::from_raw(ptr)) };
+        }));
+        ptr
     }
 }
 
@@ -215,6 +225,11 @@ impl Drop for RootVm {
         unsafe {
             println!("Closing Lua VM...");
             lua_close(self.vm.as_ptr());
+        }
+        println!("Deleting leaked pointers...");
+        let v = std::mem::replace(&mut self.leaked, Vec::new());
+        for f in v {
+            f()
         }
     }
 }

@@ -75,6 +75,12 @@ impl IntoParam for &str {
     }
 }
 
+impl IntoParam for String {
+    fn into_param(self, vm: &Vm) -> u16 {
+        (&*self).into_param(vm)
+    }
+}
+
 macro_rules! impl_integer {
     ($($t: ty),*) => {
         $(

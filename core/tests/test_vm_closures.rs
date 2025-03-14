@@ -27,6 +27,7 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use bp3d_lua::decl_closure;
+use bp3d_lua::vm::closure::types::RClosure;
 use bp3d_lua::vm::RootVm;
 
 decl_closure! {
@@ -36,10 +37,23 @@ decl_closure! {
 }
 
 #[test]
-fn test_vm_closures() {
+fn test_vm_fast_closure() {
     let vm = RootVm::new();
     let top = vm.top();
     vm.set_global(c"test", test("this is a test")).unwrap();
+    assert_eq!(top, vm.top());
+    let s: &str = vm.run_code(c"return test(42.42)").unwrap();
+    assert_eq!(s, "this is a test: 42.42");
+}
+
+#[test]
+fn test_vm_rust_closure() {
+    let mut vm = RootVm::new();
+    let top = vm.top();
+    let closure = RClosure::from_rust(&mut vm, |val: f32| {
+        format!("this is a test: {}", val)
+    });
+    vm.set_global(c"test", closure).unwrap();
     assert_eq!(top, vm.top());
     let s: &str = vm.run_code(c"return test(42.42)").unwrap();
     assert_eq!(s, "this is a test: 42.42");
