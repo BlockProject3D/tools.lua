@@ -26,9 +26,30 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-mod interface;
-mod core;
-pub mod table;
-mod function;
+use crate::ffi::lua::Type;
+use crate::vm::value::{FromLua, IntoLua};
+use crate::vm::Vm;
 
-pub use interface::*;
+pub struct LuaFunction<'a> {
+    vm: &'a Vm,
+    index: i32
+}
+
+impl<'a> LuaFunction<'a> {
+    pub fn call<'b, T: IntoLua, R: FromLua<'b>>(&'b self, value: T) -> crate::vm::Result<R> {
+        //TODO: Implement
+        todo!()
+    }
+}
+
+impl<'a> FromLua<'a> for LuaFunction<'a> {
+    const EXPECTED_TYPE: Type = Type::Function;
+
+    #[inline]
+    unsafe fn from_lua_unchecked(vm: &'a Vm, index: i32) -> LuaFunction<'a> {
+        LuaFunction {
+            vm,
+            index: vm.get_absolute_index(index)
+        }
+    }
+}
