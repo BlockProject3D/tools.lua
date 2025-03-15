@@ -26,50 +26,27 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use crate::ffi::lua::{lua_pushvalue, Type};
-use crate::vm::core::{pcall, push_error_handler};
-use crate::vm::registry::core::RegistryKey;
-use crate::vm::registry::Register;
-use crate::vm::value::{FromLua, IntoLua};
-use crate::vm::value::util::{ensure_type_equals, ensure_value_top};
-use crate::vm::Vm;
+use bp3d_lua::vm::RootVm;
+use bp3d_lua::vm::value::function::LuaFunction;
 
-pub struct LuaFunction<'a> {
-    vm: &'a Vm,
-    index: i32
+#[test]
+fn test_vm_function_1_arg() {
+    let mut vm = RootVm::new();
+    let f: LuaFunction = vm.run_code(c"return function(value) return 'this is a test ' .. value end").unwrap();
+    let str: &str = f.call(42.42).unwrap();
+    assert_eq!(str, "this is a test 42.42");
+    let str: &str = f.call(42).unwrap();
+    assert_eq!(str, "this is a test 42");
+    vm.clear();
 }
 
-impl<'a> LuaFunction<'a> {
-    pub fn call<'b, T: IntoLua, R: FromLua<'b>>(&'b self, value: T) -> crate::vm::Result<R> {
-        let pos = push_error_handler(self.vm.as_ptr());
-        unsafe { lua_pushvalue(self.vm.as_ptr(), self.index); }
-        let num_values = value.into_lua(self.vm)?;
-        unsafe { pcall(self.vm, num_values as _, R::num_values() as _, pos)? };
-        R::from_lua(self.vm, -(R::num_values() as i32))
-    }
-}
-
-impl<'a> FromLua<'a> for LuaFunction<'a> {
-    #[inline(always)]
-    unsafe fn from_lua_unchecked(vm: &'a Vm, index: i32) -> LuaFunction<'a> {
-        LuaFunction {
-            vm,
-            index: vm.get_absolute_index(index)
-        }
-    }
-
-    fn from_lua(vm: &'a Vm, index: i32) -> crate::vm::Result<Self> {
-        ensure_type_equals(vm, index, Type::Function)?;
-        Ok(LuaFunction { vm, index: vm.get_absolute_index(index) })
-    }
-}
-
-impl Register for LuaFunction<'_> {
-    type RegistryValue = crate::vm::registry::types::LuaFunction;
-
-    fn register(self, vm: &Vm) -> RegistryKey<Self::RegistryValue> {
-        // If the function is not at the top of the stack, move it to the top.
-        ensure_value_top(vm, self.index);
-        unsafe { RegistryKey::from_top(vm) }
-    }
+#[test]
+fn test_vm_function_2_args() {
+    let mut vm = RootVm::new();
+    let f: LuaFunction = vm.run_code(c"return function(value, value2) return 'this ' .. value .. ' is a test ' .. tostring(value2) end").unwrap();
+    let str: &str = f.call((42.42, false)).unwrap();
+    assert_eq!(str, "this 42.42 is a test false");
+    let str: &str = f.call((42, true)).unwrap();
+    assert_eq!(str, "this 42 is a test true");
+    vm.clear();
 }

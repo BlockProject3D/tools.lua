@@ -74,7 +74,8 @@ pub(super) fn push_error_handler(l: State) -> c_int {
     }
 }
 
-pub(super) fn pcall(vm: &Vm, nargs: c_int, nreturns: c_int, handler_pos: c_int) -> crate::vm::Result<()> {
+/// This function is highly unsafe it may crash at any time.
+pub(super) unsafe fn pcall(vm: &Vm, nargs: c_int, nreturns: c_int, handler_pos: c_int) -> crate::vm::Result<()> {
     let l = vm.as_ptr();
     unsafe {
         // Call the function created by load_code.
@@ -188,7 +189,7 @@ impl Vm {
             ThreadStatus::ErrMem => return Err(Error::Memory),
             _ => return Err(Error::Unknown)
         };
-        pcall(self, 0, R::num_values() as _, handler_pos)?;
+        unsafe { pcall(self, 0, R::num_values() as _, handler_pos)? };
         // Read and return the result of the function from the stack.
         FromLua::from_lua(self, -(R::num_values() as i32))
     }
