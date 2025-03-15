@@ -26,17 +26,35 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#[macro_export]
-macro_rules! check_single_type {
-    ($expected: expr => ($vm: ident, $index: ident) { $ret: expr }) => {{
-        let ty = unsafe { crate::ffi::lua::lua_type($vm.as_ptr(), $index) };
-        if ty == $expected {
-            Ok($ret)
-        } else {
-            Err(crate::vm::error::Error::Type(crate::vm::error::TypeError {
-                expected: $expected,
-                actual: ty
-            }))
+use crate::ffi::lua::{lua_pushnil, lua_pushvalue, lua_replace, Type};
+use crate::vm::error::{Error, TypeError};
+use crate::vm::Vm;
+
+/// Ensures the given lua value at index is of a specified type.
+#[inline(always)]
+pub fn ensure_type_equals(vm: &Vm, index: i32, expected: Type) -> crate::vm::Result<()> {
+    let ty = unsafe { crate::ffi::lua::lua_type(vm.as_ptr(), index) };
+    if ty == expected {
+        Ok(())
+    } else {
+        Err(Error::Type(TypeError {
+            expected,
+            actual: ty
+        }))
+    }
+}
+
+/// Ensures the given lua value at index is at the top of the stack.
+/// If the value at index is not at the top of the stack, this function moves it to the top and
+/// replaces the original index by a nil value.
+#[inline(always)]
+pub fn ensure_value_top(vm: &Vm, index: i32) {
+    if index != vm.top() {
+        let l = vm.as_ptr();
+        unsafe {
+            lua_pushvalue(l, index);
+            lua_pushnil(l);
+            lua_replace(l, index); // Replace the value at index by a nil.
         }
-    }};
+    }
 }

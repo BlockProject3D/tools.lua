@@ -26,7 +26,6 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use crate::check_single_type;
 use crate::ffi::laux::luaL_testudata;
 use crate::ffi::lua::{lua_tolstring, lua_type, lua_tointeger, lua_tonumber, Type, lua_toboolean, lua_touserdata};
 use crate::vm::function::IntoParam;
@@ -34,6 +33,7 @@ use crate::vm::Vm;
 use crate::vm::error::{Error, TypeError};
 use crate::vm::userdata::UserDataImmutable;
 use crate::vm::value::{FromLua, IntoLua};
+use crate::vm::value::util::ensure_type_equals;
 
 impl<'a> FromLua<'a> for &'a str {
     unsafe fn from_lua_unchecked(vm: &'a Vm, index: i32) -> Self {
@@ -72,7 +72,8 @@ macro_rules! impl_from_lua {
             }
 
             fn from_lua(vm: &Vm, index: i32) -> crate::vm::Result<Self> {
-                check_single_type!(Type::$expected => (vm, index) { unsafe { $func(vm.as_ptr(), index) $($ret)* } })
+                ensure_type_equals(vm, index, Type::$expected)?;
+                Ok(unsafe { $func(vm.as_ptr(), index) $($ret)* })
             }
         }
     };

@@ -26,9 +26,11 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use crate::check_single_type;
 use crate::ffi::lua::Type;
+use crate::vm::registry::core::RegistryKey;
+use crate::vm::registry::Register;
 use crate::vm::value::{FromLua, IntoLua};
+use crate::vm::value::util::{ensure_type_equals, ensure_value_top};
 use crate::vm::Vm;
 
 pub struct LuaFunction<'a> {
@@ -53,6 +55,17 @@ impl<'a> FromLua<'a> for LuaFunction<'a> {
     }
 
     fn from_lua(vm: &'a Vm, index: i32) -> crate::vm::Result<Self> {
-        check_single_type!(Type::Function => (vm, index) { LuaFunction { vm, index: vm.get_absolute_index(index) } })
+        ensure_type_equals(vm, index, Type::Function)?;
+        Ok(LuaFunction { vm, index: vm.get_absolute_index(index) })
+    }
+}
+
+impl Register for LuaFunction<'_> {
+    type RegistryValue = crate::vm::registry::types::Table;
+
+    fn register(self, vm: &Vm) -> RegistryKey<Self::RegistryValue> {
+        // If the function is not at the top of the stack, move it to the top.
+        ensure_value_top(vm, self.index);
+        unsafe { RegistryKey::from_top(vm) }
     }
 }
