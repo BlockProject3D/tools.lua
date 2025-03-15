@@ -65,9 +65,31 @@ impl<'a> FromParam<'a> for &'a str {
     }
 }
 
+impl LuaType for &[u8] {}
+
+impl<'a> FromParam<'a> for &'a [u8] {
+    unsafe fn from_param(vm: &'a Vm, index: i32) -> Self {
+        let mut len: usize = 0;
+        let str = luaL_checklstring(vm.as_ptr(), index, &mut len as _);
+        let slice = slice::from_raw_parts(str as *const u8, len);
+        slice
+    }
+}
+
 unsafe impl SimpleDrop for &str {}
 
 impl IntoParam for &str {
+    #[inline(always)]
+    fn into_param(self, vm: &Vm) -> u16 {
+        unsafe {
+            lua_pushlstring(vm.as_ptr(), self.as_ptr() as _, self.len());
+        }
+        1
+    }
+}
+
+impl IntoParam for &[u8] {
+    #[inline(always)]
     fn into_param(self, vm: &Vm) -> u16 {
         unsafe {
             lua_pushlstring(vm.as_ptr(), self.as_ptr() as _, self.len());
@@ -77,6 +99,7 @@ impl IntoParam for &str {
 }
 
 impl IntoParam for String {
+    #[inline(always)]
     fn into_param(self, vm: &Vm) -> u16 {
         (&*self).into_param(vm)
     }
@@ -94,12 +117,14 @@ macro_rules! impl_integer {
             }
 
             impl FromParam<'_> for $t {
+                #[inline(always)]
                 unsafe fn from_param(vm: &Vm, index: i32) -> Self {
                     lua_ext_fast_checkinteger(vm.as_ptr(), index) as _
                 }
             }
 
             impl IntoParam for $t {
+                #[inline(always)]
                 fn into_param(self, vm: &Vm) -> u16 {
                     unsafe {
                         lua_pushinteger(vm.as_ptr(), self as _);
@@ -128,12 +153,14 @@ macro_rules! impl_float {
             }
 
             impl FromParam<'_> for $t {
+                #[inline(always)]
                 unsafe fn from_param(vm: &Vm, index: i32) -> Self {
                     lua_ext_fast_checknumber(vm.as_ptr(), index) as _
                 }
             }
 
             impl IntoParam for $t {
+                #[inline(always)]
                 fn into_param(self, vm: &Vm) -> u16 {
                     unsafe {
                         lua_pushnumber(vm.as_ptr(), self as _);
@@ -148,6 +175,7 @@ macro_rules! impl_float {
 impl_float!(f32, f64);
 
 impl IntoParam for bool {
+    #[inline(always)]
     fn into_param(self, vm: &Vm) -> u16 {
         unsafe { lua_pushboolean(vm.as_ptr(), if self { 1 } else { 0 }) };
         1
@@ -182,6 +210,7 @@ impl<T: IntoParam> IntoParam for Option<T> {
 }
 
 impl IntoParam for () {
+    #[inline(always)]
     fn into_param(self, _: &Vm) -> u16 {
         0
     }
@@ -194,6 +223,7 @@ impl<T: UserData> LuaType for &T {
 }
 
 impl<'a, T: UserData> FromParam<'a> for &'a T {
+    #[inline(always)]
     unsafe fn from_param(vm: &'a Vm, index: i32) -> &'a T {
         let obj_ptr = unsafe { luaL_checkudata(vm.as_ptr(), index, T::CLASS_NAME.as_ptr()) } as *const T;
         unsafe { &*obj_ptr }

@@ -52,6 +52,13 @@ impl<'a> FromUpvalue<'a> for &'a str {
     }
 }
 
+impl<'a> FromUpvalue<'a> for &'a [u8] {
+    #[inline(always)]
+    unsafe fn from_upvalue(vm: &'a Vm, index: i32) -> Self {
+        FromLua::from_lua_unchecked(vm, GLOBALSINDEX - index)
+    }
+}
+
 #[cfg(target_pointer_width = "64")]
 impl_from_upvalue_using_from_lua_unchecked!(i64, u64);
 

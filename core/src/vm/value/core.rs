@@ -63,6 +63,34 @@ impl<'a> FromLua<'a> for &'a str {
     }
 }
 
+impl<'a> FromLua<'a> for &'a [u8] {
+    unsafe fn from_lua_unchecked(vm: &'a Vm, index: i32) -> Self {
+        let mut len: usize = 0;
+        let str = lua_tolstring(vm.as_ptr(), index, &mut len as _);
+        let slice = std::slice::from_raw_parts(str as *const u8, len);
+        slice
+    }
+
+    fn from_lua(vm: &'a Vm, index: i32) -> crate::vm::Result<Self> {
+        let l = vm.as_ptr();
+        unsafe {
+            let ty = lua_type(l, index);
+            match ty {
+                Type::String => {
+                    let mut len: usize = 0;
+                    let s = lua_tolstring(l, index, &mut len as _);
+                    let slice = std::slice::from_raw_parts(s as *const u8, len);
+                    Ok(slice)
+                },
+                _ => Err(Error::Type(TypeError {
+                    expected: Type::String,
+                    actual: ty
+                }))
+            }
+        }
+    }
+}
+
 macro_rules! impl_from_lua {
     ($t: ty, $expected: ident, $func: ident, $($ret: tt)*) => {
         impl FromLua<'_> for $t {

@@ -69,3 +69,4 @@ unsafe impl SimpleDrop for bool {}
 unsafe impl<T: SimpleDrop> SimpleDrop for Option<T> {}
 unsafe impl<T: SimpleDrop, R: SimpleDrop> SimpleDrop for Result<T, R> {}
 unsafe impl<T> SimpleDrop for &T {}
+unsafe impl SimpleDrop for &[u8] {}
