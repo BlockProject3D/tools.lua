@@ -26,27 +26,54 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use std::ffi::CStr;
 use bp3d_lua::vm::RootVm;
 use bp3d_lua::vm::value::function::LuaFunction;
+use bp3d_lua::vm::value::table::Table;
 
 #[test]
 fn test_vm_function_1_arg() {
     let mut vm = RootVm::new();
+    let top = vm.top();
     let f: LuaFunction = vm.run_code(c"return function(value) return 'this is a test ' .. value end").unwrap();
     let str: &str = f.call(42.42).unwrap();
     assert_eq!(str, "this is a test 42.42");
     let str: &str = f.call(42).unwrap();
     assert_eq!(str, "this is a test 42");
+    assert_eq!(vm.top(), top + 3); // Function + 2 results
     vm.clear();
 }
 
 #[test]
 fn test_vm_function_2_args() {
     let mut vm = RootVm::new();
+    let top = vm.top();
     let f: LuaFunction = vm.run_code(c"return function(value, value2) return 'this ' .. value .. ' is a test ' .. tostring(value2) end").unwrap();
     let str: &str = f.call((42.42, false)).unwrap();
     assert_eq!(str, "this 42.42 is a test false");
     let str: &str = f.call((42, true)).unwrap();
     assert_eq!(str, "this 42 is a test true");
+    assert_eq!(vm.top(), top + 3); // Function + 2 results
+    vm.clear();
+}
+
+const METHODS: &CStr = c"
+local obj = { ctx = 'this is a test' }
+
+function obj:greeting()
+    return 'Hello ' .. self.ctx
+end
+
+return obj
+";
+
+#[test]
+fn test_vm_function_method() {
+    let mut vm = RootVm::new();
+    let top = vm.top();
+    let obj: Table = vm.run_code(METHODS).unwrap();
+    let str: &str = obj.call_method(c"greeting", ()).unwrap();
+    assert_eq!(str, "Hello this is a test");
+    assert_eq!(vm.top(), top + 2); // Table + 1 result
     vm.clear();
 }
