@@ -26,8 +26,9 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use crate::check_single_type;
 use crate::ffi::laux::luaL_testudata;
-use crate::ffi::lua::{lua_tolstring, lua_type, lua_tointeger, lua_tonumber, Type, lua_toboolean};
+use crate::ffi::lua::{lua_tolstring, lua_type, lua_tointeger, lua_tonumber, Type, lua_toboolean, lua_touserdata};
 use crate::vm::function::IntoParam;
 use crate::vm::Vm;
 use crate::vm::error::{Error, TypeError};
@@ -35,6 +36,13 @@ use crate::vm::userdata::UserDataImmutable;
 use crate::vm::value::{FromLua, IntoLua};
 
 impl<'a> FromLua<'a> for &'a str {
+    unsafe fn from_lua_unchecked(vm: &'a Vm, index: i32) -> Self {
+        let mut len: usize = 0;
+        let s = lua_tolstring(vm.as_ptr(), index, &mut len as _);
+        let slice = std::slice::from_raw_parts(s as _, len);
+        std::str::from_utf8_unchecked(slice)
+    }
+
     fn from_lua(vm: &Vm, index: i32) -> crate::vm::Result<Self> {
         let l = vm.as_ptr();
         unsafe {
@@ -58,17 +66,14 @@ impl<'a> FromLua<'a> for &'a str {
 macro_rules! impl_from_lua {
     ($t: ty, $expected: ident, $func: ident, $($ret: tt)*) => {
         impl FromLua<'_> for $t {
+            #[inline(always)]
+            unsafe fn from_lua_unchecked(vm: &Vm, index: i32) -> Self {
+                $func(vm.as_ptr(), index) $($ret)*
+            }
+
             fn from_lua(vm: &Vm, index: i32) -> crate::vm::Result<Self> {
-                let l = vm.as_ptr();
                 unsafe {
-                    let ty = lua_type(l, index);
-                    match ty {
-                        Type::$expected => Ok($func(l, index) $($ret)*),
-                        _ => Err(Error::Type(TypeError {
-                            expected: Type::$expected,
-                            actual: ty
-                        }))
-                    }
+                    check_single_type!(Type::$expected => (vm, index) { $func(vm.as_ptr(), index) $($ret)* })
                 }
             }
         }
@@ -100,6 +105,10 @@ impl<T: IntoParam> IntoLua for T {
 }
 
 impl FromLua<'_> for () {
+    unsafe fn from_lua_unchecked(_: &'_ Vm, _: i32) -> Self {
+        ()
+    }
+
     fn from_lua(_vm: &Vm, _: i32) -> crate::vm::Result<()> {
         Ok(())
     }
@@ -110,6 +119,11 @@ impl FromLua<'_> for () {
 }
 
 impl<'a, T: UserDataImmutable> FromLua<'a> for &'a T {
+    #[inline(always)]
+    unsafe fn from_lua_unchecked(vm: &'a Vm, index: i32) -> Self {
+        &*(lua_touserdata(vm.as_ptr(), index) as *const T)
+    }
+
     fn from_lua(vm: &'a Vm, index: i32) -> crate::vm::Result<Self> {
         let this_ptr = unsafe { luaL_testudata(vm.as_ptr(), index, T::CLASS_NAME.as_ptr()) } as *const T;
         if this_ptr.is_null() {
@@ -132,6 +146,14 @@ macro_rules! impl_tuple {
         impl<'a, $($name: FromLua<'a>),*> FromLua<'a> for ($($name),*) {
             fn num_values() -> u16 {
                 count_tts!($($name),*)
+            }
+
+            unsafe fn from_lua_unchecked(vm: &'a Vm, mut index: i32) -> Self {
+                $(
+                    let $name2: $name = FromLua::from_lua_unchecked(vm, index);
+                    index += 1;
+                )*
+                ($($name2),*)
             }
 
             fn from_lua(vm: &'a Vm, mut index: i32) -> crate::vm::Result<($($name),*)> {

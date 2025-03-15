@@ -26,6 +26,7 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use crate::check_single_type;
 use crate::ffi::lua::Type;
 use crate::vm::value::{FromLua, IntoLua};
 use crate::vm::Vm;
@@ -43,13 +44,15 @@ impl<'a> LuaFunction<'a> {
 }
 
 impl<'a> FromLua<'a> for LuaFunction<'a> {
-    const EXPECTED_TYPE: Type = Type::Function;
-
-    #[inline]
+    #[inline(always)]
     unsafe fn from_lua_unchecked(vm: &'a Vm, index: i32) -> LuaFunction<'a> {
         LuaFunction {
             vm,
             index: vm.get_absolute_index(index)
         }
+    }
+
+    fn from_lua(vm: &'a Vm, index: i32) -> crate::vm::Result<Self> {
+        check_single_type!(Type::Function => (vm, index) { LuaFunction { vm, index: vm.get_absolute_index(index) } })
     }
 }

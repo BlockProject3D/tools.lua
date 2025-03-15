@@ -26,10 +26,17 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-mod interface;
-mod core;
-pub mod table;
-mod function;
-mod util;
-
-pub use interface::*;
+#[macro_export]
+macro_rules! check_single_type {
+    ($expected: expr => ($vm: ident, $index: ident) { $ret: expr }) => {{
+        let ty = unsafe { crate::ffi::lua::lua_type($vm.as_ptr(), $index) };
+        if ty == $expected {
+            Ok($ret)
+        } else {
+            Err(crate::vm::error::Error::Type(crate::vm::error::TypeError {
+                expected: $expected,
+                actual: ty
+            }))
+        }
+    }};
+}

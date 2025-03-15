@@ -26,12 +26,12 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use crate::check_single_type;
 use crate::ffi::ext::{lua_ext_tab_len, MSize};
 use crate::ffi::laux::luaL_checktype;
-use crate::ffi::lua::{lua_createtable, lua_getfield, lua_gettop, lua_next, lua_pushnil, lua_pushvalue, lua_rawgeti, lua_rawseti, lua_setfield, lua_settop, lua_type, Type};
+use crate::ffi::lua::{lua_createtable, lua_getfield, lua_gettop, lua_next, lua_pushnil, lua_pushvalue, lua_rawgeti, lua_rawseti, lua_setfield, lua_settop, Type};
 use crate::vm::function::{FromParam, IntoParam};
 use crate::vm::Vm;
-use crate::vm::error::TypeError;
 use crate::vm::util::{AnyStr, LuaType, SimpleDrop};
 use crate::vm::value::{FromLua, IntoLua};
 
@@ -161,17 +161,13 @@ impl<'a> FromParam<'a> for Table<'a> {
 }
 
 impl<'a> FromLua<'a> for Table<'a> {
+    #[inline(always)]
+    unsafe fn from_lua_unchecked(vm: &'a Vm, index: i32) -> Self {
+        Table { vm, index: vm.get_absolute_index(index) }
+    }
+
     fn from_lua(vm: &'a Vm, index: i32) -> crate::vm::Result<Self> {
-        let ty = unsafe { lua_type(vm.as_ptr(), index) };
-        let index = vm.get_absolute_index(index);
-        if ty == Type::Table {
-            Ok(Table { vm, index })
-        } else {
-            Err(crate::vm::error::Error::Type(TypeError {
-                expected: Type::Table,
-                actual: ty
-            }))
-        }
+        check_single_type!(Type::Table => (vm, index) { Table { vm, index: vm.get_absolute_index(index) } })
     }
 }
 

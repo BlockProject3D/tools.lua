@@ -26,9 +26,26 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use crate::ffi::lua::lua_type;
+use crate::vm::error::{Error, TypeError};
 use crate::vm::Vm;
 
 pub trait FromLua<'a>: Sized {
+    /// Reads the value at the specified index in the given [Vm].
+    ///
+    /// # Arguments
+    ///
+    /// * `vm`: the [Vm] to read from.
+    /// * `index`: the index at which to try reading the value from.
+    ///
+    /// returns: Result<Self, Error>
+    ///
+    /// # Safety
+    ///
+    /// This function assumes the type of the value at index `index` is already of the expected type,
+    /// if not, calling this function is UB.
+    unsafe fn from_lua_unchecked(vm: &'a Vm, index: i32) -> Self;
+
     /// Attempt to read the value at the specified index in the given [Vm].
     ///
     /// # Arguments
