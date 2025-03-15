@@ -140,20 +140,20 @@ macro_rules! count_tts {
     ($_head:tt $($tail:tt)*) => {1 + count_tts!($($tail)*)};
 }
 
-macro_rules! impl_tuple {
+macro_rules! impl_from_lua_tuple {
     ($($name: ident: $name2: ident),*) => {
         impl<'a, $($name: FromLua<'a>),*> FromLua<'a> for ($($name),*) {
             fn num_values() -> u16 {
-                count_tts!($($name),*)
+                count_tts!($($name)*)
             }
 
             unsafe fn from_lua_unchecked(vm: &'a Vm, mut index: i32) -> Self {
-                impl_tuple!(_from_lua_unchecked vm, index, $($name2: $name),*);
+                impl_from_lua_tuple!(_from_lua_unchecked vm, index, $($name2: $name),*);
                 ($($name2),*)
             }
 
             fn from_lua(vm: &'a Vm, mut index: i32) -> crate::vm::Result<($($name),*)> {
-                impl_tuple!(_from_lua vm, index, $($name2: $name),*);
+                impl_from_lua_tuple!(_from_lua vm, index, $($name2: $name),*);
                 Ok(($($name2),*))
             }
         }
@@ -166,7 +166,7 @@ macro_rules! impl_tuple {
     (_from_lua_unchecked $vm: ident, $index: ident, $name2: ident: $name: ident, $($name3: ident: $name4: ident),*) => {
         let $name2: $name = FromLua::from_lua_unchecked($vm, $index);
         $index += 1;
-        impl_tuple!(_from_lua_unchecked $vm, $index, $($name3: $name4),*);
+        impl_from_lua_tuple!(_from_lua_unchecked $vm, $index, $($name3: $name4),*);
     };
 
     (_from_lua $vm: ident, $index: ident, $name2: ident: $name: ident) => {
@@ -176,16 +176,39 @@ macro_rules! impl_tuple {
     (_from_lua $vm: ident, $index: ident, $name2: ident: $name: ident, $($name3: ident: $name4: ident),*) => {
         let $name2: $name = FromLua::from_lua($vm, $index)?;
         $index += 1;
-        impl_tuple!(_from_lua $vm, $index, $($name3: $name4),*);
+        impl_from_lua_tuple!(_from_lua $vm, $index, $($name3: $name4),*);
     };
 }
 
-impl_tuple!(T: t, T1: t1);
-impl_tuple!(T: t, T1: t1, T2: t2);
-impl_tuple!(T: t, T1: t1, T2: t2, T3: t3);
-impl_tuple!(T: t, T1: t1, T2: t2, T3: t3, T4: t4);
-impl_tuple!(T: t, T1: t1, T2: t2, T3: t3, T4: t4, T5: t5);
-impl_tuple!(T: t, T1: t1, T2: t2, T3: t3, T4: t4, T5: t5, T6: t6);
-impl_tuple!(T: t, T1: t1, T2: t2, T3: t3, T4: t4, T5: t5, T6: t6, T7: t7);
-impl_tuple!(T: t, T1: t1, T2: t2, T3: t3, T4: t4, T5: t5, T6: t6, T7: t7, T8: t8);
-impl_tuple!(T: t, T1: t1, T2: t2, T3: t3, T4: t4, T5: t5, T6: t6, T7: t7, T8: t8, T9: t9);
+impl_from_lua_tuple!(T: t, T1: t1);
+impl_from_lua_tuple!(T: t, T1: t1, T2: t2);
+impl_from_lua_tuple!(T: t, T1: t1, T2: t2, T3: t3);
+impl_from_lua_tuple!(T: t, T1: t1, T2: t2, T3: t3, T4: t4);
+impl_from_lua_tuple!(T: t, T1: t1, T2: t2, T3: t3, T4: t4, T5: t5);
+impl_from_lua_tuple!(T: t, T1: t1, T2: t2, T3: t3, T4: t4, T5: t5, T6: t6);
+impl_from_lua_tuple!(T: t, T1: t1, T2: t2, T3: t3, T4: t4, T5: t5, T6: t6, T7: t7);
+impl_from_lua_tuple!(T: t, T1: t1, T2: t2, T3: t3, T4: t4, T5: t5, T6: t6, T7: t7, T8: t8);
+impl_from_lua_tuple!(T: t, T1: t1, T2: t2, T3: t3, T4: t4, T5: t5, T6: t6, T7: t7, T8: t8, T9: t9);
+
+macro_rules! impl_into_lua_tuple {
+    ($($name: ident: $name2: tt),*) => {
+        impl<$($name: IntoLua),*> IntoLua for ($($name),*) {
+            fn into_lua(self, vm: &Vm) -> Result<u16, Error> {
+                $(
+                    self.$name2.into_lua(vm)?;
+                )*
+                Ok(count_tts!($($name)*))
+            }
+        }
+    };
+}
+
+impl_into_lua_tuple!(T: 0, T1: 1);
+impl_into_lua_tuple!(T: 0, T1: 1, T2: 2);
+impl_into_lua_tuple!(T: 0, T1: 1, T2: 2, T3: 3);
+impl_into_lua_tuple!(T: 0, T1: 1, T2: 2, T3: 3, T4: 4);
+impl_into_lua_tuple!(T: 0, T1: 1, T2: 2, T3: 3, T4: 4, T5: 5);
+impl_into_lua_tuple!(T: 0, T1: 1, T2: 2, T3: 3, T4: 4, T5: 5, T6: 6);
+impl_into_lua_tuple!(T: 0, T1: 1, T2: 2, T3: 3, T4: 4, T5: 5, T6: 6, T7: 7);
+impl_into_lua_tuple!(T: 0, T1: 1, T2: 2, T3: 3, T4: 4, T5: 5, T6: 6, T7: 7, T8: 8);
+impl_into_lua_tuple!(T: 0, T1: 1, T2: 2, T3: 3, T4: 4, T5: 5, T6: 6, T7: 7, T8: 8, T9: 9);
