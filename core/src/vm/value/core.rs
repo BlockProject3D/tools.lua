@@ -183,3 +183,9 @@ macro_rules! impl_tuple {
 impl_tuple!(T: t, T1: t1);
 impl_tuple!(T: t, T1: t1, T2: t2);
 impl_tuple!(T: t, T1: t1, T2: t2, T3: t3);
+impl_tuple!(T: t, T1: t1, T2: t2, T3: t3, T4: t4);
+impl_tuple!(T: t, T1: t1, T2: t2, T3: t3, T4: t4, T5: t5);
+impl_tuple!(T: t, T1: t1, T2: t2, T3: t3, T4: t4, T5: t5, T6: t6);
+impl_tuple!(T: t, T1: t1, T2: t2, T3: t3, T4: t4, T5: t5, T6: t6, T7: t7);
+impl_tuple!(T: t, T1: t1, T2: t2, T3: t3, T4: t4, T5: t5, T6: t6, T7: t7, T8: t8);
+impl_tuple!(T: t, T1: t1, T2: t2, T3: t3, T4: t4, T5: t5, T6: t6, T7: t7, T8: t8, T9: t9);
