@@ -30,6 +30,7 @@ use crate::ffi::ext::{lua_ext_tab_len, MSize};
 use crate::ffi::laux::luaL_checktype;
 use crate::ffi::lua::{lua_createtable, lua_getfield, lua_gettop, lua_next, lua_pushnil, lua_pushvalue, lua_rawgeti, lua_rawseti, lua_setfield, lua_settop, Type};
 use crate::util::{AnyStr, SimpleDrop};
+use crate::vm::core::{pcall, push_error_handler};
 use crate::vm::function::{FromParam, IntoParam};
 use crate::vm::registry::core::RegistryKey;
 use crate::vm::registry::Register;
@@ -99,6 +100,14 @@ impl<'a> Scope<'a> {
             lua_rawgeti(self.vm.as_ptr(), self.index, i);
             T::from_lua(self.vm, -1)
         }
+    }
+
+    pub fn call<'b, T: IntoLua, R: FromLua<'b>>(&'b self, name: impl AnyStr, value: T) -> crate::vm::Result<R> {
+        let pos = push_error_handler(self.vm.as_ptr());
+        unsafe { lua_getfield(self.vm.as_ptr(), self.index, name.to_str()?.as_ptr()) };
+        let num_values = value.into_lua(self.vm)?;
+        unsafe { pcall(self.vm, num_values as _, R::num_values() as _, pos)? };
+        R::from_lua(self.vm, -(R::num_values() as i32))
     }
 }
 
