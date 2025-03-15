@@ -31,9 +31,10 @@ use std::slice;
 use crate::ffi::laux::{luaL_checklstring, luaL_checkudata, luaL_setmetatable};
 use crate::ffi::lua::{lua_newuserdata, lua_pushboolean, lua_pushinteger, lua_pushlstring, lua_pushnil, lua_pushnumber, lua_type, Integer, Number, Type};
 use crate::ffi::ext::{lua_ext_fast_checknumber, lua_ext_fast_checkinteger};
+use crate::util::SimpleDrop;
 use crate::vm::function::{FromParam, IntoParam};
 use crate::vm::userdata::UserData;
-use crate::vm::util::{lua_rust_error, LuaType, SimpleDrop, TypeName};
+use crate::vm::util::{lua_rust_error, LuaType, TypeName};
 use crate::vm::Vm;
 
 impl<'a, T: FromParam<'a> + SimpleDrop> FromParam<'a> for Option<T> {

@@ -26,8 +26,6 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use crate::ffi::lua::lua_type;
-use crate::vm::error::{Error, TypeError};
 use crate::vm::Vm;
 
 pub trait FromLua<'a>: Sized {

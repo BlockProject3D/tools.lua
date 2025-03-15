@@ -26,8 +26,9 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use crate::util::SimpleDrop;
 use crate::vm::Vm;
-use crate::vm::util::{LuaType, SimpleDrop};
+use crate::vm::util::LuaType;
 
 /// This trait represents a function return value.
 pub trait IntoParam: Sized {

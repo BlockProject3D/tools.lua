@@ -30,9 +30,10 @@ use std::ffi::c_int;
 use std::ops::{Deref, DerefMut};
 use crate::ffi::laux::{luaL_callmeta, luaL_newstate, luaL_openlibs, luaL_traceback};
 use crate::ffi::lua::{lua_close, lua_getfield, lua_gettop, lua_isstring, lua_pcall, lua_pushcclosure, lua_pushlstring, lua_pushnil, lua_remove, lua_setfield, lua_settop, lua_tolstring, lua_type, State, ThreadStatus, Type, GLOBALSINDEX, REGISTRYINDEX};
+use crate::util::AnyStr;
 use crate::vm::error::{Error, RuntimeError};
 use crate::vm::userdata::{Registry, UserData};
-use crate::vm::util::{AnyStr, LoadCode};
+use crate::vm::util::LoadCode;
 use crate::vm::value::{FromLua, IntoLua};
 
 const TRACEBACK_NONE: &[u8] = b"<unknown error>\n<no traceback>";

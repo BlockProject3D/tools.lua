@@ -30,9 +30,10 @@ use crate::check_single_type;
 use crate::ffi::ext::{lua_ext_tab_len, MSize};
 use crate::ffi::laux::luaL_checktype;
 use crate::ffi::lua::{lua_createtable, lua_getfield, lua_gettop, lua_next, lua_pushnil, lua_pushvalue, lua_rawgeti, lua_rawseti, lua_setfield, lua_settop, Type};
+use crate::util::{AnyStr, SimpleDrop};
 use crate::vm::function::{FromParam, IntoParam};
 use crate::vm::Vm;
-use crate::vm::util::{AnyStr, LuaType, SimpleDrop};
+use crate::vm::util::LuaType;
 use crate::vm::value::{FromLua, IntoLua};
 
 pub struct Table<'a> {

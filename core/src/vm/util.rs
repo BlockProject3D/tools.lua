@@ -26,7 +26,6 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::borrow::Cow;
 use std::error::Error;
 use std::ffi::{CStr, CString};
 use crate::ffi::laux::luaL_loadstring;
@@ -52,15 +51,6 @@ impl<T: LuaType> LuaType for Option<T> {
         v
     }
 }
-
-pub unsafe trait SimpleDrop {}
-
-unsafe impl<T> SimpleDrop for *mut T {}
-unsafe impl<T> SimpleDrop for *const T {}
-unsafe impl SimpleDrop for bool {}
-unsafe impl<T: SimpleDrop> SimpleDrop for Option<T> {}
-unsafe impl<T: SimpleDrop, R: SimpleDrop> SimpleDrop for Result<T, R> {}
-unsafe impl<T> SimpleDrop for &T {}
 
 pub unsafe fn lua_rust_error<E: Error>(l: State, error: E) -> ! {
     // At this point the function is assumed to be a non-POF (error and String).
@@ -97,35 +87,5 @@ impl LoadCode for &str {
             }
             Err(_) => ThreadStatus::ErrSyntax
         }
-    }
-}
-
-pub trait AnyStr {
-    fn to_str(&self) -> crate::vm::Result<Cow<CStr>>;
-}
-
-impl AnyStr for String {
-    fn to_str(&self) -> crate::vm::Result<Cow<CStr>> {
-        let cstr = CString::new(&**self).map_err(|_| crate::vm::error::Error::Null)?;
-        Ok(Cow::Owned(cstr))
-    }
-}
-
-impl AnyStr for &str {
-    fn to_str(&self) -> crate::vm::Result<Cow<CStr>> {
-        let cstr = CString::new(&**self).map_err(|_| crate::vm::error::Error::Null)?;
-        Ok(Cow::Owned(cstr))
-    }
-}
-
-impl AnyStr for CString {
-    fn to_str(&self) -> crate::vm::Result<Cow<CStr>> {
-        Ok(Cow::Borrowed(&**self))
-    }
-}
-
-impl AnyStr for &CStr {
-    fn to_str(&self) -> crate::vm::Result<Cow<CStr>> {
-        Ok(Cow::Borrowed(&**self))
     }
 }
