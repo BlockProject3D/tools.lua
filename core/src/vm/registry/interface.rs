@@ -26,15 +26,25 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-mod core;
-pub mod function;
-pub mod value;
-pub mod error;
-pub mod util;
-pub mod userdata;
-pub mod closure;
-pub mod registry;
+use crate::vm::registry::core::RegistryKey;
+use crate::vm::Vm;
 
-pub use core::*;
+pub trait RegistryValue: 'static {
+    type Value<'a>;
 
-pub type Result<T> = std::result::Result<T, error::Error>;
+    fn to_lua_value<'a>(vm: &'a Vm, index: i32) -> Self::Value<'a>;
+}
+
+/// A trait to produce registry values safely.
+pub trait Register {
+    type RegistryValue: RegistryValue;
+
+    /// Register this value into the registry.
+    /// 
+    /// # Arguments 
+    /// 
+    /// * `vm`: the [Vm] to attach this value to.
+    ///
+    /// returns: RegistryKey<Self::RegistryValue>
+    fn register(self, vm: &Vm) -> RegistryKey<Self::RegistryValue>;
+}

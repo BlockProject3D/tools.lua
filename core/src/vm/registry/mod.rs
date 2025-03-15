@@ -26,15 +26,8 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-mod core;
-pub mod function;
-pub mod value;
-pub mod error;
-pub mod util;
-pub mod userdata;
-pub mod closure;
-pub mod registry;
+pub mod core;
+mod interface;
+pub mod types;
 
-pub use core::*;
-
-pub type Result<T> = std::result::Result<T, error::Error>;
+pub use interface::*;

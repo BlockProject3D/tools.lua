@@ -26,15 +26,27 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-mod core;
-pub mod function;
-pub mod value;
-pub mod error;
-pub mod util;
-pub mod userdata;
-pub mod closure;
-pub mod registry;
+use crate::vm::registry::RegistryValue;
+use crate::vm::value::FromLua;
+use crate::vm::Vm;
 
-pub use core::*;
+pub struct Table;
+pub struct Function;
 
-pub type Result<T> = std::result::Result<T, error::Error>;
+impl RegistryValue for Table {
+    type Value<'a> = crate::vm::value::table::Table<'a>;
+
+    #[inline(always)]
+    fn to_lua_value<'a>(vm: &'a Vm, index: i32) -> Self::Value<'a> {
+        unsafe { crate::vm::value::table::Table::from_lua_unchecked(vm, index) }
+    }
+}
+
+impl RegistryValue for Function {
+    type Value<'a> = crate::vm::value::function::LuaFunction<'a>;
+
+    #[inline(always)]
+    fn to_lua_value<'a>(vm: &'a Vm, index: i32) -> Self::Value<'a> {
+        unsafe { crate::vm::value::function::LuaFunction::from_lua_unchecked(vm, index) }
+    }
+}
