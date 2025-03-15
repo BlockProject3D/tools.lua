@@ -148,21 +148,35 @@ macro_rules! impl_tuple {
             }
 
             unsafe fn from_lua_unchecked(vm: &'a Vm, mut index: i32) -> Self {
-                $(
-                    let $name2: $name = FromLua::from_lua_unchecked(vm, index);
-                    index += 1;
-                )*
+                impl_tuple!(_from_lua_unchecked vm, index, $($name2: $name),*);
                 ($($name2),*)
             }
 
             fn from_lua(vm: &'a Vm, mut index: i32) -> crate::vm::Result<($($name),*)> {
-                $(
-                    let $name2: $name = FromLua::from_lua(vm, index)?;
-                    index += 1;
-                )*
+                impl_tuple!(_from_lua vm, index, $($name2: $name),*);
                 Ok(($($name2),*))
             }
         }
+    };
+
+    (_from_lua_unchecked $vm: ident, $index: ident, $name2: ident: $name: ident) => {
+        let $name2: $name = FromLua::from_lua_unchecked($vm, $index);
+    };
+
+    (_from_lua_unchecked $vm: ident, $index: ident, $name2: ident: $name: ident, $($name3: ident: $name4: ident),*) => {
+        let $name2: $name = FromLua::from_lua_unchecked($vm, $index);
+        $index += 1;
+        impl_tuple!(_from_lua_unchecked $vm, $index, $($name3: $name4),*);
+    };
+
+    (_from_lua $vm: ident, $index: ident, $name2: ident: $name: ident) => {
+        let $name2: $name = FromLua::from_lua($vm, $index)?;
+    };
+
+    (_from_lua $vm: ident, $index: ident, $name2: ident: $name: ident, $($name3: ident: $name4: ident),*) => {
+        let $name2: $name = FromLua::from_lua($vm, $index)?;
+        $index += 1;
+        impl_tuple!(_from_lua $vm, $index, $($name3: $name4),*);
     };
 }
 
