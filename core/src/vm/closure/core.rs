@@ -26,60 +26,36 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::slice;
-use crate::ffi::lua::{lua_pushlightuserdata, lua_tointeger, lua_tolstring, lua_tonumber, lua_topointer, GLOBALSINDEX};
+use crate::ffi::lua::{lua_pushlightuserdata, lua_topointer, GLOBALSINDEX};
 use crate::vm::closure::{FromUpvalue, IntoUpvalue};
 use crate::vm::function::IntoParam;
-use crate::vm::util::{lua_rust_error, SimpleDrop};
 use crate::vm::Vm;
+use crate::vm::value::FromLua;
+
+macro_rules! impl_from_upvalue_using_from_lua_unchecked {
+    ($($t: ty),*) => {
+        $(
+            impl FromUpvalue<'_> for $t {
+                #[inline(always)]
+                unsafe fn from_upvalue(vm: &Vm, index: i32) -> Self {
+                    <$t>::from_lua_unchecked(vm, GLOBALSINDEX - index)
+                }
+            }
+        )*
+    };
+}
 
 impl<'a> FromUpvalue<'a> for &'a str {
+    #[inline(always)]
     unsafe fn from_upvalue(vm: &'a Vm, index: i32) -> Self {
-        let mut len: usize = 0;
-        let str = lua_tolstring(vm.as_ptr(), GLOBALSINDEX - index, &mut len as _);
-        let slice = slice::from_raw_parts(str as *const u8, len);
-        match std::str::from_utf8(slice){
-            Ok(v) => v,
-            Err(e) => {
-                lua_rust_error(vm.as_ptr(), e);
-            }
-        }
+        FromLua::from_lua_unchecked(vm, GLOBALSINDEX - index)
     }
 }
 
-macro_rules! impl_integer {
-    ($($t: ty),*) => {
-        $(
-            impl FromUpvalue<'_> for $t {
-                unsafe fn from_upvalue(vm: &Vm, index: i32) -> Self {
-                    lua_tointeger(vm.as_ptr(), GLOBALSINDEX - index) as _
-                }
-            }
-        )*
-    };
-}
-
 #[cfg(target_pointer_width = "64")]
-impl_integer!(i64, u64);
+impl_from_upvalue_using_from_lua_unchecked!(i64, u64);
 
-impl_integer!(i8, u8, i16, u16, i32, u32);
-
-macro_rules! impl_float {
-    ($($t: ty),*) => {
-        $(
-            impl FromUpvalue<'_> for $t {
-                unsafe fn from_upvalue(vm: &Vm, index: i32) -> Self {
-                    lua_tonumber(vm.as_ptr(), GLOBALSINDEX - index) as _
-                }
-            }
-        )*
-    };
-}
-
-impl_float!(f32, f64);
-
-unsafe impl<T> SimpleDrop for *mut T {}
-unsafe impl<T> SimpleDrop for *const T {}
+impl_from_upvalue_using_from_lua_unchecked!(i8, u8, i16, u16, i32, u32, f32, f64, bool);
 
 impl<T> FromUpvalue<'_> for *mut T {
     unsafe fn from_upvalue(vm: &Vm, index: i32) -> Self {

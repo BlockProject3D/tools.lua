@@ -55,6 +55,9 @@ impl<T: LuaType> LuaType for Option<T> {
 
 pub unsafe trait SimpleDrop {}
 
+unsafe impl<T> SimpleDrop for *mut T {}
+unsafe impl<T> SimpleDrop for *const T {}
+unsafe impl SimpleDrop for bool {}
 unsafe impl<T: SimpleDrop> SimpleDrop for Option<T> {}
 unsafe impl<T: SimpleDrop, R: SimpleDrop> SimpleDrop for Result<T, R> {}
 unsafe impl<T> SimpleDrop for &T {}
