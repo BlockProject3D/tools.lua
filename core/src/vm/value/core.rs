@@ -72,9 +72,7 @@ macro_rules! impl_from_lua {
             }
 
             fn from_lua(vm: &Vm, index: i32) -> crate::vm::Result<Self> {
-                unsafe {
-                    check_single_type!(Type::$expected => (vm, index) { $func(vm.as_ptr(), index) $($ret)* })
-                }
+                check_single_type!(Type::$expected => (vm, index) { unsafe { $func(vm.as_ptr(), index) $($ret)* } })
             }
         }
     };
