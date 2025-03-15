@@ -61,7 +61,7 @@ impl<'a> FromLua<'a> for LuaFunction<'a> {
 }
 
 impl Register for LuaFunction<'_> {
-    type RegistryValue = crate::vm::registry::types::Table;
+    type RegistryValue = crate::vm::registry::types::LuaFunction;
 
     fn register(self, vm: &Vm) -> RegistryKey<Self::RegistryValue> {
         // If the function is not at the top of the stack, move it to the top.

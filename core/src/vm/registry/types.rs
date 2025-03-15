@@ -31,7 +31,7 @@ use crate::vm::value::FromLua;
 use crate::vm::Vm;
 
 pub struct Table;
-pub struct Function;
+pub struct LuaFunction;
 
 impl RegistryValue for Table {
     type Value<'a> = crate::vm::value::table::Table<'a>;
@@ -42,7 +42,7 @@ impl RegistryValue for Table {
     }
 }
 
-impl RegistryValue for Function {
+impl RegistryValue for LuaFunction {
     type Value<'a> = crate::vm::value::function::LuaFunction<'a>;
 
     #[inline(always)]
