@@ -51,6 +51,17 @@ impl<T: RegistryValue> RegistryKey<T> {
         T::to_lua_value(vm, -1)
     }
 
+    /// Pushes the lua value associated to this registry key on the lua stack.
+    ///
+    /// # Arguments
+    ///
+    /// * `vm`: the [Vm] to attach the produced lua value to.
+    ///
+    /// returns: <T as RegistryValue>::Value
+    pub fn raw_push(&self, vm: &Vm) {
+        unsafe { lua_rawgeti(vm.as_ptr(), REGISTRYINDEX, self.key) };
+    }
+
     /// Deletes this registry key from the specified [Vm].
     ///
     /// # Arguments
