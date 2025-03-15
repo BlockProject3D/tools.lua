@@ -70,6 +70,7 @@ pub struct Vm {
 }
 
 impl Vm {
+    #[inline(always)]
     pub unsafe fn from_raw(l: State) -> Self {
         Self {
             l
@@ -92,7 +93,7 @@ impl Vm {
     }
 
     /// Returns the absolute stack index for the given index.
-    #[inline]
+    #[inline(always)]
     pub fn get_absolute_index(&self, index: i32) -> i32 {
         if index < 0 {
             unsafe { lua_gettop(self.l) + index + 1 }
@@ -102,18 +103,18 @@ impl Vm {
     }
 
     /// Returns the top of the lua stack.
-    #[inline]
+    #[inline(always)]
     pub fn top(&self) -> i32 {
         unsafe { lua_gettop(self.l) }
     }
 
     /// Clears the lua stack.
-    #[inline]
+    #[inline(always)]
     pub fn clear(&mut self) {
         unsafe { lua_settop(self.l, 0); }
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn as_ptr(&self) -> State {
         self.l
     }
