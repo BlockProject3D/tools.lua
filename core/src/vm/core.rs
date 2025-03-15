@@ -155,7 +155,7 @@ impl Vm {
     }
 
     pub fn set_global(&self, name: impl AnyStr, value: impl IntoLua) -> crate::vm::Result<()> {
-        value.into_lua(self)?;
+        value.into_lua(self);
         unsafe {
             lua_setfield(self.as_ptr(), GLOBALSINDEX, name.to_str()?.as_ptr());
         }

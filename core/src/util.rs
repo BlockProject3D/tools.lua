@@ -37,25 +37,25 @@ pub trait AnyStr {
 
 impl AnyStr for String {
     fn to_str(&self) -> crate::vm::Result<Cow<CStr>> {
-        let cstr = CString::new(&**self).map_err(|_| crate::vm::error::Error::Null)?;
-        Ok(Cow::Owned(cstr))
+        Ok(Cow::Owned(CString::new(&**self).map_err(|_| crate::vm::error::Error::Null)?))
     }
 }
 
 impl AnyStr for &str {
     fn to_str(&self) -> crate::vm::Result<Cow<CStr>> {
-        let cstr = CString::new(&**self).map_err(|_| crate::vm::error::Error::Null)?;
-        Ok(Cow::Owned(cstr))
+        Ok(Cow::Owned(CString::new(&**self).map_err(|_| crate::vm::error::Error::Null)?))
     }
 }
 
 impl AnyStr for CString {
+    #[inline(always)]
     fn to_str(&self) -> crate::vm::Result<Cow<CStr>> {
         Ok(Cow::Borrowed(&**self))
     }
 }
 
 impl AnyStr for &CStr {
+    #[inline(always)]
     fn to_str(&self) -> crate::vm::Result<Cow<CStr>> {
         Ok(Cow::Borrowed(&**self))
     }

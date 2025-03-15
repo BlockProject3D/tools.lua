@@ -69,6 +69,6 @@ pub trait IntoLua: Sized {
     ///
     /// * `vm`: the [Vm] to push into.
     ///
-    /// returns: Result<Self, Error>
-    fn into_lua(self, vm: &Vm) -> crate::vm::Result<u16>;
+    /// returns: u16 number of elements pushed onto the Lua stack.
+    fn into_lua(self, vm: &Vm) -> u16;
 }

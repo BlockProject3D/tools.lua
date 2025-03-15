@@ -58,7 +58,7 @@ impl<'a> Scope<'a> {
 
     pub fn set_field(&mut self, name: impl AnyStr, value: impl IntoLua) -> crate::vm::Result<()> {
         unsafe {
-            let nums = value.into_lua(self.vm)?;
+            let nums = value.into_lua(self.vm);
             if nums > 1 {
                 // Clear the stack.
                 lua_settop(self.vm.as_ptr(), -(nums as i32)-1);
@@ -81,7 +81,7 @@ impl<'a> Scope<'a> {
 
     pub fn set(&mut self, i: i32, value: impl IntoLua) -> crate::vm::Result<()> {
         unsafe {
-            let nums = value.into_lua(self.vm)?;
+            let nums = value.into_lua(self.vm);
             if nums > 1 {
                 // Clear the stack.
                 lua_settop(self.vm.as_ptr(), -(nums as i32)-1);
@@ -126,6 +126,7 @@ impl<'a> Table<'a> {
         Self { vm, index }
     }
 
+    #[inline(always)]
     pub fn lock(&mut self) -> Scope {
         Scope::new(self.vm, self.index)
     }
@@ -147,6 +148,7 @@ impl<'a> Table<'a> {
         count
     }
 
+    #[inline(always)]
     pub fn is_empty(&self) -> bool {
         self.len() == 0
     }
@@ -154,7 +156,7 @@ impl<'a> Table<'a> {
     pub fn call_function<'b, T: IntoLua, R: FromLua<'b>>(&'b self, name: impl AnyStr, value: T) -> crate::vm::Result<R> {
         let pos = push_error_handler(self.vm.as_ptr());
         unsafe { lua_getfield(self.vm.as_ptr(), self.index, name.to_str()?.as_ptr()) };
-        let num_values = value.into_lua(self.vm)?;
+        let num_values = value.into_lua(self.vm);
         unsafe { pcall(self.vm, num_values as _, R::num_values() as _, pos)? };
         R::from_lua(self.vm, -(R::num_values() as i32))
     }
@@ -163,7 +165,7 @@ impl<'a> Table<'a> {
         let pos = push_error_handler(self.vm.as_ptr());
         unsafe { lua_getfield(self.vm.as_ptr(), self.index, name.to_str()?.as_ptr()) };
         unsafe { lua_pushvalue(self.vm.as_ptr(), self.index) };
-        let num_values = value.into_lua(self.vm)?;
+        let num_values = value.into_lua(self.vm);
         unsafe { pcall(self.vm, (num_values + 1) as _, R::num_values() as _, pos)? };
         R::from_lua(self.vm, -(R::num_values() as i32))
     }
@@ -172,6 +174,7 @@ impl<'a> Table<'a> {
 unsafe impl<'a> SimpleDrop for Table<'a> {}
 
 impl<'a> FromParam<'a> for Table<'a> {
+    #[inline(always)]
     unsafe fn from_param(vm: &'a Vm, index: i32) -> Self {
         luaL_checktype(vm.as_ptr(), index, Type::Table);
         Table {

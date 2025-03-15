@@ -33,17 +33,18 @@ use crate::vm::Vm;
 pub struct RFunction(CFunction);
 
 impl RFunction {
+    #[inline(always)]
     pub fn wrap(inner: CFunction) -> Self {
         Self(inner)
     }
 }
 
 impl IntoLua for RFunction {
-    fn into_lua(self, vm: &Vm) -> crate::vm::Result<u16> {
+    fn into_lua(self, vm: &Vm) -> u16 {
         let l = vm.as_ptr();
         unsafe {
             lua_pushcclosure(l, self.0, 0);
         }
-        Ok(1)
+        1
     }
 }
