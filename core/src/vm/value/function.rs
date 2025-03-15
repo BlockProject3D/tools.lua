@@ -27,6 +27,7 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::ffi::lua::Type;
+use crate::vm::core::{pcall, push_error_handler};
 use crate::vm::registry::core::RegistryKey;
 use crate::vm::registry::Register;
 use crate::vm::value::{FromLua, IntoLua};
@@ -40,8 +41,10 @@ pub struct LuaFunction<'a> {
 
 impl<'a> LuaFunction<'a> {
     pub fn call<'b, T: IntoLua, R: FromLua<'b>>(&'b self, value: T) -> crate::vm::Result<R> {
-        //TODO: Implement
-        todo!()
+        let pos = push_error_handler(self.vm.as_ptr());
+        let num_values = value.into_lua(self.vm)?;
+        pcall(self.vm, num_values as _, R::num_values() as _, pos)?;
+        R::from_lua(self.vm, -(R::num_values() as i32))
     }
 }
 

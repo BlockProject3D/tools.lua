@@ -66,6 +66,39 @@ extern "C-unwind" fn error_handler(l: State) -> c_int {
     }
 }
 
+#[inline(always)]
+pub(super) fn push_error_handler(l: State) -> c_int {
+    unsafe {
+        lua_pushcclosure(l, error_handler, 0);
+        lua_gettop(l)
+    }
+}
+
+pub(super) fn pcall(vm: &Vm, nargs: c_int, nreturns: c_int, handler_pos: c_int) -> crate::vm::Result<()> {
+    let l = vm.as_ptr();
+    unsafe {
+        // Call the function created by load_code.
+        let res = lua_pcall(l, nargs, nreturns, handler_pos);
+        // At this point the stack should no longer have the function but still has the error
+        // handler and R::num_values results.
+        // First remove error handler as we no longer need it.
+        lua_remove(l, handler_pos);
+        match res {
+            ThreadStatus::Ok => Ok(()),
+            ThreadStatus::ErrRun => {
+                // We've got a runtime error when executing the function so read the full stack
+                // trace produced by luaL_traceback and remove it from the stack.
+                let full_traceback: &str = FromLua::from_lua(vm, -1)?;
+                lua_remove(l, -1);
+                Err(Error::Runtime(RuntimeError::new(full_traceback.into())))
+            }
+            ThreadStatus::ErrMem => Err(Error::Memory),
+            ThreadStatus::ErrErr => Err(Error::Error),
+            _ => Err(Error::Unknown)
+        }
+    }
+}
+
 pub struct Vm {
     l: State
 }
@@ -138,10 +171,7 @@ impl Vm {
     pub fn run_code<'a, R: FromLua<'a>>(&'a self, code: impl LoadCode) -> crate::vm::Result<R> {
         let l = self.as_ptr();
         // Push error handler and the get the stack position of it.
-        let handler_pos = unsafe {
-            lua_pushcclosure(l, error_handler, 0);
-            lua_gettop(l)
-        };
+        let handler_pos = push_error_handler(l);
         // Push the lua code.
         let res = code.load_code(l);
         if res != ThreadStatus::Ok {
@@ -158,27 +188,7 @@ impl Vm {
             ThreadStatus::ErrMem => return Err(Error::Memory),
             _ => return Err(Error::Unknown)
         };
-        unsafe {
-            // Call the function created by load_code.
-            let res = lua_pcall(l, 0, R::num_values() as _, handler_pos);
-            // At this point the stack should no longer have the function but still has the error
-            // handler and R::num_values results.
-            // First remove error handler as we no longer need it.
-            lua_remove(l, handler_pos);
-            match res {
-                ThreadStatus::Ok => (),
-                ThreadStatus::ErrRun => {
-                    // We've got a runtime error when executing the function so read the full stack
-                    // trace produced by luaL_traceback and remove it from the stack.
-                    let full_traceback: &str = FromLua::from_lua(self, -1)?;
-                    lua_remove(l, -1);
-                    return Err(Error::Runtime(RuntimeError::new(full_traceback.into())));
-                }
-                ThreadStatus::ErrMem => return Err(Error::Memory),
-                ThreadStatus::ErrErr => return Err(Error::Error),
-                _ => return Err(Error::Unknown)
-            };
-        }
+        pcall(self, 0, R::num_values() as _, handler_pos)?;
         // Read and return the result of the function from the stack.
         FromLua::from_lua(self, -(R::num_values() as i32))
     }
