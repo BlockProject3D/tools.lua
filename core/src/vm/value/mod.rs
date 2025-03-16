@@ -28,8 +28,8 @@
 
 mod interface;
 mod core;
-pub mod table;
 pub mod function;
 pub mod util;
+pub mod any;
 
 pub use interface::*;

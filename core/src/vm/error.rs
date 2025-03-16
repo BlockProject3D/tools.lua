@@ -88,7 +88,8 @@ simple_error! {
         Error => "error in error handler",
         Null => "string contains a null character",
         MultiValue => "only one value is supported by this API",
-        UserData(crate::vm::userdata::Error) => "userdata: {}"
+        UserData(crate::vm::userdata::Error) => "userdata: {}",
+        UnsupportedType(Type) => "unsupported lua type: {:?}"
     }
 }
 
