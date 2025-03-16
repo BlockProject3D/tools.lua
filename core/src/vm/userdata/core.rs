@@ -28,22 +28,11 @@
 
 use std::ffi::CStr;
 use std::marker::PhantomData;
-use bp3d_util::simple_error;
 use crate::ffi::laux::{luaL_checkudata, luaL_newmetatable};
 use crate::ffi::lua::{lua_pushcclosure, lua_pushvalue, lua_setfield, lua_settop, CFunction, State};
+use crate::vm::userdata::{Error, UserData};
 use crate::vm::util::{LuaType, TypeName};
 use crate::vm::Vm;
-
-simple_error! {
-    pub Error {
-        ArgsEmpty => "no arguments specified in function, please add at least one argument matching the type of self",
-        MutViolation(&'static CStr) => "violation of the unique type rule for mutable method {:?}",
-        Gc => "__gc meta-method is reserved for internal use, if you need Vm access in drop, please use LuaDrop",
-        Index => "__index meta-method is required to be surrendered to luaL_newmetatable, it is impossible to bind custom code to __index",
-        AlreadyRegistered(&'static CStr) => "class name {:?} has already been registered",
-        Alignment(usize) => "too strict alignment required ({} bytes), max is 8 bytes"
-    }
-}
 
 pub struct Function {
     is_mutable: bool,
@@ -159,14 +148,3 @@ impl<'a, T> Drop for Registry<'a, T> {
         }
     }
 }
-
-pub trait UserData: Sized {
-    const CLASS_NAME: &'static CStr;
-
-    fn register(registry: &Registry<Self>) -> Result<(), Error>;
-}
-
-pub unsafe trait UserDataImmutable: UserData {}
-
-//TODO: implement __gc for Drop (std::mem::drop_in_place) and LuaDrop
-//TODO: only implement __gc for std::mem::needs_drop return false

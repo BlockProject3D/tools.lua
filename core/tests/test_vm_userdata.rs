@@ -182,5 +182,5 @@ fn test_vm_userdata() {
         assert_eq!(vm.run_code::<Number>(c"return (a + b):tonumber()").unwrap(), 579.0);
         assert_eq!(top + 7, vm.top());
     }
-    assert_eq!(unsafe { DROP_COUNTER }, 6)
+    assert_eq!(unsafe { DROP_COUNTER }, 6);
 }

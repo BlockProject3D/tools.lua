@@ -32,7 +32,7 @@ macro_rules! decl_userdata_func {
         $vis: vis fn $fn_name: ident($this: ident: &mut $obj_name: ident, $name: ident: &Vm$(, $($arg_name: ident: $arg_ty: ty),*)?) -> $ret_ty: ty $code: block
     ) => {
         impl $obj_name {
-            $vis fn $fn_name() -> $crate::vm::userdata::Function {
+            $vis fn $fn_name() -> $crate::vm::userdata::core::Function {
                 extern "C-unwind" fn _cfunc(l: $crate::ffi::lua::State) -> i32 {
                     fn _func($this: &mut $obj_name, $name: &$crate::vm::Vm$(, $($arg_name: $arg_ty),*)?) -> $ret_ty $code
                     use $crate::vm::function::IntoParam;
@@ -42,7 +42,7 @@ macro_rules! decl_userdata_func {
                     let ret = _func(unsafe { &mut *this_ptr }, &vm $(, $($arg_name),*)?);
                     ret.into_param(&vm) as _
                 }
-                let mut f = $crate::vm::userdata::Function::new($crate::c_stringify!($fn_name), _cfunc);
+                let mut f = $crate::vm::userdata::core::Function::new($crate::c_stringify!($fn_name), _cfunc);
                 f.mutable();
                 f.arg::<&$obj_name>();
                 $($(f.arg::<$arg_ty>();)*)?
@@ -54,7 +54,7 @@ macro_rules! decl_userdata_func {
         $vis: vis fn $fn_name: ident($this: ident: &mut $obj_name: ident$(, $($arg_name: ident: $arg_ty: ty),*)?) -> $ret_ty: ty $code: block
     ) => {
         impl $obj_name {
-            $vis fn $fn_name() -> $crate::vm::userdata::Function {
+            $vis fn $fn_name() -> $crate::vm::userdata::core::Function {
                 extern "C-unwind" fn _cfunc(l: $crate::ffi::lua::State) -> i32 {
                     fn _func($this: &mut $obj_name$(, $($arg_name: $arg_ty),*)?) -> $ret_ty $code
                     use $crate::vm::function::IntoParam;
@@ -64,7 +64,7 @@ macro_rules! decl_userdata_func {
                     let ret = _func(unsafe { &mut *this_ptr } $(, $($arg_name),*)?);
                     ret.into_param(&vm) as _
                 }
-                let mut f = $crate::vm::userdata::Function::new($crate::c_stringify!($fn_name), _cfunc);
+                let mut f = $crate::vm::userdata::core::Function::new($crate::c_stringify!($fn_name), _cfunc);
                 f.mutable();
                 f.arg::<&$obj_name>();
                 $($(f.arg::<$arg_ty>();)*)?
@@ -76,7 +76,7 @@ macro_rules! decl_userdata_func {
         $vis: vis fn $fn_name: ident($this: ident: &$obj_name: ident, $name: ident: &Vm$(, $($arg_name: ident: $arg_ty: ty),*)?) -> $ret_ty: ty $code: block
     ) => {
         impl $obj_name {
-            $vis fn $fn_name() -> $crate::vm::userdata::Function {
+            $vis fn $fn_name() -> $crate::vm::userdata::core::Function {
                 extern "C-unwind" fn _cfunc(l: $crate::ffi::lua::State) -> i32 {
                     fn _func($this: &$obj_name, $name: &$crate::vm::Vm$(, $($arg_name: $arg_ty),*)?) -> $ret_ty $code
                     use $crate::vm::function::IntoParam;
@@ -86,7 +86,7 @@ macro_rules! decl_userdata_func {
                     let ret = _func(unsafe { &*this_ptr }, &vm $(, $($arg_name),*)?);
                     ret.into_param(&vm) as _
                 }
-                let mut f = $crate::vm::userdata::Function::new($crate::c_stringify!($fn_name), _cfunc);
+                let mut f = $crate::vm::userdata::core::Function::new($crate::c_stringify!($fn_name), _cfunc);
                 f.arg::<&$obj_name>();
                 $($(f.arg::<$arg_ty>();)*)?
                 f
@@ -97,7 +97,7 @@ macro_rules! decl_userdata_func {
         $vis: vis fn $fn_name: ident($this: ident: &$obj_name: ident$(, $($arg_name: ident: $arg_ty: ty),*)?) -> $ret_ty: ty $code: block
     ) => {
         impl $obj_name {
-            $vis fn $fn_name() -> $crate::vm::userdata::Function {
+            $vis fn $fn_name() -> $crate::vm::userdata::core::Function {
                 extern "C-unwind" fn _cfunc(l: $crate::ffi::lua::State) -> i32 {
                     fn _func($this: &$obj_name$(, $($arg_name: $arg_ty),*)?) -> $ret_ty $code
                     use $crate::vm::function::IntoParam;
@@ -107,7 +107,7 @@ macro_rules! decl_userdata_func {
                     let ret = _func(unsafe { &*this_ptr } $(, $($arg_name),*)?);
                     ret.into_param(&vm) as _
                 }
-                let mut f = $crate::vm::userdata::Function::new($crate::c_stringify!($fn_name), _cfunc);
+                let mut f = $crate::vm::userdata::core::Function::new($crate::c_stringify!($fn_name), _cfunc);
                 f.arg::<&$obj_name>();
                 $($(f.arg::<$arg_ty>();)*)?
                 f
