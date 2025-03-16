@@ -29,6 +29,7 @@
 mod scope;
 mod core;
 mod interface;
+mod iter;
 
 pub use core::Table;
 pub use scope::Scope;

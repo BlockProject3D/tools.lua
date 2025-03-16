@@ -27,9 +27,10 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::ffi::ext::{lua_ext_tab_len, MSize};
-use crate::ffi::lua::{lua_createtable, lua_getfield, lua_gettop, lua_next, lua_pushnil, lua_pushvalue, lua_settop};
+use crate::ffi::lua::{lua_createtable, lua_getfield, lua_gettop, lua_pushvalue};
 use crate::util::AnyStr;
 use crate::vm::core::{pcall, push_error_handler};
+use crate::vm::table::iter::Iter;
 use crate::vm::value::{FromLua, IntoLua};
 use crate::vm::table::Scope;
 use crate::vm::Vm;
@@ -82,15 +83,7 @@ impl<'a> Table<'a> {
         if ret == 0 {
             return size as _;
         }
-        let mut count = 0;
-        unsafe {
-            lua_pushnil(self.vm.as_ptr());
-            while lua_next(self.vm.as_ptr(), self.index) != 0 {
-                lua_settop(self.vm.as_ptr(), -2);
-                count += 1;
-            }
-        }
-        count
+        Iter::from_raw(self.vm, self.index).count() as _
     }
 
     /// Returns the absolute index of this table on the Lua stack.
@@ -119,5 +112,12 @@ impl<'a> Table<'a> {
         let num_values = value.into_lua(self.vm);
         unsafe { pcall(self.vm, (num_values + 1) as _, R::num_values() as _, pos)? };
         R::from_lua(self.vm, -(R::num_values() as i32))
+    }
+
+    /// Creates a new iterator for this table.
+    ///
+    /// This function borrows mutably to avoid messing up the Lua stack while iterating.
+    pub fn iter(&mut self) -> Iter {
+        Iter::from_raw(self.vm, self.index)
     }
 }
