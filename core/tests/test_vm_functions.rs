@@ -29,7 +29,7 @@
 use std::ffi::CStr;
 use bp3d_lua::vm::RootVm;
 use bp3d_lua::vm::value::function::LuaFunction;
-use bp3d_lua::vm::value::table::Table;
+use bp3d_lua::vm::table::Table;
 
 #[test]
 fn test_vm_function_1_arg() {

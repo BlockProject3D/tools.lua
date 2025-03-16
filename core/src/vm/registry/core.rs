@@ -46,6 +46,7 @@ impl<T: RegistryValue> RegistryKey<T> {
     /// * `vm`: the [Vm] to attach the produced lua value to.
     ///
     /// returns: <T as RegistryValue>::Value
+    #[inline(always)]
     pub fn push<'a>(&self, vm: &'a Vm) -> T::Value<'a> {
         unsafe { lua_rawgeti(vm.as_ptr(), REGISTRYINDEX, self.key) };
         T::to_lua_value(vm, -1)
@@ -58,6 +59,7 @@ impl<T: RegistryValue> RegistryKey<T> {
     /// * `vm`: the [Vm] to attach the produced lua value to.
     ///
     /// returns: <T as RegistryValue>::Value
+    #[inline(always)]
     pub fn raw_push(&self, vm: &Vm) {
         unsafe { lua_rawgeti(vm.as_ptr(), REGISTRYINDEX, self.key) };
     }
@@ -69,6 +71,7 @@ impl<T: RegistryValue> RegistryKey<T> {
     /// * `vm`: the [Vm] to unregister from.
     ///
     /// returns: ()
+    #[inline(always)]
     pub fn delete(self, vm: &Vm) {
         unsafe { luaL_unref(vm.as_ptr(), REGISTRYINDEX, self.key) };
     }

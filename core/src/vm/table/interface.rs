@@ -26,39 +26,58 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use crate::vm::core::{pcall, push_error_handler};
+use crate::ffi::laux::luaL_checktype;
+use crate::ffi::lua::{lua_gettop, lua_pushvalue, Type};
+use crate::util::SimpleDrop;
+use crate::vm::function::{FromParam, IntoParam};
 use crate::vm::registry::core::RegistryKey;
-use crate::vm::registry::RegistryValue;
-use crate::vm::value::{FromLua, IntoLua};
+use crate::vm::registry::Register;
+use crate::vm::util::LuaType;
+use crate::vm::value::FromLua;
+use crate::vm::table::Table;
+use crate::vm::value::util::{ensure_type_equals, ensure_value_top};
 use crate::vm::Vm;
 
-pub struct Table;
-pub struct LuaFunction;
+unsafe impl<'a> SimpleDrop for Table<'a> {}
 
-impl RegistryValue for Table {
-    type Value<'a> = crate::vm::table::Table<'a>;
-
+impl<'a> FromParam<'a> for Table<'a> {
     #[inline(always)]
-    fn to_lua_value<'a>(vm: &'a Vm, index: i32) -> Self::Value<'a> {
-        unsafe { crate::vm::table::Table::from_lua_unchecked(vm, index) }
+    unsafe fn from_param(vm: &'a Vm, index: i32) -> Self {
+        luaL_checktype(vm.as_ptr(), index, Type::Table);
+        Table::from_raw(vm, index)
     }
 }
 
-impl RegistryValue for LuaFunction {
-    type Value<'a> = crate::vm::value::function::LuaFunction<'a>;
-
+impl<'a> FromLua<'a> for Table<'a> {
     #[inline(always)]
-    fn to_lua_value<'a>(vm: &'a Vm, index: i32) -> Self::Value<'a> {
-        unsafe { crate::vm::value::function::LuaFunction::from_lua_unchecked(vm, index) }
+    unsafe fn from_lua_unchecked(vm: &'a Vm, index: i32) -> Self {
+        Table::from_raw(vm, vm.get_absolute_index(index))
+    }
+
+    fn from_lua(vm: &'a Vm, index: i32) -> crate::vm::Result<Self> {
+        ensure_type_equals(vm, index, Type::Table)?;
+        Ok(unsafe { Table::from_raw(vm, vm.get_absolute_index(index)) })
     }
 }
 
-impl RegistryKey<LuaFunction> {
-    pub fn call<'a, T: IntoLua, R: FromLua<'a>>(&self, vm: &'a Vm, value: T) -> crate::vm::Result<R> {
-        let pos = push_error_handler(vm.as_ptr());
-        self.raw_push(vm);
-        let num_values = value.into_lua(vm);
-        unsafe { pcall(vm, num_values as _, R::num_values() as _, pos)? };
-        R::from_lua(vm, -(R::num_values() as i32))
+impl IntoParam for Table<'_> {
+    fn into_param(self, vm: &Vm) -> u16 {
+        let top = unsafe { lua_gettop(vm.as_ptr()) };
+        if top != self.index() {
+            unsafe { lua_pushvalue(vm.as_ptr(), self.index()) };
+        }
+        1
+    }
+}
+
+impl LuaType for Table<'_> {}
+
+impl Register for Table<'_> {
+    type RegistryValue = crate::vm::registry::types::Table;
+
+    fn register(self, vm: &Vm) -> RegistryKey<Self::RegistryValue> {
+        // If the table is not at the top of the stack, move it to the top.
+        ensure_value_top(vm, self.index());
+        unsafe { RegistryKey::from_top(vm) }
     }
 }
