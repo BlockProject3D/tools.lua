@@ -27,6 +27,25 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #[macro_export]
+macro_rules! _impl_userdata {
+    ($obj_name: ident, $($fn_name: ident),*) => {
+        impl $crate::vm::userdata::UserData for $obj_name {
+            const CLASS_NAME: &'static std::ffi::CStr = $crate::c_stringify!($obj_name);
+
+            fn register(registry: &$crate::vm::userdata::core::Registry<Self>) -> Result<(), $crate::vm::userdata::Error> {
+                $(
+                    let (name, func) = unsafe { $obj_name::$fn_name().build()? };
+                    registry.add_method(name, func);
+                )*
+                use $crate::vm::userdata::AddGcMethod;
+                (&$crate::vm::userdata::core::AddGcMethodAuto::<$obj_name>::default()).add_gc_method(registry);
+                Ok(())
+            }
+        }
+    };
+}
+
+#[macro_export]
 macro_rules! decl_userdata {
     (
         impl $obj_name: ident {
@@ -41,19 +60,7 @@ macro_rules! decl_userdata {
             }
         )*
 
-        impl $crate::vm::userdata::UserData for $obj_name {
-            const CLASS_NAME: &'static std::ffi::CStr = $crate::c_stringify!($obj_name);
-
-            fn register(registry: &$crate::vm::userdata::core::Registry<Self>) -> Result<(), $crate::vm::userdata::Error> {
-                $(
-                    let (name, func) = unsafe { $obj_name::$fn_name().build()? };
-                    registry.add_method(name, func);
-                )*
-                use $crate::vm::userdata::AddGcMethod;
-                (&$crate::vm::userdata::core::AddGcMethodAuto::<$obj_name>::default()).add_gc_method(registry);
-                Ok(())
-            }
-        }
+        $crate::_impl_userdata!($obj_name, $($fn_name),*);
 
         unsafe impl $crate::vm::userdata::UserDataImmutable for $obj_name {}
     };
@@ -74,18 +81,6 @@ macro_rules! decl_userdata_mut {
             }
         )*
 
-        impl $crate::vm::userdata::UserData for $obj_name {
-            const CLASS_NAME: &'static std::ffi::CStr = $crate::c_stringify!($obj_name);
-
-            fn register(registry: &$crate::vm::userdata::core::Registry<Self>) -> Result<(), $crate::vm::userdata::Error> {
-                $(
-                    let (name, func) = unsafe { $obj_name::$fn_name().build()? };
-                    registry.add_method(name, func);
-                )*
-                use $crate::vm::userdata::AddGcMethod;
-                (&$crate::vm::userdata::core::AddGcMethodAuto::<$obj_name>::default()).add_gc_method(registry);
-                Ok(())
-            }
-        }
+        $crate::_impl_userdata!($obj_name, $($fn_name),*);
     };
 }

@@ -76,14 +76,10 @@ impl<'a> FromParam<'a> for &'a [u8] {
     }
 }
 
-unsafe impl SimpleDrop for &str {}
-
 impl IntoParam for &str {
     #[inline(always)]
     fn into_param(self, vm: &Vm) -> u16 {
-        unsafe {
-            lua_pushlstring(vm.as_ptr(), self.as_ptr() as _, self.len());
-        }
+        unsafe { lua_pushlstring(vm.as_ptr(), self.as_ptr() as _, self.len()); }
         1
     }
 }
@@ -91,9 +87,7 @@ impl IntoParam for &str {
 impl IntoParam for &[u8] {
     #[inline(always)]
     fn into_param(self, vm: &Vm) -> u16 {
-        unsafe {
-            lua_pushlstring(vm.as_ptr(), self.as_ptr() as _, self.len());
-        }
+        unsafe { lua_pushlstring(vm.as_ptr(), self.as_ptr() as _, self.len()); }
         1
     }
 }

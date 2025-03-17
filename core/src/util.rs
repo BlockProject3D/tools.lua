@@ -36,8 +36,11 @@ pub trait AnyStr {
 }
 
 impl AnyStr for String {
+    #[inline(always)]
     fn to_str(&self) -> crate::vm::Result<Cow<CStr>> {
-        Ok(Cow::Owned(CString::new(&**self).map_err(|_| crate::vm::error::Error::Null)?))
+        // Somehow Rust is too stupid to see that to_str on &str returns an Owned CString, so force
+        // it using transmute...
+        unsafe { std::mem::transmute((&**self).to_str()) }
     }
 }
 
@@ -66,6 +69,7 @@ pub unsafe trait SimpleDrop {}
 unsafe impl<T> SimpleDrop for *mut T {}
 unsafe impl<T> SimpleDrop for *const T {}
 unsafe impl SimpleDrop for bool {}
+unsafe impl SimpleDrop for &str {}
 unsafe impl<T: SimpleDrop> SimpleDrop for Option<T> {}
 unsafe impl<T: SimpleDrop, R: SimpleDrop> SimpleDrop for Result<T, R> {}
 unsafe impl<T> SimpleDrop for &T {}
