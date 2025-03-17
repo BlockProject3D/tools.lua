@@ -29,9 +29,8 @@
 mod interface;
 mod error;
 pub mod core;
+mod any;
 
 pub use error::Error;
 pub use interface::*;
-
-//TODO: implement __gc for Drop (std::mem::drop_in_place) and LuaDrop
-//TODO: only implement __gc for std::mem::needs_drop return false
+pub use any::AnyUserData;
