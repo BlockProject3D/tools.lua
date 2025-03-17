@@ -71,10 +71,9 @@ pub trait LoadCode {
 }
 
 impl LoadCode for &CStr {
+    #[inline(always)]
     fn load_code(&self, l: State) -> ThreadStatus {
-        unsafe {
-            luaL_loadstring(l, self.as_ptr())
-        }
+        unsafe { luaL_loadstring(l, self.as_ptr()) }
     }
 }
 

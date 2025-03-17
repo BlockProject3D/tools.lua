@@ -35,25 +35,9 @@ pub trait AnyStr {
     fn to_str(&self) -> crate::vm::Result<Cow<CStr>>;
 }
 
-impl AnyStr for String {
-    #[inline(always)]
-    fn to_str(&self) -> crate::vm::Result<Cow<CStr>> {
-        // Somehow Rust is too stupid to see that to_str on &str returns an Owned CString, so force
-        // it using transmute...
-        unsafe { std::mem::transmute((&**self).to_str()) }
-    }
-}
-
 impl AnyStr for &str {
     fn to_str(&self) -> crate::vm::Result<Cow<CStr>> {
         Ok(Cow::Owned(CString::new(&**self).map_err(|_| crate::vm::error::Error::Null)?))
-    }
-}
-
-impl AnyStr for CString {
-    #[inline(always)]
-    fn to_str(&self) -> crate::vm::Result<Cow<CStr>> {
-        Ok(Cow::Borrowed(&**self))
     }
 }
 
