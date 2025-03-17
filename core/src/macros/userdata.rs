@@ -49,6 +49,8 @@ macro_rules! decl_userdata {
                     let (name, func) = unsafe { $obj_name::$fn_name().build()? };
                     registry.add_method(name, func);
                 )*
+                use $crate::vm::userdata::AddGcMethod;
+                (&$crate::vm::userdata::core::AddGcMethodAuto::<$obj_name>::default()).add_gc_method(registry);
                 Ok(())
             }
         }
@@ -80,6 +82,8 @@ macro_rules! decl_userdata_mut {
                     let (name, func) = unsafe { $obj_name::$fn_name().build()? };
                     registry.add_method(name, func);
                 )*
+                use $crate::vm::userdata::AddGcMethod;
+                (&$crate::vm::userdata::core::AddGcMethodAuto::<$obj_name>::default()).add_gc_method(registry);
                 Ok(())
             }
         }

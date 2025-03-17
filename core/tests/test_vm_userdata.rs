@@ -28,12 +28,22 @@
 
 use bp3d_lua::{decl_lib_func, decl_userdata, decl_userdata_mut};
 use bp3d_lua::ffi::lua::Number;
-use bp3d_lua::vm::RootVm;
+use bp3d_lua::vm::{RootVm, Vm};
 use bp3d_lua::vm::function::types::RFunction;
+use bp3d_lua::vm::userdata::LuaDrop;
 
 static mut DROP_COUNTER: i32 = 0;
+static mut LUA_DROP_COUNTER: i32 = 0;
 
 pub struct MyInt(i64);
+
+impl LuaDrop for MyInt {
+    fn lua_drop(&self, _: &Vm) {
+        unsafe {
+            LUA_DROP_COUNTER += 1;
+        }
+    }
+}
 
 impl Drop for MyInt {
     fn drop(&mut self) {
@@ -183,4 +193,5 @@ fn test_vm_userdata() {
         assert_eq!(top + 7, vm.top());
     }
     assert_eq!(unsafe { DROP_COUNTER }, 6);
+    assert_eq!(unsafe { LUA_DROP_COUNTER }, 6);
 }

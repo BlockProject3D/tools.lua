@@ -28,6 +28,7 @@
 
 use std::ffi::CStr;
 use crate::vm::userdata::{Error, core::Registry};
+use crate::vm::Vm;
 
 pub trait UserData: Sized {
     const CLASS_NAME: &'static CStr;
@@ -36,3 +37,11 @@ pub trait UserData: Sized {
 }
 
 pub unsafe trait UserDataImmutable: UserData {}
+
+pub trait LuaDrop {
+    fn lua_drop(&self, vm: &Vm);
+}
+
+pub trait AddGcMethod<T: UserData> {
+    fn add_gc_method(&self, reg: &Registry<T>);
+}
