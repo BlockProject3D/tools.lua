@@ -51,13 +51,14 @@ pub trait FromParam<'a>: Sized + SimpleDrop + LuaType {
     /// # Arguments
     ///
     /// * `vm`: the [Vm] to read from.
-    /// * `index`: index of the parameter to read.
+    /// * `index`: index of the parameter to read. This index is guaranteed to be absolute.
     ///
     /// returns: Self
     ///
     /// # Safety
     ///
     /// Calling this function outside the body of a [CFunction](crate::ffi::lua::CFunction) is UB.
-    /// Calling this function in a non-POF segment of that CFunction is also UB.
+    /// Calling this function in a non-POF segment of that CFunction is also UB. If the index is not
+    /// absolute, this function may cause UB.
     unsafe fn from_param(vm: &'a Vm, index: i32) -> Self;
 }

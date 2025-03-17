@@ -34,7 +34,8 @@ pub trait FromLua<'a>: Sized {
     /// # Arguments
     ///
     /// * `vm`: the [Vm] to read from.
-    /// * `index`: the index at which to try reading the value from.
+    /// * `index`: the index at which to try reading the value from. The index does not have to be
+    ///            absolute.
     ///
     /// returns: Result<Self, Error>
     ///
@@ -49,7 +50,8 @@ pub trait FromLua<'a>: Sized {
     /// # Arguments
     ///
     /// * `vm`: the [Vm] to read from.
-    /// * `index`: the index at which to try reading the value from.
+    /// * `index`: the index at which to try reading the value from. The index does not have to be
+    ///            absolute.
     ///
     /// returns: Result<Self, Error>
     fn from_lua(vm: &'a Vm, index: i32) -> crate::vm::Result<Self>;
