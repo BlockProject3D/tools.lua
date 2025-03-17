@@ -51,7 +51,7 @@ static TARGET_MAP: phf::Map<&'static str, Target> = phf_map! {
 
 fn run_command_in_luajit(text: &str, cmd: &str, args: impl IntoIterator<Item = impl AsRef<OsStr>>) -> ExitStatus {
     let path = bp3d_os::fs::get_absolute_path("../").expect("Failed to acquire current path");
-    std::process::Command::new(cmd)
+    Command::new(cmd)
         .args(args)
         .current_dir(path.join("LuaJIT")).status().expect(text)
 }
