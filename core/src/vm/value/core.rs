@@ -125,7 +125,7 @@ impl_from_lua!(f64, Number, lua_tonumber, as _);
 
 impl_from_lua!(bool, Boolean, lua_toboolean, == 1);
 
-impl<T: IntoParam> IntoLua for T {
+unsafe impl<T: IntoParam> IntoLua for T {
     #[inline(always)]
     fn into_lua(self, vm: &Vm) -> u16 {
         self.into_param(vm)
@@ -221,7 +221,7 @@ impl_from_lua_tuple!(T: t, T1: t1, T2: t2, T3: t3, T4: t4, T5: t5, T6: t6, T7: t
 
 macro_rules! impl_into_lua_tuple {
     ($($name: ident: $name2: tt),*) => {
-        impl<$($name: IntoLua),*> IntoLua for ($($name),*) {
+        unsafe impl<$($name: IntoLua),*> IntoLua for ($($name),*) {
             fn into_lua(self, vm: &Vm) -> u16 {
                 $(
                     self.$name2.into_lua(vm);

@@ -52,7 +52,7 @@ impl<T> RClosure<T> {
     }
 }
 
-impl<T: IntoUpvalue> IntoLua for RClosure<T> {
+unsafe impl<T: IntoUpvalue> IntoLua for RClosure<T> {
     fn into_lua(self, vm: &Vm) -> u16 {
         let num = self.upvalue.into_upvalue(vm);
         unsafe { lua_pushcclosure(vm.as_ptr(), self.func, num as _) };

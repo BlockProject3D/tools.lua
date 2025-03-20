@@ -62,7 +62,16 @@ pub trait FromLua<'a>: Sized {
     }
 }
 
-pub trait IntoLua: Sized {
+/// This trait represents a value convertible to lua outside Rust function calls. For lua values
+/// returned by Rust functions, see [IntoParam](crate::vm::function::IntoParam).
+///
+/// # Safety
+///
+/// When implementing this trait, ensure that the number returned by
+/// [into_lua](IntoLua::into_lua) is EXACTLY equal to the number of values pushed onto the lua
+/// stack. If more or fewer than advertised values exists on the stack after the call then the impl
+/// is considered UB.
+pub unsafe trait IntoLua: Sized {
     /// Attempt to push self onto the top of the stack in the given [Vm].
     ///
     /// Returns the number values pushed into the lua stack.

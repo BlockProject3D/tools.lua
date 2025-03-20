@@ -39,7 +39,7 @@ impl RFunction {
     }
 }
 
-impl IntoLua for RFunction {
+unsafe impl IntoLua for RFunction {
     fn into_lua(self, vm: &Vm) -> u16 {
         let l = vm.as_ptr();
         unsafe {
