@@ -31,7 +31,14 @@ use crate::vm::Vm;
 use crate::vm::util::LuaType;
 
 /// This trait represents a function return value.
-pub trait IntoParam: Sized {
+///
+/// # Safety
+///
+/// When implementing this trait, ensure that the number returned by
+/// [into_param](IntoParam::into_param) is EXACTLY equal to the number of values pushed onto the lua
+/// stack. If more or fewer than advertised values exists on the stack after the call then the impl
+/// is considered UB.
+pub unsafe trait IntoParam: Sized {
     /// Turns self into a function return parameter.
     ///
     /// This function returns the number of parameters pushed onto the lua stack.

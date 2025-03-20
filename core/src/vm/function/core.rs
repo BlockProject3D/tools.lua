@@ -76,7 +76,7 @@ impl<'a> FromParam<'a> for &'a [u8] {
     }
 }
 
-impl IntoParam for &str {
+unsafe impl IntoParam for &str {
     #[inline(always)]
     fn into_param(self, vm: &Vm) -> u16 {
         unsafe { lua_pushlstring(vm.as_ptr(), self.as_ptr() as _, self.len()); }
@@ -84,7 +84,7 @@ impl IntoParam for &str {
     }
 }
 
-impl IntoParam for &[u8] {
+unsafe impl IntoParam for &[u8] {
     #[inline(always)]
     fn into_param(self, vm: &Vm) -> u16 {
         unsafe { lua_pushlstring(vm.as_ptr(), self.as_ptr() as _, self.len()); }
@@ -92,7 +92,7 @@ impl IntoParam for &[u8] {
     }
 }
 
-impl IntoParam for String {
+unsafe impl IntoParam for String {
     #[inline(always)]
     fn into_param(self, vm: &Vm) -> u16 {
         (&*self).into_param(vm)
@@ -117,7 +117,7 @@ macro_rules! impl_integer {
                 }
             }
 
-            impl IntoParam for $t {
+            unsafe impl IntoParam for $t {
                 #[inline(always)]
                 fn into_param(self, vm: &Vm) -> u16 {
                     unsafe {
@@ -153,7 +153,7 @@ macro_rules! impl_float {
                 }
             }
 
-            impl IntoParam for $t {
+            unsafe impl IntoParam for $t {
                 #[inline(always)]
                 fn into_param(self, vm: &Vm) -> u16 {
                     unsafe {
@@ -168,7 +168,7 @@ macro_rules! impl_float {
 
 impl_float!(f32, f64);
 
-impl IntoParam for bool {
+unsafe impl IntoParam for bool {
     #[inline(always)]
     fn into_param(self, vm: &Vm) -> u16 {
         unsafe { lua_pushboolean(vm.as_ptr(), if self { 1 } else { 0 }) };
@@ -176,7 +176,7 @@ impl IntoParam for bool {
     }
 }
 
-impl<T: IntoParam, E: Error> IntoParam for Result<T, E> {
+unsafe impl<T: IntoParam, E: Error> IntoParam for Result<T, E> {
     fn into_param(self, vm: &Vm) -> u16 {
         match self {
             Ok(v) => v.into_param(vm),
@@ -189,7 +189,7 @@ impl<T: IntoParam, E: Error> IntoParam for Result<T, E> {
     }
 }
 
-impl<T: IntoParam> IntoParam for Option<T> {
+unsafe impl<T: IntoParam> IntoParam for Option<T> {
     fn into_param(self, vm: &Vm) -> u16 {
         match self {
             None => {
@@ -203,7 +203,7 @@ impl<T: IntoParam> IntoParam for Option<T> {
     }
 }
 
-impl IntoParam for () {
+unsafe impl IntoParam for () {
     #[inline(always)]
     fn into_param(self, _: &Vm) -> u16 {
         0
@@ -224,7 +224,7 @@ impl<'a, T: UserData> FromParam<'a> for &'a T {
     }
 }
 
-impl<T: UserData> IntoParam for T {
+unsafe impl<T: UserData> IntoParam for T {
     fn into_param(self, vm: &Vm) -> u16 {
         let userdata = unsafe { lua_newuserdata(vm.as_ptr(), size_of::<T>()) } as *mut T;
         unsafe { userdata.write(self) };

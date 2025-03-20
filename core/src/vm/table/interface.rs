@@ -60,7 +60,7 @@ impl<'a> FromLua<'a> for Table<'a> {
     }
 }
 
-impl IntoParam for Table<'_> {
+unsafe impl IntoParam for Table<'_> {
     fn into_param(self, vm: &Vm) -> u16 {
         let top = unsafe { lua_gettop(vm.as_ptr()) };
         if top != self.index() {
