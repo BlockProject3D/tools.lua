@@ -28,13 +28,14 @@
 
 use std::error::Error;
 use std::slice;
-use crate::ffi::laux::{luaL_checklstring, luaL_checkudata, luaL_setmetatable};
+use crate::ffi::laux::{luaL_checklstring, luaL_checkudata, luaL_setmetatable, luaL_testudata};
 use crate::ffi::lua::{lua_newuserdata, lua_pushboolean, lua_pushinteger, lua_pushlstring, lua_pushnil, lua_pushnumber, lua_type, Integer, Number, Type};
 use crate::ffi::ext::{lua_ext_fast_checknumber, lua_ext_fast_checkinteger};
 use crate::util::SimpleDrop;
 use crate::vm::function::{FromParam, IntoParam};
 use crate::vm::userdata::UserData;
 use crate::vm::util::{lua_rust_error, LuaType, TypeName};
+use crate::vm::value::FromLua;
 use crate::vm::Vm;
 
 impl<'a, T: FromParam<'a> + SimpleDrop> FromParam<'a> for Option<T> {
@@ -45,6 +46,16 @@ impl<'a, T: FromParam<'a> + SimpleDrop> FromParam<'a> for Option<T> {
             None
         } else {
             Some(T::from_param(vm, index))
+        }
+    }
+
+    fn try_from_param(vm: &'a Vm, index: i32) -> Option<Self> {
+        let l = vm.as_ptr();
+        let ty = unsafe { lua_type(l, index) };
+        if ty == Type::Nil || ty == Type::None {
+            None
+        } else {
+            Some(T::try_from_param(vm, index))
         }
     }
 }
@@ -63,6 +74,11 @@ impl<'a> FromParam<'a> for &'a str {
             }
         }
     }
+
+    #[inline(always)]
+    fn try_from_param(vm: &'a Vm, index: i32) -> Option<Self> {
+        FromLua::from_lua(vm, index).ok()
+    }
 }
 
 impl LuaType for &[u8] {}
@@ -73,6 +89,11 @@ impl<'a> FromParam<'a> for &'a [u8] {
         let str = luaL_checklstring(vm.as_ptr(), index, &mut len as _);
         let slice = slice::from_raw_parts(str as *const u8, len);
         slice
+    }
+
+    #[inline(always)]
+    fn try_from_param(vm: &'a Vm, index: i32) -> Option<Self> {
+        FromLua::from_lua(vm, index).ok()
     }
 }
 
@@ -115,6 +136,11 @@ macro_rules! impl_integer {
                 unsafe fn from_param(vm: &Vm, index: i32) -> Self {
                     lua_ext_fast_checkinteger(vm.as_ptr(), index) as _
                 }
+
+                #[inline(always)]
+                fn try_from_param(vm: &Vm, index: i32) -> Option<Self> {
+                    FromLua::from_lua(vm, index).ok()
+                }
             }
 
             unsafe impl IntoParam for $t {
@@ -150,6 +176,11 @@ macro_rules! impl_float {
                 #[inline(always)]
                 unsafe fn from_param(vm: &Vm, index: i32) -> Self {
                     lua_ext_fast_checknumber(vm.as_ptr(), index) as _
+                }
+
+                #[inline(always)]
+                fn try_from_param(vm: &Vm, index: i32) -> Option<Self> {
+                    FromLua::from_lua(vm, index).ok()
                 }
             }
 
@@ -219,8 +250,18 @@ impl<T: UserData> LuaType for &T {
 impl<'a, T: UserData> FromParam<'a> for &'a T {
     #[inline(always)]
     unsafe fn from_param(vm: &'a Vm, index: i32) -> &'a T {
-        let obj_ptr = unsafe { luaL_checkudata(vm.as_ptr(), index, T::CLASS_NAME.as_ptr()) } as *const T;
+        let obj_ptr = luaL_checkudata(vm.as_ptr(), index, T::CLASS_NAME.as_ptr()) as *const T;
         unsafe { &*obj_ptr }
+    }
+
+    #[inline(always)]
+    fn try_from_param(vm: &'a Vm, index: i32) -> Option<Self> {
+        let ptr = unsafe { luaL_testudata(vm.as_ptr(), index, T::CLASS_NAME.as_ptr()) } as *const T;
+        if ptr.is_null() {
+            None
+        } else {
+            Some(unsafe { &*ptr })
+        }
     }
 }
 

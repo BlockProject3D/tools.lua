@@ -27,7 +27,7 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::ffi::laux::luaL_checktype;
-use crate::ffi::lua::{lua_gettop, lua_pushvalue, Type};
+use crate::ffi::lua::{lua_gettop, lua_pushvalue, lua_type, Type};
 use crate::util::SimpleDrop;
 use crate::vm::function::{FromParam, IntoParam};
 use crate::vm::registry::core::RegistryKey;
@@ -45,6 +45,11 @@ impl<'a> FromParam<'a> for Table<'a> {
     unsafe fn from_param(vm: &'a Vm, index: i32) -> Self {
         luaL_checktype(vm.as_ptr(), index, Type::Table);
         Table::from_raw(vm, index)
+    }
+
+    fn try_from_param(vm: &'a Vm, index: i32) -> Option<Self> {
+        if unsafe { lua_type(vm.as_ptr(), index) } != Type::Table { return None; }
+        Some(unsafe { Table::from_raw(vm, index) })
     }
 }
 

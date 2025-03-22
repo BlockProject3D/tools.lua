@@ -68,4 +68,18 @@ pub trait FromParam<'a>: Sized + SimpleDrop + LuaType {
     /// Calling this function in a non-POF segment of that CFunction is also UB. If the index is not
     /// absolute, this function may cause UB.
     unsafe fn from_param(vm: &'a Vm, index: i32) -> Self;
+
+    /// Attempts to read this value from the given lua stack.
+    ///
+    /// # Arguments
+    ///
+    /// * `vm`: the [Vm] to read from.
+    /// * `index`: index of the parameter to read. This index is guaranteed to be absolute.
+    ///
+    /// returns: Self
+    ///
+    /// # Errors
+    ///
+    /// Returns a [None] value if this value cannot be read from the lua stack.
+    fn try_from_param(vm: &'a Vm, index: i32) -> Option<Self>;
 }
