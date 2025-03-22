@@ -28,5 +28,6 @@
 
 mod interface;
 pub mod structs;
+pub mod enums;
 
 pub use interface::*;

@@ -29,24 +29,32 @@
 use proc_macro2::{Ident, TokenStream};
 use quote::{quote, ToTokens};
 use syn::Generics;
+use crate::parser::enums::EnumVariant;
 use crate::parser::Parser;
 use crate::parser::structs::StructField;
 
 pub struct FromParam {
     name: Ident,
     generics: Generics,
-    is_index_based: bool
+    is_index_based: bool,
+    is_simpl_enum: bool
 }
 
 impl FromParam {
     pub fn new(name: Ident, generics: Generics) -> Self {
-        Self { name, generics, is_index_based: false }
+        Self { name, generics, is_index_based: false, is_simpl_enum: true }
     }
 }
 
+pub struct Field {
+    name: Ident,
+    from_param: TokenStream,
+    try_from_param: TokenStream
+}
+
 impl Parser for FromParam {
-    type ParsedField = (Ident, TokenStream);
-    type ParsedVariant = ();
+    type ParsedField = Field;
+    type ParsedVariant = Field;
 
     fn parse_field(&mut self, field: StructField) -> Self::ParsedField {
         let name = field.unique_name;
@@ -58,19 +66,76 @@ impl Parser for FromParam {
         } else {
             quote! { bp3d_lua::ffi::lua::lua_getfield(vm.as_ptr(), index, bp3d_lua::c_stringify!(#name).as_ptr()) }
         };
-        (name.clone(), quote! {
-            #reader;
-            top += 1;
-            let #name: #ty = bp3d_lua::vm::function::FromParam::from_param(&vm, top);
-        })
+        Field {
+            name: name.clone(),
+            from_param: quote! {
+                #reader;
+                top += 1;
+                let #name: #ty = bp3d_lua::vm::function::FromParam::from_param(vm, top);
+            },
+            try_from_param: quote! {
+                unsafe { #reader };
+                top += 1;
+                let #name: #ty = bp3d_lua::vm::function::FromParam::try_from_param(vm, top)?;
+            }
+        }
+    }
+
+    fn parse_variant(&mut self, variant: EnumVariant) -> Self::ParsedVariant {
+        match variant {
+            EnumVariant::SingleField(v) => {
+                self.is_simpl_enum = false;
+                let ty = v.field.ty;
+                let name = self.name.clone();
+                let variant = v.unique_name;
+                Field {
+                    name: variant.clone(),
+                    from_param: quote! {
+                        match <#ty as bp3d_lua::vm::function::FromParam>::try_from_param(vm, index) {
+                            Some(v) => return #name::#variant(v),
+                            None => ()
+                        };
+                    },
+                    try_from_param: quote! {
+                        match <#ty as bp3d_lua::vm::function::FromParam>::try_from_param(vm, index) {
+                            Some(v) => return Some(#name::#variant(v)),
+                            None => ()
+                        };
+                    }
+                }
+            }
+            EnumVariant::MultiField(_) => {
+                panic!("Multi-field enum variants are not supported");
+            }
+            EnumVariant::None(variant) => {
+                let name = self.name.clone();
+                let vname = variant.to_string();
+                Field {
+                    name: variant.clone(),
+                    from_param: quote! {
+                        match enum_name == #vname {
+                            true => return #name::#variant,
+                            false => ()
+                        };
+                    },
+                    try_from_param: quote! {
+                        match enum_name == #vname {
+                            true => return Some(#name::#variant),
+                            false => ()
+                        };
+                    }
+                }
+            }
+        }
     }
 
     fn gen_struct(self, parsed: Vec<Self::ParsedField>) -> TokenStream {
         let name = self.name;
         let generics = self.generics;
         let lifetime = generics.lifetimes().next().map(|v| v.into_token_stream()).unwrap_or(quote! { '_ });
-        let from_params = parsed.iter().map(|(_, v)| v);
-        let values = parsed.iter().map(|(k, _)| k);
+        let from_params = parsed.iter().map(|field| &field.from_param);
+        let try_from_params = parsed.iter().map(|field| &field.try_from_param);
+        let values = parsed.iter().map(|field| &field.name);
         let end = if self.is_index_based {
             quote! {
                 #name(#(#values),*)
@@ -83,12 +148,54 @@ impl Parser for FromParam {
         quote! {
             impl #generics bp3d_lua::vm::function::FromParam<#lifetime> for #name #generics {
                 unsafe fn from_param(vm: &#lifetime bp3d_lua::vm::Vm, index: i32) -> Self {
+                    unsafe { bp3d_lua::ffi::laux::luaL_checktype(vm.as_ptr(), index, bp3d_lua::ffi::lua::Type::Table) };
                     let mut top = vm.top();
                     #(#from_params)*
                     #end
                 }
+
+                fn try_from_param(vm: &#lifetime bp3d_lua::vm::Vm, index: i32) -> Option<Self> {
+                    bp3d_lua::vm::value::util::ensure_type_equals(vm, index, bp3d_lua::ffi::lua::Type::Table).ok()?;
+                    let mut top = vm.top();
+                    let mut f = || -> Option<Self> {
+                        #(#try_from_params)*
+                        Some(#end)
+                    };
+                    match f() {
+                        Some(v) => Some(v),
+                        None => {
+                            // Reset stack position.
+                            unsafe { bp3d_lua::ffi::lua::lua_settop(vm.as_ptr(), top) };
+                            None
+                        }
+                    }
+                }
             }
-            
+
+            unsafe impl #generics bp3d_lua::util::SimpleDrop for #name #generics { }
+        }
+    }
+
+    fn gen_enum(self, parsed: Vec<Self::ParsedVariant>) -> TokenStream {
+        let name = self.name;
+        let generics = self.generics;
+        let lifetime = generics.lifetimes().next().map(|v| v.into_token_stream()).unwrap_or(quote! { '_ });
+        let from_params = parsed.iter().map(|field| &field.from_param);
+        let try_from_params = parsed.iter().map(|field| &field.try_from_param);
+        quote! {
+            impl #generics bp3d_lua::vm::function::FromParam<#lifetime> for #name #generics {
+                unsafe fn from_param(vm: &#lifetime bp3d_lua::vm::Vm, index: i32) -> Self {
+                    #(#from_params)*
+                    bp3d_lua::ffi::laux::luaL_error(vm.as_ptr(), "Unable to find a type satisfying constraints");
+                    std::hint::unreachable_unchecked()
+                }
+
+                fn try_from_param(vm: &#lifetime bp3d_lua::vm::Vm, index: i32) -> Option<Self> {
+                    #(#try_from_params)*
+                    None
+                }
+            }
+
             unsafe impl #generics bp3d_lua::util::SimpleDrop for #name #generics { }
         }
     }

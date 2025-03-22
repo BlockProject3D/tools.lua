@@ -29,6 +29,7 @@
 use proc_macro2::{Ident, TokenStream};
 use quote::quote;
 use syn::Generics;
+use crate::parser::enums::EnumVariant;
 use crate::parser::Parser;
 use crate::parser::structs::StructField;
 
@@ -45,13 +46,27 @@ impl LuaType {
 
 impl Parser for LuaType {
     type ParsedField = TokenStream;
-    type ParsedVariant = ();
+    type ParsedVariant = Vec<TokenStream>;
 
     fn parse_field(&mut self, field: StructField) -> Self::ParsedField {
         let ty = field.ty;
         quote! {
             types.append(&mut <#ty as bp3d_lua::vm::util::LuaType>::lua_type());
         }
+    }
+
+    fn parse_variant(&mut self, field: EnumVariant) -> Self::ParsedVariant {
+        let mut tokens = Vec::new();
+        match field {
+            EnumVariant::SingleField(v) => tokens.push(self.parse_field(v.field)),
+            EnumVariant::MultiField(v) => {
+                for v in v.fields {
+                    tokens.push(self.parse_field(v));
+                }
+            }
+            EnumVariant::None(_) => ()
+        }
+        tokens
     }
 
     fn gen_struct(self, parsed: Vec<Self::ParsedField>) -> TokenStream {
@@ -62,6 +77,21 @@ impl Parser for LuaType {
                 fn lua_type() -> Vec<bp3d_lua::vm::util::TypeName> {
                     let mut types = Vec::new();
                     #(#parsed)*
+                    types
+                }
+            }
+        }
+    }
+
+    fn gen_enum(self, parsed: Vec<Self::ParsedVariant>) -> TokenStream {
+        let name = self.name;
+        let generics = self.generics;
+        let tokens = parsed.into_iter().map(|v| quote! { #(#v)* });
+        quote! {
+            impl #generics bp3d_lua::vm::util::LuaType for #name #generics {
+                fn lua_type() -> Vec<bp3d_lua::vm::util::TypeName> {
+                    let mut types = Vec::new();
+                    #(#tokens)*
                     types
                 }
             }

@@ -26,40 +26,56 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use proc_macro2::TokenStream;
-use syn::Data;
-use crate::parser::enums::{EnumParser, EnumVariant};
+use proc_macro2::Ident;
+use syn::{Fields, Variant};
 use crate::parser::structs::{StructField, StructParser};
 
-pub trait Parser: Sized {
-    type ParsedField;
-    type ParsedVariant;
+pub struct EnumVariantSingle {
+    pub unique_name: Ident,
+    pub field: StructField,
+}
 
-    fn parse_field(&mut self, field: StructField) -> Self::ParsedField;
-    fn parse_variant(&mut self, variant: EnumVariant) -> Self::ParsedVariant;
+pub struct EnumVariantMulti {
+    pub unique_name: Ident,
+    pub fields: Vec<StructField>,
+}
 
-    fn gen_struct(self, parsed: Vec<Self::ParsedField>) -> TokenStream;
-    fn gen_enum(self, parsed: Vec<Self::ParsedVariant>) -> TokenStream;
+pub enum EnumVariant {
+    SingleField(EnumVariantSingle),
+    MultiField(EnumVariantMulti),
+    None(Ident)
+}
 
-    fn parse(mut self, data: Data) -> TokenStream {
-        match data {
-            Data::Struct(v) => {
+pub struct EnumParser;
+
+impl EnumParser {
+    pub fn parse(&mut self, variant: Variant) -> EnumVariant {
+        let unique_name = variant.ident;
+        match variant.fields {
+            Fields::Named(v) => {
                 let mut parser = StructParser::new();
-                let mut parsed = Vec::new();
-                for v in v.fields {
-                    parsed.push(self.parse_field(parser.parse(v)));
-                }
-                self.gen_struct(parsed)
+                let fields = v.named.into_iter().map(|v| parser.parse(v));
+                EnumVariant::MultiField(EnumVariantMulti {
+                    unique_name,
+                    fields: fields.collect()
+                })
             }
-            Data::Enum(v) => {
-                let mut parser = EnumParser;
-                let mut parsed = Vec::new();
-                for v in v.variants {
-                    parsed.push(self.parse_variant(parser.parse(v)));
+            Fields::Unnamed(v) => {
+                let mut parser = StructParser::new();
+                if v.unnamed.len() == 1 {
+                    EnumVariant::SingleField(EnumVariantSingle {
+                        unique_name,
+                        field: parser.parse(v.unnamed.into_iter().next().unwrap())
+                    })
+                } else {
+                    let fields = v.unnamed.into_iter().map(|v| parser.parse(v));
+                    EnumVariant::MultiField(EnumVariantMulti {
+                        unique_name,
+                        fields: fields.collect()
+                    })
                 }
-                self.gen_enum(parsed)
             }
-            _ => panic!("Unsupported type")
+            Fields::Unit => EnumVariant::None(unique_name)
         }
     }
 }
