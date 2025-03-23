@@ -29,27 +29,35 @@
 #[macro_export]
 macro_rules! decl_lib_func {
     (
-        $vis: vis fn $fn_name: ident ($name: ident: &Vm$(, $($arg_name: ident: $arg_ty: ty),*)?) -> $ret_ty: ty $code: block
+        $vis: vis fn $fn_name: ident $(<$lifetime: lifetime>)? ($name: ident: &Vm$(, $($arg_name: ident: $arg_ty: ty),*)?) -> $ret_ty: ty $code: block
     ) => {
         $vis extern "C-unwind" fn $fn_name(l: $crate::ffi::lua::State) -> i32 {
-            fn _func($name: &$crate::vm::Vm$(, $($arg_name: $arg_ty),*)?) -> $ret_ty $code
+            fn _func $(<$lifetime>)? ($name: &$crate::vm::Vm$(, $($arg_name: $arg_ty),*)?) -> $ret_ty $code
             use $crate::vm::function::IntoParam;
             let vm = unsafe { $crate::vm::Vm::from_raw(l) };
-            $($crate::decl_from_param!(vm, 1, $($arg_name: $arg_ty)*);)?
-            let ret = _func(&vm $(, $($arg_name),*)?);
-            ret.into_param(&vm) as _
+            #[inline(always)]
+            extern "C-unwind" fn _vmfunc $(<$lifetime>)? (vm: &$($lifetime)? $crate::vm::Vm) -> i32 {
+                $($crate::decl_from_param!(vm, 1, $($arg_name: $arg_ty)*);)?
+                let ret = _func(vm $(, $($arg_name),*)?);
+                ret.into_param(vm) as _
+            }
+            _vmfunc(&vm)
         }
     };
     (
-        $vis: vis fn $fn_name: ident ($($arg_name: ident: $arg_ty: ty),*) -> $ret_ty: ty $code: block
+        $vis: vis fn $fn_name: ident $(<$lifetime: lifetime>)? ($($arg_name: ident: $arg_ty: ty),*) -> $ret_ty: ty $code: block
     ) => {
         $vis extern "C-unwind" fn $fn_name(l: $crate::ffi::lua::State) -> i32 {
-            fn _func($($arg_name: $arg_ty),*) -> $ret_ty $code
+            fn _func $(<$lifetime>)? ($($arg_name: $arg_ty),*) -> $ret_ty $code
             use $crate::vm::function::IntoParam;
             let vm = unsafe { $crate::vm::Vm::from_raw(l) };
-            $crate::decl_from_param!(vm, 1, $($arg_name: $arg_ty)*);
-            let ret = _func($($arg_name),*);
-            ret.into_param(&vm) as _
+            #[inline(always)]
+            extern "C-unwind" fn _vmfunc $(<$lifetime>)? (vm: &$($lifetime)? $crate::vm::Vm) -> i32 {
+                $crate::decl_from_param!(vm, 1, $($arg_name: $arg_ty)*);
+                let ret = _func($($arg_name),*);
+                ret.into_param(vm) as _
+            }
+            _vmfunc(&vm)
         }
     };
 }

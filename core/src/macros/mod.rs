@@ -50,11 +50,11 @@ macro_rules! decl_from_param {
     };
 
     (_from_param $vm: ident, $index: ident, ($arg_name: ident: $arg_ty: ty)) => {
-        let $arg_name: $arg_ty = unsafe { FromParam::from_param(&$vm, $index) };
+        let $arg_name: $arg_ty = unsafe { FromParam::from_param($vm, $index) };
     };
 
     (_from_param $vm: ident, $index: ident, ($arg_name: ident: $arg_ty: ty) $(($arg_name2: ident: $arg_ty2: ty))*) => {
-        let $arg_name: $arg_ty = unsafe { FromParam::from_param(&$vm, $index) };
+        let $arg_name: $arg_ty = unsafe { FromParam::from_param($vm, $index) };
         $index += 1;
         $crate::decl_from_param!(_from_param $vm, $index, $(($arg_name2: $arg_ty2))*);
     };
