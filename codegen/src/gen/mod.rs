@@ -28,6 +28,8 @@
 
 mod from_param;
 mod lua_type;
+mod into_param;
 
-pub use lua_type::*;
-pub use from_param::*;
+pub use lua_type::LuaType;
+pub use from_param::FromParam;
+pub use into_param::IntoParam;

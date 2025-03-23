@@ -37,12 +37,12 @@ pub struct FromParam {
     name: Ident,
     generics: Generics,
     is_index_based: bool,
-    is_simpl_enum: bool
+    is_simple_enum: bool
 }
 
 impl FromParam {
     pub fn new(name: Ident, generics: Generics) -> Self {
-        Self { name, generics, is_index_based: false, is_simpl_enum: true }
+        Self { name, generics, is_index_based: false, is_simple_enum: true }
     }
 }
 
@@ -84,7 +84,7 @@ impl Parser for FromParam {
     fn parse_variant(&mut self, variant: EnumVariant) -> Self::ParsedVariant {
         match variant {
             EnumVariant::SingleField(v) => {
-                self.is_simpl_enum = false;
+                self.is_simple_enum = false;
                 let ty = v.field.ty;
                 let name = self.name.clone();
                 let variant = v.unique_name;
@@ -104,9 +104,7 @@ impl Parser for FromParam {
                     }
                 }
             }
-            EnumVariant::MultiField(_) => {
-                panic!("Multi-field enum variants are not supported");
-            }
+            EnumVariant::MultiField(_) => panic!("Multi-field enum variants are not supported"),
             EnumVariant::None(variant) => {
                 let name = self.name.clone();
                 let vname = variant.to_string();

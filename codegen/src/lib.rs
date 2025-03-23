@@ -32,12 +32,18 @@ mod gen;
 use proc_macro::TokenStream;
 use syn::{parse_macro_input, DeriveInput};
 use crate::parser::Parser;
-use crate::gen::{FromParam, LuaType};
+use crate::gen::{FromParam, IntoParam, LuaType};
 
 #[proc_macro_derive(FromParam)]
 pub fn from_param(input: TokenStream) -> TokenStream {
     let DeriveInput { ident, data, generics, .. } = parse_macro_input!(input);
     FromParam::new(ident, generics).parse(data).into()
+}
+
+#[proc_macro_derive(IntoParam)]
+pub fn into_param(input: TokenStream) -> TokenStream {
+    let DeriveInput { ident, data, generics, .. } = parse_macro_input!(input);
+    IntoParam::new(ident, generics).parse(data).into()
 }
 
 #[proc_macro_derive(LuaType)]

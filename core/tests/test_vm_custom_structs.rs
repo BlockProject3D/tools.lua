@@ -28,34 +28,20 @@
 
 use bp3d_lua::decl_lib_func;
 use bp3d_lua::vm::function::types::RFunction;
-use bp3d_lua::vm::{RootVm, Vm};
-use bp3d_lua::vm::function::IntoParam;
-use bp3d_lua::vm::table::Table;
-use bp3d_lua_codegen::FromParam;
+use bp3d_lua::vm::RootVm;
+use bp3d_lua_codegen::{FromParam, IntoParam};
 use bp3d_lua_codegen::LuaType;
 
-#[derive(FromParam, LuaType)]
+#[derive(FromParam, LuaType, IntoParam)]
 struct Test1<'a>(&'a str, i32);
 
-#[derive(FromParam, LuaType)]
+#[derive(FromParam, LuaType, IntoParam)]
 struct Test2<'a> {
     name: &'a str,
     value: i32
 }
 
-unsafe impl IntoParam for Test2<'_> {
-    fn into_param(self, vm: &Vm) -> u16 {
-        let mut tbl = Table::new(vm);
-        {
-            let mut scope = tbl.lock();
-            scope.set_field(c"name", self.name).unwrap();
-            scope.set_field(c"value", self.value).unwrap();
-        }
-        1
-    }
-}
-
-#[derive(FromParam, LuaType)]
+#[derive(FromParam, LuaType, IntoParam)]
 struct TestStatic {
     value1: f32,
     value2: i32
