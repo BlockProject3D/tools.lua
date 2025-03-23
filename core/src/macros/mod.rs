@@ -29,7 +29,6 @@
 mod lib_func;
 mod userdata_func;
 mod userdata;
-mod impl_from_param;
 mod closure;
 
 #[macro_export]
