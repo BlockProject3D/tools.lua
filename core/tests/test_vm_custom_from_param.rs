@@ -73,12 +73,20 @@ decl_lib_func! {
     }
 }
 
+decl_lib_func! {
+    fn test3<'a>(name: &'a str, name2: &str) -> Test2<'a> {
+        println!("{}", name2);
+        Test2 { name, value: 42 }
+    }
+}
+
 #[test]
 fn basic() {
     let vm = RootVm::new();
     let top = vm.top();
     vm.set_global(c"test", RFunction::wrap(test)).unwrap();
     vm.set_global(c"test2", RFunction::wrap(test2)).unwrap();
+    vm.set_global(c"test3", RFunction::wrap(test3)).unwrap();
     let out = vm.run_code::<&str>(c"
         local test1 = { 'value', 42 }
         local test2 = { name = 'of', value = 64 }
@@ -97,6 +105,11 @@ fn basic() {
     vm.run_code::<()>(c"
         local t2 = test2('test')
         assert(t2.name == 'test')
+        assert(t2.value == 42)
+    ").unwrap();
+    vm.run_code::<()>(c"
+        local t2 = test3('test42', 'test2')
+        assert(t2.name == 'test42')
         assert(t2.value == 42)
     ").unwrap();
     assert_eq!(top + 3, vm.top())
