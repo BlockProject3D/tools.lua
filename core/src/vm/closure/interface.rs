@@ -51,3 +51,8 @@ pub trait FromUpvalue<'a>: Sized + SimpleDrop {
 pub trait IntoUpvalue {
     fn into_upvalue(self, vm: &Vm) -> u16;
 }
+
+pub trait Upvalue {
+    type From<'a>: FromUpvalue<'a>;
+    type Into<'a>: IntoUpvalue;
+}

@@ -27,7 +27,7 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::ffi::lua::{lua_pushlightuserdata, lua_topointer, GLOBALSINDEX};
-use crate::vm::closure::{FromUpvalue, IntoUpvalue};
+use crate::vm::closure::{FromUpvalue, IntoUpvalue, Upvalue};
 use crate::vm::function::IntoParam;
 use crate::vm::Vm;
 use crate::vm::value::FromLua;
@@ -41,6 +41,11 @@ macro_rules! impl_from_upvalue_using_from_lua_unchecked {
                     <$t>::from_lua_unchecked(vm, GLOBALSINDEX - index)
                 }
             }
+
+            impl Upvalue for $t {
+                type From<'a> = $t;
+                type Into<'a> = $t;
+            }
         )*
     };
 }
@@ -52,11 +57,21 @@ impl<'a> FromUpvalue<'a> for &'a str {
     }
 }
 
+impl Upvalue for &str {
+    type From<'a> = &'a str;
+    type Into<'a> = &'a str;
+}
+
 impl<'a> FromUpvalue<'a> for &'a [u8] {
     #[inline(always)]
     unsafe fn from_upvalue(vm: &'a Vm, index: i32) -> Self {
         FromLua::from_lua_unchecked(vm, GLOBALSINDEX - index)
     }
+}
+
+impl Upvalue for &[u8] {
+    type From<'a> = &'a [u8];
+    type Into<'a> = &'a [u8];
 }
 
 #[cfg(target_pointer_width = "64")]
@@ -94,4 +109,14 @@ impl<T> IntoUpvalue for *const T {
         unsafe { lua_pushlightuserdata(vm.as_ptr(), self as _) };
         1
     }
+}
+
+impl<T> Upvalue for *mut T {
+    type From<'a> = *mut T;
+    type Into<'a> = *mut T;
+}
+
+impl<T> Upvalue for *const T {
+    type From<'a> = *const T;
+    type Into<'a> = *const T;
 }
