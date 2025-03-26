@@ -29,5 +29,6 @@
 mod interface;
 mod core;
 pub mod types;
+pub mod context;
 
 pub use interface::*;

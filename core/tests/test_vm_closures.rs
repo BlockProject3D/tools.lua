@@ -27,8 +27,35 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use bp3d_lua::decl_closure;
+use bp3d_lua::vm::closure::context::ContextMut;
 use bp3d_lua::vm::closure::types::RClosure;
 use bp3d_lua::vm::RootVm;
+
+struct TestContext {
+    value: i32,
+    value3: Vec<u64>
+}
+
+decl_closure! {
+    fn context_set_value |ctx: ContextMut<TestContext>| (val: i32) -> () {
+        let mut ctx = ctx;
+        ctx.value = val;
+    }
+}
+
+decl_closure! {
+    fn context_push |ctx: ContextMut<TestContext>| (val: u64) -> () {
+        let mut ctx = ctx;
+        ctx.value3.push(val);
+    }
+}
+
+decl_closure! {
+    fn context_pop |ctx: ContextMut<TestContext>| () -> Option<u64> {
+        let mut ctx = ctx;
+        ctx.value3.pop()
+    }
+}
 
 decl_closure! {
     fn test |upvalue: &str| (val: f32) -> String {
