@@ -39,7 +39,7 @@ impl RegistryValue for Table {
     type Value<'a> = crate::vm::table::Table<'a>;
 
     #[inline(always)]
-    fn to_lua_value<'a>(vm: &'a Vm, index: i32) -> Self::Value<'a> {
+    unsafe fn to_lua_value<'a>(vm: &'a Vm, index: i32) -> Self::Value<'a> {
         unsafe { crate::vm::table::Table::from_lua_unchecked(vm, index) }
     }
 }
@@ -48,7 +48,7 @@ impl RegistryValue for LuaFunction {
     type Value<'a> = crate::vm::value::function::LuaFunction<'a>;
 
     #[inline(always)]
-    fn to_lua_value<'a>(vm: &'a Vm, index: i32) -> Self::Value<'a> {
+    unsafe fn to_lua_value<'a>(vm: &'a Vm, index: i32) -> Self::Value<'a> {
         unsafe { crate::vm::value::function::LuaFunction::from_lua_unchecked(vm, index) }
     }
 }
@@ -56,7 +56,7 @@ impl RegistryValue for LuaFunction {
 impl RegistryKey<LuaFunction> {
     pub fn call<'a, T: IntoLua, R: FromLua<'a>>(&self, vm: &'a Vm, value: T) -> crate::vm::Result<R> {
         let pos = push_error_handler(vm.as_ptr());
-        self.raw_push(vm);
+        self.as_raw().push(vm);
         let num_values = value.into_lua(vm);
         unsafe { pcall(vm, num_values as _, R::num_values() as _, pos)? };
         R::from_lua(vm, -(R::num_values() as i32))
