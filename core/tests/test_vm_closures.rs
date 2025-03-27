@@ -98,4 +98,34 @@ fn test_vm_context() {
     let res = vm.run_code::<()>(c"context_set_value(42)");
     assert!(res.is_err());
     assert_eq!(res.unwrap_err().into_runtime().unwrap().msg(), "[string \"context_set_value(42)\"]:1: Context is not available in this function.");
+    let mut obj = TestContext {
+        value: 0,
+        value3: vec![],
+    };
+    {
+        let _obj = ctx.bind(&vm, &mut obj);
+        vm.run_code::<()>(c"context_set_value(42)").unwrap();
+    }
+    let res = vm.run_code::<()>(c"context_set_value(84)");
+    assert!(res.is_err());
+    assert_eq!(res.unwrap_err().into_runtime().unwrap().msg(), "[string \"context_set_value(84)\"]:1: Context is not available in this function.");
+    assert_eq!(obj.value, 42);
+    {
+        let _obj = ctx.bind(&vm, &mut obj);
+        vm.run_code::<()>(c"assert(context_pop() == nil)").unwrap();
+        vm.run_code::<()>(c"context_push(1)").unwrap();
+        vm.run_code::<()>(c"context_push(2)").unwrap();
+        vm.run_code::<()>(c"context_push(3)").unwrap();
+    }
+    assert_eq!(obj.value3.len(), 3);
+    {
+        let _obj = ctx.bind(&vm, &mut obj);
+        vm.run_code::<()>(c"assert(context_pop() == 3)").unwrap();
+        vm.run_code::<()>(c"assert(context_pop() == 2)").unwrap();
+        vm.run_code::<()>(c"assert(context_pop() == 1)").unwrap();
+        vm.run_code::<()>(c"assert(context_pop() == nil)").unwrap();
+        vm.run_code::<()>(c"assert(context_pop() == nil)").unwrap();
+    }
+    assert_eq!(obj.value3.len(), 0);
+    assert_eq!(top, vm.top());
 }
