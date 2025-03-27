@@ -94,10 +94,10 @@ simple_error! {
 }
 
 impl Error {
-    pub fn into_runtime(self) -> RuntimeError {
+    pub fn into_runtime(self) -> Option<RuntimeError> {
         match self {
-            Error::Runtime(e) => e,
-            _ => panic!("error is not a runtime error")
+            Error::Runtime(e) => Some(e),
+            _ => None
         }
     }
 }

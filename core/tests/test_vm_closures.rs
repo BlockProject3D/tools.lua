@@ -85,3 +85,17 @@ fn test_vm_rust_closure() {
     let s: &str = vm.run_code(c"return test(42.42)").unwrap();
     assert_eq!(s, "this is a test: 42.42");
 }
+
+#[test]
+fn test_vm_context() {
+    let vm = RootVm::new();
+    let top = vm.top();
+    let ctx = ContextMut::new(&vm);
+    vm.set_global(c"context_push", context_push(ctx)).unwrap();
+    vm.set_global(c"context_pop", context_pop(ctx)).unwrap();
+    vm.set_global(c"context_set_value", context_set_value(ctx)).unwrap();
+    assert_eq!(top, vm.top());
+    let res = vm.run_code::<()>(c"context_set_value(42)");
+    assert!(res.is_err());
+    assert_eq!(res.unwrap_err().into_runtime().unwrap().msg(), "[string \"context_set_value(42)\"]:1: Context is not available in this function.");
+}
