@@ -29,7 +29,7 @@
 use std::ffi::c_int;
 use std::marker::PhantomData;
 use crate::ffi::laux::{luaL_ref, luaL_unref};
-use crate::ffi::lua::{lua_rawgeti, REGISTRYINDEX};
+use crate::ffi::lua::{lua_rawgeti, lua_rawseti, REGISTRYINDEX};
 use crate::vm::registry::RegistryValue;
 use crate::vm::Vm;
 
@@ -64,8 +64,8 @@ impl RawRegistryKey {
     /// 
     /// This is UB to call if the key is invalid or already freed.
     #[inline(always)]
-    pub fn push(&self, vm: &Vm) {
-        unsafe { lua_rawgeti(vm.as_ptr(), REGISTRYINDEX, self.0) };
+    pub unsafe fn push(&self, vm: &Vm) {
+        lua_rawgeti(vm.as_ptr(), REGISTRYINDEX, self.0);
     }
 
     /// Deletes this registry key from the specified [Vm].
@@ -81,7 +81,23 @@ impl RawRegistryKey {
     /// This is UB to call if the registry key is invalid or was already freed.
     #[inline(always)]
     pub unsafe fn delete(self, vm: &Vm) {
-        unsafe { luaL_unref(vm.as_ptr(), REGISTRYINDEX, self.0) };
+        luaL_unref(vm.as_ptr(), REGISTRYINDEX, self.0);
+    }
+
+    /// Replaces the content of this key with the value on top of the stack.
+    ///
+    /// # Arguments
+    ///
+    /// * `vm`: the vm associated with this key.
+    ///
+    /// returns: ()
+    ///
+    /// # Safety
+    ///
+    /// This is UB to call if the key has already been deleted.
+    #[inline(always)]
+    pub unsafe fn replace(&self, vm: &Vm) {
+        lua_rawseti(vm.as_ptr(), REGISTRYINDEX, self.0);
     }
 
     /// Creates a new [RawRegistryKey] from the top of the lua stack.
@@ -117,7 +133,7 @@ impl<T: RegistryValue> RegistryKey<T> {
     /// returns: <T as RegistryValue>::Value
     #[inline(always)]
     pub fn push<'a>(&self, vm: &'a Vm) -> T::Value<'a> {
-        self.raw.push(vm);
+        unsafe { self.raw.push(vm) };
         unsafe { T::to_lua_value(vm, -1) }
     }
 
