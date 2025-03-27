@@ -28,10 +28,11 @@
 
 //! A module to simplify declaring functions with associated to a context (rust object).
 
+use std::ffi::c_void;
 use std::marker::PhantomData;
 use std::ops::{Deref, DerefMut};
 use crate::ffi::laux::luaL_error;
-use crate::ffi::lua::{lua_settop, lua_topointer};
+use crate::ffi::lua::{lua_pushlightuserdata, lua_settop, lua_topointer};
 use crate::util::SimpleDrop;
 use crate::vm::closure::{FromUpvalue, IntoUpvalue, Upvalue};
 use crate::vm::registry::core::{RawRegistryKey};
@@ -39,12 +40,87 @@ use crate::vm::Vm;
 
 pub struct Context<T> {
     key: RawRegistryKey,
-    obj: PhantomData<T>
+    useless: PhantomData<T>
 }
 
-pub struct ContextMut<T> {
-    key: RawRegistryKey,
-    obj: PhantomData<T>
+impl<T> Clone for Context<T> {
+    fn clone(&self) -> Self {
+        Self {
+            key: self.key,
+            useless: self.useless
+        }
+    }
+}
+
+impl<T> Copy for Context<T> {}
+
+pub struct ContextMut<T>(Context<T>);
+
+impl<T> Clone for ContextMut<T> {
+    fn clone(&self) -> Self {
+        Self(self.0)
+    }
+}
+
+impl<T> Copy for ContextMut<T> { }
+
+impl<T: 'static> Context<T> {
+    pub fn new(vm: &Vm) -> Self {
+        let key = unsafe {
+            lua_pushlightuserdata(vm.as_ptr(), std::ptr::null_mut());
+            RawRegistryKey::from_top(vm)
+        };
+        Self {
+            key,
+            useless: PhantomData
+        }
+    }
+
+    pub fn bind<'a, 'b>(&self, vm: &'a Vm, obj: &'b T) -> Guard<'a, &'b T> {
+        unsafe {
+            lua_pushlightuserdata(vm.as_ptr(), obj as *const T as *mut T as *mut c_void);
+            self.key.replace(vm);
+            Guard {
+                vm,
+                ptr: obj,
+                key: self.key
+            }
+        }
+    }
+}
+
+impl<T: 'static> ContextMut<T> {
+    pub fn new(vm: &Vm) -> Self {
+        Self(Context::new(vm))
+    }
+
+    pub fn bind<'a, 'b>(&self, vm: &'a Vm, obj: &'b mut T) -> Guard<'a, &'b mut T> {
+        unsafe {
+            lua_pushlightuserdata(vm.as_ptr(), obj as *mut T as *mut c_void);
+            self.0.key.replace(vm);
+            Guard {
+                vm,
+                ptr: obj,
+                key: self.0.key
+            }
+        }
+    }
+}
+
+pub struct Guard<'a, T> {
+    vm: &'a Vm,
+    #[allow(dead_code)]
+    ptr: T,
+    key: RawRegistryKey
+}
+
+impl<'a, T> Drop for Guard<'a, T> {
+    fn drop(&mut self) {
+        unsafe {
+            lua_pushlightuserdata(self.vm.as_ptr(), std::ptr::null_mut());
+            self.key.replace(self.vm);
+        }
+    }
 }
 
 #[repr(transparent)]
@@ -118,7 +194,7 @@ impl<T: 'static> IntoUpvalue for Context<T> {
 
 impl<T: 'static> IntoUpvalue for ContextMut<T> {
     fn into_upvalue(self, vm: &Vm) -> u16 {
-        self.key.as_int().into_upvalue(vm)
+        self.0.key.as_int().into_upvalue(vm)
     }
 }
 
