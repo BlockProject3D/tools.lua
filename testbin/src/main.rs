@@ -26,6 +26,8 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+mod context;
+
 use std::time::Duration;
 use mlua::Lua;
 use bp3d_lua::decl_lib_func;
@@ -90,14 +92,26 @@ fn main() {
     const RUNS: u32 = 10;
     let mut lua = Duration::new(0, 0);
     let mut mlua = Duration::new(0, 0);
+    let mut ctx_lua = Duration::new(0, 0);
+    let mut ctx_mlua = Duration::new(0, 0);
     for _ in 0..RUNS {
         lua += test_vm_destructor();
         mlua += test_vm_mlua();
+        ctx_lua += context::test_context_vm();
+        ctx_mlua += context::test_context_mlua();
     }
     lua = lua / RUNS;
     mlua = mlua / RUNS;
-    println!("average tools.lua: {:?}", lua);
-    println!("average mlua: {:?}", mlua);
+    ctx_lua = ctx_lua / RUNS;
+    ctx_mlua = ctx_mlua / RUNS;
+
+    println!("average tools.lua (basic): {:?}", lua);
+    println!("average mlua (basic): {:?}", mlua);
     assert!(lua < mlua);
-    println!("average diff: {:?}", mlua - lua);
+    println!("average diff (basic): {:?}", mlua - lua);
+
+    println!("average tools.lua (context): {:?}", ctx_lua);
+    println!("average mlua (context): {:?}", ctx_mlua);
+    assert!(lua < mlua);
+    println!("average diff (context): {:?}", ctx_mlua - ctx_lua);
 }
