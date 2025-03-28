@@ -200,10 +200,8 @@ impl<T: 'static> IntoUpvalue for ContextMut<T> {
 
 impl<T: 'static> Upvalue for Context<T> {
     type From<'a> = Ref<'a, T>;
-    type Into<'a> = Context<T>;
 }
 
 impl<T: 'static> Upvalue for ContextMut<T> {
     type From<'a> = Mut<'a, T>;
-    type Into<'a> = ContextMut<T>;
 }

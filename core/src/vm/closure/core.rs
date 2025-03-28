@@ -44,7 +44,6 @@ macro_rules! impl_from_upvalue_using_from_lua_unchecked {
 
             impl Upvalue for $t {
                 type From<'a> = $t;
-                type Into<'a> = $t;
             }
         )*
     };
@@ -59,7 +58,6 @@ impl<'a> FromUpvalue<'a> for &'a str {
 
 impl Upvalue for &str {
     type From<'a> = &'a str;
-    type Into<'a> = &'a str;
 }
 
 impl<'a> FromUpvalue<'a> for &'a [u8] {
@@ -71,7 +69,6 @@ impl<'a> FromUpvalue<'a> for &'a [u8] {
 
 impl Upvalue for &[u8] {
     type From<'a> = &'a [u8];
-    type Into<'a> = &'a [u8];
 }
 
 #[cfg(target_pointer_width = "64")]
@@ -91,7 +88,7 @@ impl<T> FromUpvalue<'_> for *const T {
     }
 }
 
-impl<T: IntoParam> IntoUpvalue for T {
+impl<T: IntoParam + Upvalue> IntoUpvalue for T {
     fn into_upvalue(self, vm: &Vm) -> u16 {
         self.into_param(vm)
     }
@@ -113,10 +110,8 @@ impl<T> IntoUpvalue for *const T {
 
 impl<T> Upvalue for *mut T {
     type From<'a> = *mut T;
-    type Into<'a> = *mut T;
 }
 
 impl<T> Upvalue for *const T {
     type From<'a> = *const T;
-    type Into<'a> = *const T;
 }

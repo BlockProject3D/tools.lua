@@ -48,11 +48,10 @@ pub trait FromUpvalue<'a>: Sized + SimpleDrop {
     unsafe fn from_upvalue(vm: &'a Vm, index: i32) -> Self;
 }
 
-pub trait IntoUpvalue {
+pub trait IntoUpvalue: Upvalue {
     fn into_upvalue(self, vm: &Vm) -> u16;
 }
 
 pub trait Upvalue {
     type From<'a>: FromUpvalue<'a>;
-    type Into<'a>: IntoUpvalue;
 }
