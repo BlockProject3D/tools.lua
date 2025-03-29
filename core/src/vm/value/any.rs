@@ -31,6 +31,7 @@ use crate::vm::error::Error;
 use crate::vm::value::FromLua;
 use crate::vm::value::function::LuaFunction;
 use crate::vm::table::Table;
+use crate::vm::thread::Thread;
 use crate::vm::userdata::AnyUserData;
 use crate::vm::Vm;
 
@@ -43,7 +44,8 @@ pub enum AnyValue<'a> {
     Buffer(&'a [u8]),
     Function(LuaFunction<'a>),
     Table(Table<'a>),
-    UserData(AnyUserData<'a>)
+    UserData(AnyUserData<'a>),
+    Thread(Thread<'a>)
 }
 
 impl<'a> FromLua<'a> for AnyValue<'a> {
@@ -75,7 +77,7 @@ impl<'a> FromLua<'a> for AnyValue<'a> {
             Type::Table => Ok(unsafe { AnyValue::Table(FromLua::from_lua_unchecked(vm, index)) }),
             Type::Function => Ok(unsafe { AnyValue::Function(FromLua::from_lua_unchecked(vm, index)) }),
             Type::Userdata => Ok(unsafe { AnyValue::UserData(FromLua::from_lua_unchecked(vm, index)) }),
-            Type::Thread => Err(Error::UnsupportedType(ty))
+            Type::Thread => Ok(unsafe { AnyValue::Thread(FromLua::from_lua_unchecked(vm, index)) }),
         }
     }
 }
