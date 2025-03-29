@@ -9,4 +9,4 @@ publish = false
 [dependencies]
 mlua = { version = "0.10.3", features = ["luajit", "vendored"] }
 bp3d-lua = { version = "0.2.0", path = "../core" }
-bp3d-os = { version = "1.0.0-rc.4.2", features = ["time"] }
+bp3d-os = { version = "1.0.0-rc.4.2.1", features = ["time"] }
