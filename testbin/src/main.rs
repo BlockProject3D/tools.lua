@@ -27,6 +27,7 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 mod context;
+mod context_opt;
 
 use std::time::Duration;
 use mlua::Lua;
@@ -94,16 +95,24 @@ fn main() {
     let mut mlua = Duration::new(0, 0);
     let mut ctx_lua = Duration::new(0, 0);
     let mut ctx_mlua = Duration::new(0, 0);
+    let mut ctx_lua_opt = Duration::new(0, 0);
+    let mut ctx_mlua_opt = Duration::new(0, 0);
+
     for _ in 0..RUNS {
         lua += test_vm_destructor();
         mlua += test_vm_mlua();
         ctx_lua += context::test_context_vm();
         ctx_mlua += context::test_context_mlua();
+        ctx_lua_opt += context_opt::test_context_vm();
+        ctx_mlua_opt += context_opt::test_context_mlua();
     }
+
     lua = lua / RUNS;
     mlua = mlua / RUNS;
     ctx_lua = ctx_lua / RUNS;
     ctx_mlua = ctx_mlua / RUNS;
+    ctx_lua_opt = ctx_lua_opt / RUNS;
+    ctx_mlua_opt = ctx_mlua_opt / RUNS;
 
     println!("average tools.lua (basic): {:?}", lua);
     println!("average mlua (basic): {:?}", mlua);
@@ -112,6 +121,11 @@ fn main() {
 
     println!("average tools.lua (context): {:?}", ctx_lua);
     println!("average mlua (context): {:?}", ctx_mlua);
-    assert!(lua < mlua);
+    assert!(ctx_lua < ctx_mlua);
     println!("average diff (context): {:?}", ctx_mlua - ctx_lua);
+
+    println!("average tools.lua (context_opt): {:?}", ctx_lua_opt);
+    println!("average mlua (context_opt): {:?}", ctx_mlua_opt);
+    assert!(ctx_lua_opt < ctx_mlua_opt);
+    println!("average diff (context_opt): {:?}", ctx_mlua_opt - ctx_lua_opt);
 }
