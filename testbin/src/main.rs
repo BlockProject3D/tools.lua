@@ -56,7 +56,7 @@ decl_lib_func! {
 fn test_vm_destructor() -> Duration {
     let mut vm = RootVm::new();
     vm.set_global(c"test_c_function", RFunction::wrap(test_c_function)).unwrap();
-    let time = std::time::Instant::now();
+    let time = bp3d_os::time::Instant::now();
     for _ in 0..20000 {
         let res = vm.run_code::<&str>(c"return test_c_function('this is a test\\xFF', 0.42)");
         assert!(res.is_err());
@@ -77,7 +77,7 @@ fn test_vm_mlua() -> Duration {
         Ok(format!("Hello {} ({})", name, value))
     }).unwrap();
     lua.globals().set("test_c_function", f).unwrap();
-    let time = std::time::Instant::now();
+    let time = bp3d_os::time::Instant::now();
     for _ in 0..20000 {
         let res: mlua::Result<String> = lua.load("return test_c_function('this is a test\\xFF', 0.42)").call(());
         assert!(res.is_err());

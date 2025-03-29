@@ -82,7 +82,7 @@ pub fn test_context_mlua() -> Duration {
     let mut ctx = TestContext {
         value3: Vec::new()
     };
-    let time = std::time::Instant::now();
+    let time = bp3d_os::time::Instant::now();
     for _ in 0..20000 {
         lua.scope(|l| {
             let ud = l.create_any_userdata_ref_mut(&mut ctx).unwrap();
@@ -124,7 +124,7 @@ pub fn test_context_vm() -> Duration {
     let mut obj = TestContext {
         value3: vec![],
     };
-    let time = std::time::Instant::now();
+    let time = bp3d_os::time::Instant::now();
     for _ in 0..20000 {
         {
             let _obj = ctx.bind(&vm, &mut obj);
