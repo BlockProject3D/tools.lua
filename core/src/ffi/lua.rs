@@ -86,6 +86,8 @@ extern "C" {
     pub fn lua_close(l: State);
 
     pub fn lua_atpanic(l: State, panicf: CFunction) -> CFunction;
+
+    pub fn lua_newthread(l: State) -> State;
 }
 
 //--------------------------
@@ -189,8 +191,8 @@ extern "C" {
 //---------------------
 extern "C" {
     pub fn lua_yield(l: State, nresults: c_int) -> c_int;
-    pub fn lua_resume(l: State, narg: c_int) -> c_int;
-    pub fn lua_status(l: State) -> c_int;
+    pub fn lua_resume(l: State, narg: c_int) -> ThreadStatus;
+    pub fn lua_status(l: State) -> ThreadStatus;
 }
 
 //-----------------------------------------

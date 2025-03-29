@@ -35,6 +35,7 @@ pub mod userdata;
 pub mod closure;
 pub mod registry;
 pub mod table;
+pub mod thread;
 
 pub use core::*;
 
