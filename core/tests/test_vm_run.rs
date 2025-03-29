@@ -26,35 +26,13 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use crate::ffi::lua::{lua_pushnil, lua_pushvalue, lua_replace, Type};
-use crate::vm::error::{Error, TypeError};
-use crate::vm::Vm;
+use bp3d_lua::vm::RootVm;
 
-/// Ensures the given lua value at index is of a specified type.
-#[inline(always)]
-pub fn ensure_type_equals(vm: &Vm, index: i32, expected: Type) -> crate::vm::Result<()> {
-    let ty = unsafe { crate::ffi::lua::lua_type(vm.as_ptr(), index) };
-    if ty == expected { //FIXME: likely branch
-        Ok(())
-    } else {
-        Err(Error::Type(TypeError {
-            expected,
-            actual: ty
-        }))
-    }
-}
-
-/// Ensures the given lua value at index is at the top of the stack.
-/// If the value at index is not at the top of the stack, this function moves it to the top and
-/// replaces the original index by a nil value.
-#[inline(always)]
-pub fn ensure_value_top(vm: &Vm, index: i32) {
-    if index != vm.top() {
-        let l = vm.as_ptr();
-        unsafe {
-            lua_pushvalue(l, index);
-            lua_pushnil(l);
-            lua_replace(l, index); // Replace the value at index by a nil.
-        }
-    }
+#[test]
+fn test_vm_run() {
+    let vm = RootVm::new();
+    let res = vm.run_named_code::<()>(c"test", b"return 1 + b");
+    assert!(res.is_err());
+    let err = res.unwrap_err().into_runtime().unwrap();
+    assert_eq!(err.msg(), "[string \"test\"]:1: attempt to perform arithmetic on global 'b' (a nil value)")
 }

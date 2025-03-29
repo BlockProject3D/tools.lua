@@ -18,7 +18,7 @@ log = "0.4.26"
 bp3d-lua-codegen = { version = "0.1.0", path = "../codegen" }
 
 [build-dependencies]
-bp3d-os = { version = "1.0.0-rc.4.1.1", features = ["fs"] }
+bp3d-os = { version = "1.0.0-rc.4.2.1", features = ["fs"] }
 phf = { version = "0.11.3", features = ["macros"] }
 cc = "1.2.15"
 
