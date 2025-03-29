@@ -40,7 +40,7 @@ pub struct LuaFunction<'a> {
 }
 
 impl<'a> LuaFunction<'a> {
-    pub fn call<'b, T: IntoLua, R: FromLua<'b>>(&'b self, value: T) -> crate::vm::Result<R> {
+    pub fn call<'b, R: FromLua<'b>>(&'b self, value: impl IntoLua) -> crate::vm::Result<R> {
         let pos = push_error_handler(self.vm.as_ptr());
         unsafe { lua_pushvalue(self.vm.as_ptr(), self.index); }
         let num_values = value.into_lua(self.vm);
