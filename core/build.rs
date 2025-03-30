@@ -83,6 +83,13 @@ fn build_luajit(build_dir: &Path) {
     }
 }
 
+fn apply_patch(path: &Path, name: &str) {
+    let result = run_command_in_luajit("Failed to patch LuaJIT", "git", &[OsStr::new("apply"), path.join("patch").join(name).as_os_str()]);
+    if !result.success() {
+        panic!("Failed to patch LuaJIT");
+    }
+}
+
 fn main() {
     // Rerun this script if any of the patch files changed.
     println!("cargo:rerun-if-changed=build.rs");
@@ -97,22 +104,11 @@ fn main() {
 
     // Apply patches to LuaJIT source code.
     let path = bp3d_os::fs::get_absolute_path("../").expect("Failed to acquire current path");
-    let result = run_command_in_luajit("Failed to patch LuaJIT", "git", &[OsStr::new("apply"), path.join("patch/lib_init.patch").as_os_str()]);
-    if !result.success() {
-        panic!("Failed to patch LuaJIT");
-    }
-    let result = run_command_in_luajit("Failed to patch LuaJIT", "git", &[OsStr::new("apply"), path.join("patch/lj_disable_jit.patch").as_os_str()]);
-    if !result.success() {
-        panic!("Failed to patch LuaJIT");
-    }
-    let result = run_command_in_luajit("Failed to patch LuaJIT", "git", &[OsStr::new("apply"), path.join("patch/disable_lua_load.patch").as_os_str()]);
-    if !result.success() {
-        panic!("Failed to patch LuaJIT");
-    }
-    let result = run_command_in_luajit("Failed to patch LuaJIT", "git", &[OsStr::new("apply"), path.join("patch/lua_ext.patch").as_os_str()]);
-    if !result.success() {
-        panic!("Failed to patch LuaJIT");
-    }
+    apply_patch(&path, "lib_init.patch"); // Disable unsafe/un-sandboxed libs.
+    apply_patch(&path, "lj_disable_jit.patch"); // Disable global JIT state changes from Lua code.
+    apply_patch(&path, "disable_lua_load.patch"); // Disable loadstring, dostring, etc from base lib.
+    apply_patch(&path, "lua_ext.patch"); // Ext library such as lua_ext_tab_len, etc.
+    apply_patch(&path, "lua_load_no_bc.patch"); // Treat all inputs as strings (no bytecode allowed).
 
     // Copy the source directory to the build directory.
     println!("{}", out_path.display());
