@@ -29,7 +29,7 @@
 use crate::ffi::ext::{lua_ext_tab_len, MSize};
 use crate::ffi::lua::{lua_createtable, lua_getfield, lua_gettop, lua_pushvalue};
 use crate::util::AnyStr;
-use crate::vm::core::{pcall, push_error_handler};
+use crate::vm::core::util::{pcall, push_error_handler};
 use crate::vm::table::iter::Iter;
 use crate::vm::value::{FromLua, IntoLua};
 use crate::vm::table::Scope;
@@ -98,7 +98,7 @@ impl<'a> Table<'a> {
     }
 
     pub fn call_function<'b, T: IntoLua, R: FromLua<'b>>(&'b self, name: impl AnyStr, value: T) -> crate::vm::Result<R> {
-        let pos = push_error_handler(self.vm.as_ptr());
+        let pos = unsafe { push_error_handler(self.vm.as_ptr()) };
         unsafe { lua_getfield(self.vm.as_ptr(), self.index, name.to_str()?.as_ptr()) };
         let num_values = value.into_lua(self.vm);
         unsafe { pcall(self.vm, num_values as _, R::num_values() as _, pos)? };
@@ -106,7 +106,7 @@ impl<'a> Table<'a> {
     }
 
     pub fn call_method<'b, T: IntoLua, R: FromLua<'b>>(&'b self, name: impl AnyStr, value: T) -> crate::vm::Result<R> {
-        let pos = push_error_handler(self.vm.as_ptr());
+        let pos = unsafe { push_error_handler(self.vm.as_ptr()) };
         unsafe { lua_getfield(self.vm.as_ptr(), self.index, name.to_str()?.as_ptr()) };
         unsafe { lua_pushvalue(self.vm.as_ptr(), self.index) };
         let num_values = value.into_lua(self.vm);

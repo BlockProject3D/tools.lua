@@ -31,6 +31,9 @@ use std::ffi::{c_char, c_double, c_int, c_void};
 /* mark for precompiled code (`<esc>Lua') */
 pub const SIGNATURE: &[u8] = b"\033Lua";
 
+/// The maximum size of a lua chunkname. This is used by Vm::run_named_code for optimization.
+pub const IDSIZE: usize = 60;
+
 pub const REGISTRYINDEX: c_int = -10000;
 pub const ENVIRONINDEX: c_int = -10001;
 pub const GLOBALSINDEX: c_int = -10002;

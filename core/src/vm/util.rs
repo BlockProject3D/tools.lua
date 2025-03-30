@@ -27,9 +27,7 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use std::error::Error;
-use std::ffi::{CStr, CString};
-use crate::ffi::laux::luaL_loadstring;
-use crate::ffi::lua::{lua_error, lua_pushlstring, State, ThreadStatus};
+use crate::ffi::lua::{lua_error, lua_pushlstring, State};
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum TypeName {
@@ -52,6 +50,18 @@ impl<T: LuaType> LuaType for Option<T> {
     }
 }
 
+/// Converts a Rust error to a Lua error. This function does not return as it unwinds using luajit.
+///
+/// # Arguments
+///
+/// * `l`: the lua State on which to raise the lua exception.
+/// * `error`: the Rust error to be converted.
+///
+/// returns: ! 
+/// 
+/// # Safety
+///
+/// It is UB to call this function outside a lua [CFunction](crate::ffi::lua::CFunction).
 pub unsafe fn lua_rust_error<E: Error>(l: State, error: E) -> ! {
     // At this point the function is assumed to be a non-POF (error and String).
     let s = format!("rust error: {}", error);
@@ -64,27 +74,4 @@ pub unsafe fn lua_rust_error<E: Error>(l: State, error: E) -> ! {
     lua_error(l);
     // If this is reached, then lua_error has silently failed.
     std::unreachable!()
-}
-
-pub trait LoadCode {
-    fn load_code(&self, l: State) -> ThreadStatus;
-}
-
-impl LoadCode for &CStr {
-    #[inline(always)]
-    fn load_code(&self, l: State) -> ThreadStatus {
-        unsafe { luaL_loadstring(l, self.as_ptr()) }
-    }
-}
-
-impl LoadCode for &str {
-    fn load_code(&self, l: State) -> ThreadStatus {
-        let s = CString::new(*self);
-        match s {
-            Ok(v) => {
-                (&*v).load_code(l)
-            }
-            Err(_) => ThreadStatus::ErrSyntax
-        }
-    }
 }

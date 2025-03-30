@@ -26,96 +26,16 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::ffi::c_int;
 use std::ops::{Deref, DerefMut};
-use crate::ffi::laux::{luaL_callmeta, luaL_loadbuffer, luaL_newstate, luaL_openlibs, luaL_traceback};
-use crate::ffi::lua::{lua_close, lua_getfield, lua_gettop, lua_isstring, lua_pcall, lua_pushcclosure, lua_pushlstring, lua_pushnil, lua_remove, lua_setfield, lua_settop, lua_tolstring, lua_type, State, ThreadStatus, Type, GLOBALSINDEX, REGISTRYINDEX, SIGNATURE};
+use crate::ffi::laux::{luaL_loadbuffer, luaL_newstate, luaL_openlibs};
+use crate::ffi::lua::{lua_close, lua_getfield, lua_gettop, lua_pushnil, lua_setfield, lua_settop, State, GLOBALSINDEX, REGISTRYINDEX};
 use crate::util::AnyStr;
-use crate::vm::error::{Error, RuntimeError};
-use crate::vm::userdata::{core::Registry, UserData};
-use crate::vm::util::LoadCode;
+use crate::vm::core::LoadString;
+use crate::vm::core::util::{handle_syntax_error, pcall, push_error_handler};
+use crate::vm::error::Error;
+use crate::vm::userdata::core::Registry;
+use crate::vm::userdata::UserData;
 use crate::vm::value::{FromLua, IntoLua};
-
-const TRACEBACK_NONE: &[u8] = b"<unknown error>\n<no traceback>";
-extern "C-unwind" fn error_handler(l: State) -> c_int {
-    unsafe {
-        let ty = lua_type(l, 1);
-        if ty != Type::String {
-            // Non-string error object? Try metamethod.
-            if (ty == Type::Nil || ty == Type::None) ||
-                luaL_callmeta(l, 1, c"__tostring".as_ptr()) != 1 ||
-                lua_isstring(l, -1) != 1 {
-                // Object does not turn into a string remove it alongside the return value of
-                // __tostring.
-                lua_remove(l, 1);
-                lua_remove(l, 1);
-                // Push a place-holder string to avoid the rust code from crashing because the stack
-                // would be empty otherwise.
-                lua_pushlstring(l, TRACEBACK_NONE.as_ptr() as _, TRACEBACK_NONE.len());
-                return 1;
-            }
-            // Remove the object from the stack so that error message becomes now index 1.
-            lua_remove(l, 1);
-        }
-        // Call traceback with the actual error message as a string which should push onto the stack
-        // the stacktrace as a string.
-        luaL_traceback(l, l, lua_tolstring(l, 1, std::ptr::null_mut()), 1);
-        // Remove the original error message string from the stack.
-        lua_remove(l, 1);
-        1
-    }
-}
-
-#[inline(always)]
-pub(super) fn push_error_handler(l: State) -> c_int {
-    unsafe {
-        lua_pushcclosure(l, error_handler, 0);
-        lua_gettop(l)
-    }
-}
-
-/// This function is highly unsafe it may crash at any time.
-pub(super) unsafe fn pcall(vm: &Vm, nargs: c_int, nreturns: c_int, handler_pos: c_int) -> crate::vm::Result<()> {
-    let l = vm.as_ptr();
-    unsafe {
-        // Call the function created by load_code.
-        let res = lua_pcall(l, nargs, nreturns, handler_pos);
-        // At this point the stack should no longer have the function but still has the error
-        // handler and R::num_values results.
-        // First remove error handler as we no longer need it.
-        lua_remove(l, handler_pos);
-        match res {
-            ThreadStatus::Ok => Ok(()),
-            ThreadStatus::ErrRun => {
-                // We've got a runtime error when executing the function so read the full stack
-                // trace produced by luaL_traceback and remove it from the stack.
-                let full_traceback: &str = FromLua::from_lua(vm, -1)?;
-                lua_remove(l, -1);
-                Err(Error::Runtime(RuntimeError::new(full_traceback.into())))
-            }
-            ThreadStatus::ErrMem => Err(Error::Memory),
-            ThreadStatus::ErrErr => Err(Error::Error),
-            _ => Err(Error::Unknown)
-        }
-    }
-}
-
-unsafe fn handle_syntax_error(vm: &Vm, res: ThreadStatus, handler_pos: c_int) -> crate::vm::Result<()> {
-    if res != ThreadStatus::Ok {
-        unsafe { lua_remove(vm.as_ptr(), handler_pos) };
-    }
-    match res {
-        ThreadStatus::Ok => Ok(()),
-        ThreadStatus::ErrSyntax => {
-            // If we've got an error, read it and clear the stack.
-            let str: &str = FromLua::from_lua(vm, -1)?;
-            unsafe { lua_remove(vm.as_ptr(), -1) };
-            Err(Error::Syntax(str.into()))
-        }
-        ThreadStatus::ErrMem => Err(Error::Memory),
-        _ => Err(Error::Unknown)
-    }
-}
 
 pub struct Vm {
     l: State
@@ -186,26 +106,33 @@ impl Vm {
         R::from_lua(self, -1)
     }
 
-    pub fn run_code<'a, R: FromLua<'a>>(&'a self, code: impl LoadCode) -> crate::vm::Result<R> {
+    pub fn run_code<'a, R: FromLua<'a>>(&'a self, code: impl LoadString) -> crate::vm::Result<R> {
         let l = self.as_ptr();
         // Push error handler and the get the stack position of it.
-        let handler_pos = push_error_handler(l);
+        let handler_pos = unsafe { push_error_handler(l) };
         // Push the lua code.
-        let res = code.load_code(l);
+        let res = code.load_string(l);
         unsafe { handle_syntax_error(self, res, handler_pos)? };
         unsafe { pcall(self, 0, R::num_values() as _, handler_pos)? };
         // Read and return the result of the function from the stack.
         FromLua::from_lua(self, -(R::num_values() as i32))
     }
 
+    pub fn run<'a, R: FromLua<'a>>(&'a self, ) -> crate::vm::Result<R> {
+        let l = self.as_ptr();
+        let handler_pos = unsafe { push_error_handler(l) };
+        //let res = unsafe { luaL_loadbuffer(l, bytes.as_ptr() as _, bytes.len(), name.as_ptr()) };
+        //unsafe { handle_syntax_error(self, res, handler_pos)? };
+        //unsafe { pcall(self, 0, R::num_values() as _, handler_pos)? };
+        // Read and return the result of the function from the stack.
+        FromLua::from_lua(self, -(R::num_values() as i32))
+    }
+
     pub fn run_named_code<'a, R: FromLua<'a>>(&'a self, name: impl AnyStr, code: impl AsRef<[u8]>) -> crate::vm::Result<R> {
         let bytes = code.as_ref();
-        if bytes.starts_with(SIGNATURE) {
-            return Err(Error::ByteCode);
-        }
         let name = name.to_str()?;
         let l = self.as_ptr();
-        let handler_pos = push_error_handler(l);
+        let handler_pos = unsafe { push_error_handler(l) };
         let res = unsafe { luaL_loadbuffer(l, bytes.as_ptr() as _, bytes.len(), name.as_ptr()) };
         unsafe { handle_syntax_error(self, res, handler_pos)? };
         unsafe { pcall(self, 0, R::num_values() as _, handler_pos)? };

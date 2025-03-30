@@ -32,7 +32,8 @@ use crate::ffi::lua::{lua_remove, lua_resume, lua_status, lua_tothread, ThreadSt
 use crate::util::SimpleDrop;
 use crate::vm::error::{Error, RuntimeError};
 use crate::vm::function::FromParam;
-use crate::vm::util::{LoadCode, LuaType};
+use crate::vm::util::LuaType;
+use crate::vm::core::LoadString;
 use crate::vm::value::{FromLua, IntoLua};
 use crate::vm::value::util::ensure_type_equals;
 use crate::vm::Vm;
@@ -49,7 +50,7 @@ pub struct Thread<'a> {
 
 impl<'a> Thread<'a> {
     #[inline(always)]
-    pub fn run_code<'b, R: FromLua<'b>>(&'b self, code: impl LoadCode) -> crate::vm::Result<R> {
+    pub fn run_code<'b, R: FromLua<'b>>(&'b self, code: impl LoadString) -> crate::vm::Result<R> {
         self.vm.run_code(code)
     }
 

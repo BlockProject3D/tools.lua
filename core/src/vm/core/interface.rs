@@ -26,39 +26,12 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use crate::vm::core::util::{pcall, push_error_handler};
-use crate::vm::registry::core::RegistryKey;
-use crate::vm::registry::RegistryValue;
-use crate::vm::value::{FromLua, IntoLua};
-use crate::vm::Vm;
+use crate::ffi::lua::{State, ThreadStatus};
 
-pub struct Table;
-pub struct LuaFunction;
-
-impl RegistryValue for Table {
-    type Value<'a> = crate::vm::table::Table<'a>;
-
-    #[inline(always)]
-    unsafe fn to_lua_value<'a>(vm: &'a Vm, index: i32) -> Self::Value<'a> {
-        unsafe { crate::vm::table::Table::from_lua_unchecked(vm, index) }
-    }
+pub trait LoadString {
+    fn load_string(&self, l: State) -> ThreadStatus;
 }
 
-impl RegistryValue for LuaFunction {
-    type Value<'a> = crate::vm::value::function::LuaFunction<'a>;
+pub trait Load {
 
-    #[inline(always)]
-    unsafe fn to_lua_value<'a>(vm: &'a Vm, index: i32) -> Self::Value<'a> {
-        unsafe { crate::vm::value::function::LuaFunction::from_lua_unchecked(vm, index) }
-    }
-}
-
-impl RegistryKey<LuaFunction> {
-    pub fn call<'a, T: IntoLua, R: FromLua<'a>>(&self, vm: &'a Vm, value: T) -> crate::vm::Result<R> {
-        let pos = unsafe { push_error_handler(vm.as_ptr()) };
-        unsafe { self.as_raw().push(vm) };
-        let num_values = value.into_lua(vm);
-        unsafe { pcall(vm, num_values as _, R::num_values() as _, pos)? };
-        R::from_lua(vm, -(R::num_values() as i32))
-    }
 }

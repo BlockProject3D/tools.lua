@@ -89,8 +89,7 @@ simple_error! {
         Null => "string contains a null character",
         MultiValue => "only one value is supported by this API",
         UserData(crate::vm::userdata::Error) => "userdata: {}",
-        UnsupportedType(Type) => "unsupported lua type: {:?}",
-        ByteCode => "attempt to run raw lua byte code"
+        UnsupportedType(Type) => "unsupported lua type: {:?}"
     }
 }
 

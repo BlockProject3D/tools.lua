@@ -26,50 +26,26 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use crate::ffi::lua::{lua_pushvalue, Type};
-use crate::vm::core::util::{pcall, push_error_handler};
-use crate::vm::registry::core::RegistryKey;
-use crate::vm::registry::Register;
-use crate::vm::value::{FromLua, IntoLua};
-use crate::vm::value::util::{ensure_type_equals, ensure_value_top};
-use crate::vm::Vm;
+use std::ffi::{CStr, CString};
+use crate::ffi::laux::luaL_loadstring;
+use crate::ffi::lua::{State, ThreadStatus};
+use crate::vm::LoadString;
 
-pub struct LuaFunction<'a> {
-    vm: &'a Vm,
-    index: i32
-}
-
-impl<'a> LuaFunction<'a> {
-    pub fn call<'b, R: FromLua<'b>>(&'b self, value: impl IntoLua) -> crate::vm::Result<R> {
-        let pos = unsafe { push_error_handler(self.vm.as_ptr()) };
-        unsafe { lua_pushvalue(self.vm.as_ptr(), self.index); }
-        let num_values = value.into_lua(self.vm);
-        unsafe { pcall(self.vm, num_values as _, R::num_values() as _, pos)? };
-        R::from_lua(self.vm, -(R::num_values() as i32))
-    }
-}
-
-impl<'a> FromLua<'a> for LuaFunction<'a> {
+impl LoadString for &CStr {
     #[inline(always)]
-    unsafe fn from_lua_unchecked(vm: &'a Vm, index: i32) -> LuaFunction<'a> {
-        LuaFunction {
-            vm,
-            index: vm.get_absolute_index(index)
-        }
-    }
-
-    fn from_lua(vm: &'a Vm, index: i32) -> crate::vm::Result<Self> {
-        ensure_type_equals(vm, index, Type::Function)?;
-        Ok(LuaFunction { vm, index: vm.get_absolute_index(index) })
+    fn load_string(&self, l: State) -> ThreadStatus {
+        unsafe { luaL_loadstring(l, self.as_ptr()) }
     }
 }
 
-impl Register for LuaFunction<'_> {
-    type RegistryValue = crate::vm::registry::types::LuaFunction;
-
-    fn register(self, vm: &Vm) -> RegistryKey<Self::RegistryValue> {
-        // If the function is not at the top of the stack, move it to the top.
-        ensure_value_top(vm, self.index);
-        unsafe { RegistryKey::from_top(vm) }
+impl LoadString for &str {
+    fn load_string(&self, l: State) -> ThreadStatus {
+        let s = CString::new(*self);
+        match s {
+            Ok(v) => {
+                (&*v).load_string(l)
+            }
+            Err(_) => ThreadStatus::ErrSyntax
+        }
     }
 }
