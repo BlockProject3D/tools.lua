@@ -57,6 +57,7 @@ pub trait FromLua<'a>: Sized {
     fn from_lua(vm: &'a Vm, index: i32) -> crate::vm::Result<Self>;
 
     /// Returns the number of values to be expected on the lua stack, after reading this value.
+    #[inline(always)]
     fn num_values() -> u16 {
         1
     }

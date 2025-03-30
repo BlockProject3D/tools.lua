@@ -93,27 +93,25 @@ impl Vm {
 
     pub fn set_global(&self, name: impl AnyStr, value: impl IntoLua) -> crate::vm::Result<()> {
         value.into_lua(self);
-        unsafe {
-            lua_setfield(self.as_ptr(), GLOBALSINDEX, name.to_str()?.as_ptr());
-        }
+        unsafe { lua_setfield(self.as_ptr(), GLOBALSINDEX, name.to_str()?.as_ptr()); }
         Ok(())
     }
 
     pub fn get_global<'a, R: FromLua<'a>>(&'a self, name: impl AnyStr) -> crate::vm::Result<R> {
-        unsafe {
-            lua_getfield(self.as_ptr(), GLOBALSINDEX, name.to_str()?.as_ptr());
-        }
+        unsafe { lua_getfield(self.as_ptr(), GLOBALSINDEX, name.to_str()?.as_ptr()); }
         R::from_lua(self, -1)
     }
 
     pub fn run_code<'a, R: FromLua<'a>>(&'a self, code: impl LoadString) -> crate::vm::Result<R> {
         let l = self.as_ptr();
-        // Push error handler and the get the stack position of it.
-        let handler_pos = unsafe { push_error_handler(l) };
-        // Push the lua code.
-        let res = code.load_string(l);
-        unsafe { handle_syntax_error(self, res, handler_pos)? };
-        unsafe { pcall(self, 0, R::num_values() as _, handler_pos)? };
+        unsafe {
+            // Push error handler and the get the stack position of it.
+            let handler_pos = push_error_handler(l);
+            // Push the lua code.
+            let res = code.load_string(l);
+            handle_syntax_error(self, res, handler_pos)?;
+            pcall(self, 0, R::num_values() as _, handler_pos)?;
+        }
         // Read and return the result of the function from the stack.
         FromLua::from_lua(self, -(R::num_values() as i32))
     }
@@ -132,10 +130,12 @@ impl Vm {
         let bytes = code.as_ref();
         let name = name.to_str()?;
         let l = self.as_ptr();
-        let handler_pos = unsafe { push_error_handler(l) };
-        let res = unsafe { luaL_loadbuffer(l, bytes.as_ptr() as _, bytes.len(), name.as_ptr()) };
-        unsafe { handle_syntax_error(self, res, handler_pos)? };
-        unsafe { pcall(self, 0, R::num_values() as _, handler_pos)? };
+        unsafe {
+            let handler_pos = push_error_handler(l);
+            let res = luaL_loadbuffer(l, bytes.as_ptr() as _, bytes.len(), name.as_ptr());
+            handle_syntax_error(self, res, handler_pos)?;
+            pcall(self, 0, R::num_values() as _, handler_pos)?;
+        }
         // Read and return the result of the function from the stack.
         FromLua::from_lua(self, -(R::num_values() as i32))
     }

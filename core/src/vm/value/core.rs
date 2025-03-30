@@ -133,14 +133,17 @@ unsafe impl<T: IntoParam> IntoLua for T {
 }
 
 impl FromLua<'_> for () {
+    #[inline(always)]
     unsafe fn from_lua_unchecked(_: &'_ Vm, _: i32) -> Self {
         ()
     }
 
+    #[inline(always)]
     fn from_lua(_vm: &Vm, _: i32) -> crate::vm::Result<()> {
         Ok(())
     }
 
+    #[inline(always)]
     fn num_values() -> u16 {
         0
     }
@@ -172,6 +175,7 @@ macro_rules! count_tts {
 macro_rules! impl_from_lua_tuple {
     ($($name: ident: $name2: ident),*) => {
         impl<'a, $($name: FromLua<'a>),*> FromLua<'a> for ($($name),*) {
+            #[inline(always)]
             fn num_values() -> u16 {
                 count_tts!($($name)*)
             }
