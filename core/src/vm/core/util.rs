@@ -26,12 +26,14 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::ffi::c_int;
+use std::ffi::{c_int, CStr};
+use bp3d_util::format::FixedBufStr;
 use crate::ffi::laux::{luaL_callmeta, luaL_traceback};
 use crate::ffi::lua::{lua_gettop, lua_isstring, lua_pcall, lua_pushcclosure, lua_pushlstring, lua_remove, lua_tolstring, lua_type, State, ThreadStatus, Type};
 use crate::vm::error::{Error, RuntimeError};
 use crate::vm::value::FromLua;
 use crate::vm::Vm;
+use crate::ffi::lua::IDSIZE;
 
 const TRACEBACK_NONE: &[u8] = b"<unknown error>\n<no traceback>";
 extern "C-unwind" fn error_handler(l: State) -> c_int {
@@ -154,5 +156,40 @@ pub unsafe fn handle_syntax_error(vm: &Vm, res: ThreadStatus, handler_pos: c_int
         }
         ThreadStatus::ErrMem => Err(Error::Memory),
         _ => Err(Error::Unknown)
+    }
+}
+
+pub struct ChunkNameBuilder {
+    inner: FixedBufStr<59>
+}
+
+impl ChunkNameBuilder {
+    pub fn new() -> Self {
+        Self { inner: FixedBufStr::new() }
+    }
+
+    pub fn build(self) -> ChunkName {
+        let mut buf = FixedBufStr::<IDSIZE>::new();
+        unsafe {
+            buf.write(self.inner.str().as_bytes());
+            buf.write(b"\0");
+        }
+        ChunkName { inner: buf }
+    }
+}
+
+impl std::fmt::Write for ChunkNameBuilder {
+    fn write_str(&mut self, s: &str) -> Result<(), std::fmt::Error> {
+        self.inner.write_str(s)
+    }
+}
+
+pub struct ChunkName {
+    inner: FixedBufStr<60>
+}
+
+impl ChunkName {
+    pub fn cstr(&self) -> &CStr {
+        unsafe { CStr::from_bytes_with_nul_unchecked(self.inner.str().as_bytes()) }
     }
 }

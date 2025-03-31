@@ -26,10 +26,12 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use std::fmt::Write;
 use std::ffi::{CStr, CString};
-use crate::ffi::laux::luaL_loadstring;
+use crate::ffi::laux::{luaL_loadbuffer, luaL_loadstring};
 use crate::ffi::lua::{State, ThreadStatus};
-use crate::vm::LoadString;
+use crate::vm::{Load, LoadString};
+use crate::vm::core::util::ChunkNameBuilder;
 
 impl LoadString for &CStr {
     #[inline(always)]
@@ -47,5 +49,36 @@ impl LoadString for &str {
             }
             Err(_) => ThreadStatus::ErrSyntax
         }
+    }
+}
+
+pub struct Code<'a> {
+    name: &'a str,
+    code: &'a [u8]
+}
+
+impl<'a> Code<'a> {
+    pub fn new(name: &'a str, code: &'a [u8]) -> Self {
+        Self {
+            name,
+            code
+        }
+    }
+}
+
+impl Load for Code<'_> {
+    fn load(&self, l: State) -> crate::vm::Result<ThreadStatus> {
+        let mut builder = ChunkNameBuilder::new();
+        let _ = write!(&mut builder, "={}", self.name);
+        let name = builder.build();
+        unsafe {
+            Ok(luaL_loadbuffer(l, self.code.as_ptr() as _, self.code.len(), name.cstr().as_ptr()))
+        }
+    }
+}
+
+impl<T: LoadString> Load for T {
+    fn load(&self, l: State) -> crate::vm::Result<ThreadStatus> {
+        Ok(self.load_string(l))
     }
 }

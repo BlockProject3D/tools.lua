@@ -29,7 +29,7 @@
 mod interface;
 pub mod util;
 mod vm;
-mod load;
+pub mod load;
 
 pub use vm::{Vm, RootVm};
 pub use interface::*;

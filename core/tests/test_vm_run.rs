@@ -26,13 +26,22 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use bp3d_lua::vm::RootVm;
+use bp3d_lua::vm::load::Code;
+use bp3d_lua::vm::{Load, RootVm, Vm};
+
+fn run_assert_err(vm: &Vm, obj: impl Load, err_msg: &str) {
+    let res = vm.run::<()>(obj);
+    assert!(res.is_err());
+    let err = res.unwrap_err().into_runtime().unwrap();
+    assert_eq!(err.msg(), err_msg);
+}
 
 #[test]
 fn test_vm_run() {
     let vm = RootVm::new();
-    let res = vm.run_named_code::<()>(c"test", b"return 1 + b");
-    assert!(res.is_err());
-    let err = res.unwrap_err().into_runtime().unwrap();
-    assert_eq!(err.msg(), "[string \"test\"]:1: attempt to perform arithmetic on global 'b' (a nil value)")
+    let top = vm.top();
+    run_assert_err(&vm, Code::new("test", b"return 1 + b"), "test:1: attempt to perform arithmetic on global 'b' (a nil value)");
+    run_assert_err(&vm, c"return 1 + b", "[string \"return 1 + b\"]:1: attempt to perform arithmetic on global 'b' (a nil value)");
+    run_assert_err(&vm, Code::new("this is an amazingly long text which should get truncated我", b"return 1 + b"), "this is an amazingly long text which should get truncated:1: attempt to perform arithmetic on global 'b' (a nil value)");
+    assert_eq!(vm.top(), top);
 }
