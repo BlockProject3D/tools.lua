@@ -59,7 +59,7 @@ pub struct State(*mut c_void);
 
 pub type CFunction = extern "C-unwind" fn(l: State) -> i32;
 
-pub type Reader = extern "C" fn(l: State, ud: *mut c_void, sz: usize) -> *const c_char;
+pub type Reader = extern "C-unwind" fn(l: State, ud: *mut c_void, sz: *mut usize) -> *const c_char;
 
 pub type Writer = extern "C" fn(l: State, p: *const c_void, sz: usize, ud: *mut c_void) -> c_int;
 

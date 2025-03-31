@@ -154,6 +154,12 @@ pub unsafe fn handle_syntax_error(vm: &Vm, res: ThreadStatus, handler_pos: c_int
             unsafe { lua_remove(vm.as_ptr(), -1) };
             Err(Error::Syntax(str.into()))
         }
+        ThreadStatus::ErrRun => {
+            // If we've got an error, read it and clear the stack.
+            let str: &str = FromLua::from_lua(vm, -1)?;
+            unsafe { lua_remove(vm.as_ptr(), -1) };
+            Err(Error::Loader(str.into()))
+        }
         ThreadStatus::ErrMem => Err(Error::Memory),
         _ => Err(Error::Unknown)
     }

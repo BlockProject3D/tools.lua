@@ -30,10 +30,9 @@ use std::ops::{Deref, DerefMut};
 use crate::ffi::laux::{luaL_newstate, luaL_openlibs};
 use crate::ffi::lua::{lua_close, lua_getfield, lua_gettop, lua_pushnil, lua_setfield, lua_settop, State, GLOBALSINDEX, REGISTRYINDEX};
 use crate::util::AnyStr;
-use crate::vm::core::LoadString;
+use crate::vm::core::{Load, LoadString};
 use crate::vm::core::util::{handle_syntax_error, pcall, push_error_handler};
 use crate::vm::error::Error;
-use crate::vm::Load;
 use crate::vm::userdata::core::Registry;
 use crate::vm::userdata::UserData;
 use crate::vm::value::{FromLua, IntoLua};
@@ -120,7 +119,7 @@ impl Vm {
     pub fn run<'a, R: FromLua<'a>>(&'a self, obj: impl Load) -> crate::vm::Result<R> {
         let l = self.as_ptr();
         let handler_pos = unsafe { push_error_handler(l) };
-        let res = obj.load(l)?;
+        let res = obj.load(l);
         unsafe { handle_syntax_error(self, res, handler_pos)? };
         unsafe { pcall(self, 0, R::num_values() as _, handler_pos)? };
         // Read and return the result of the function from the stack.

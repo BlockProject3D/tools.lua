@@ -27,11 +27,12 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use std::fmt::Write;
-use std::ffi::{CStr, CString};
+use std::ffi::{c_char, c_void, CStr, CString};
 use crate::ffi::laux::{luaL_loadbuffer, luaL_loadstring};
-use crate::ffi::lua::{State, ThreadStatus};
-use crate::vm::{Load, LoadString};
-use crate::vm::core::util::ChunkNameBuilder;
+use crate::ffi::lua::{lua_load, State, ThreadStatus};
+use crate::vm::core::{Load, LoadString};
+use crate::vm::core::util::{ChunkName, ChunkNameBuilder};
+use crate::vm::util::lua_rust_error;
 
 impl LoadString for &CStr {
     #[inline(always)]
@@ -67,18 +68,46 @@ impl<'a> Code<'a> {
 }
 
 impl Load for Code<'_> {
-    fn load(&self, l: State) -> crate::vm::Result<ThreadStatus> {
+    fn load(&self, l: State) -> ThreadStatus {
         let mut builder = ChunkNameBuilder::new();
         let _ = write!(&mut builder, "={}", self.name);
         let name = builder.build();
-        unsafe {
-            Ok(luaL_loadbuffer(l, self.code.as_ptr() as _, self.code.len(), name.cstr().as_ptr()))
-        }
+        unsafe { luaL_loadbuffer(l, self.code.as_ptr() as _, self.code.len(), name.cstr().as_ptr()) }
     }
 }
 
 impl<T: LoadString> Load for T {
-    fn load(&self, l: State) -> crate::vm::Result<ThreadStatus> {
-        Ok(self.load_string(l))
+    fn load(&self, l: State) -> ThreadStatus {
+        self.load_string(l)
     }
+}
+
+pub trait Custom {
+    type Error: std::error::Error;
+
+    fn read_data(&mut self) -> Result<&[u8], Self::Error>;
+}
+
+/// Bind a custom Rust loader to Lua.
+///
+/// # Safety
+///
+/// This is UB to call outside a [Load] trait implementation.
+pub unsafe fn load_custom<T: Custom>(l: State, chunk_name: ChunkName, mut custom: T) -> ThreadStatus {
+    extern "C-unwind" fn _reader<T: Custom>(l: State, ud: *mut c_void, sz: *mut usize) -> *const c_char {
+        let obj = ud as *mut T;
+        unsafe {
+            let res = (&mut *obj).read_data();
+            match res {
+                Err(e) => {
+                    lua_rust_error(l, e);
+                },
+                Ok(v) => {
+                    *sz = v.len();
+                    v.as_ptr() as _
+                }
+            }
+        }
+    }
+    lua_load(l, _reader::<T>, &mut custom as *mut T as _, chunk_name.cstr().as_ptr())
 }

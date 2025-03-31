@@ -33,5 +33,5 @@ pub trait LoadString {
 }
 
 pub trait Load {
-    fn load(&self, l: State) -> crate::vm::Result<ThreadStatus>;
+    fn load(&self, l: State) -> ThreadStatus;
 }

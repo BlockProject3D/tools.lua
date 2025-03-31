@@ -26,8 +26,30 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use bp3d_lua::vm::load::Code;
-use bp3d_lua::vm::{Load, RootVm, Vm};
+use std::fmt::Write;
+use bp3d_lua::ffi::lua::{State, ThreadStatus};
+use bp3d_lua::vm::core::load::{load_custom, Code};
+use bp3d_lua::vm::core::Load;
+use bp3d_lua::vm::core::util::ChunkNameBuilder;
+use bp3d_lua::vm::{RootVm, Vm};
+
+struct BrokenReader;
+
+impl bp3d_lua::vm::core::load::Custom for BrokenReader {
+    type Error = bp3d_lua::vm::error::Error;
+
+    fn read_data(&mut self) -> Result<&[u8], Self::Error> {
+        Err(bp3d_lua::vm::error::Error::Error)
+    }
+}
+
+impl Load for BrokenReader {
+    fn load(&self, l: State) -> ThreadStatus {
+        let mut builder = ChunkNameBuilder::new();
+        let _ = write!(&mut builder, "broken");
+        unsafe { load_custom(l, builder.build(), BrokenReader) }
+    }
+}
 
 fn run_assert_err(vm: &Vm, obj: impl Load, err_msg: &str) {
     let res = vm.run::<()>(obj);
@@ -43,5 +65,7 @@ fn test_vm_run() {
     run_assert_err(&vm, Code::new("test", b"return 1 + b"), "test:1: attempt to perform arithmetic on global 'b' (a nil value)");
     run_assert_err(&vm, c"return 1 + b", "[string \"return 1 + b\"]:1: attempt to perform arithmetic on global 'b' (a nil value)");
     run_assert_err(&vm, Code::new("this is an amazingly long text which should get truncated我", b"return 1 + b"), "this is an amazingly long text which should get truncated:1: attempt to perform arithmetic on global 'b' (a nil value)");
+    let err = vm.run::<()>(BrokenReader).unwrap_err();
+    assert_eq!(err.to_string(), "loader error: rust error: error in error handler");
     assert_eq!(vm.top(), top);
 }
