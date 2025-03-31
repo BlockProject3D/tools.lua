@@ -27,7 +27,9 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use std::fmt::Write;
-use std::ffi::{c_char, c_void, CStr, CString};
+use std::ffi::{c_char, c_void, CStr, CString, OsStr};
+use std::fs::File;
+use std::path::Path;
 use crate::ffi::laux::{luaL_loadbuffer, luaL_loadstring};
 use crate::ffi::lua::{lua_load, State, ThreadStatus};
 use crate::vm::core::{Load, LoadString};
@@ -68,7 +70,7 @@ impl<'a> Code<'a> {
 }
 
 impl Load for Code<'_> {
-    fn load(&self, l: State) -> ThreadStatus {
+    fn load(self, l: State) -> ThreadStatus {
         let mut builder = ChunkNameBuilder::new();
         let _ = write!(&mut builder, "={}", self.name);
         let name = builder.build();
@@ -77,7 +79,7 @@ impl Load for Code<'_> {
 }
 
 impl<T: LoadString> Load for T {
-    fn load(&self, l: State) -> ThreadStatus {
+    fn load(self, l: State) -> ThreadStatus {
         self.load_string(l)
     }
 }
@@ -110,4 +112,55 @@ pub unsafe fn load_custom<T: Custom>(l: State, chunk_name: ChunkName, mut custom
         }
     }
     lua_load(l, _reader::<T>, &mut custom as *mut T as _, chunk_name.cstr().as_ptr())
+}
+
+const BUF_SIZE: usize = 8192;
+
+pub struct Read<T: std::io::Read> {
+    inner: T,
+    buffer: [u8; BUF_SIZE],
+    len: usize
+}
+
+impl<T: std::io::Read> Read<T> {
+    pub fn new(inner: T) -> Self {
+        Self {
+            inner,
+            buffer: [0; BUF_SIZE],
+            len: 0
+        }
+    }
+}
+
+impl<T: std::io::Read> Custom for Read<T> {
+    type Error = std::io::Error;
+
+    fn read_data(&mut self) -> Result<&[u8], Self::Error> {
+        self.len = self.inner.read(&mut self.buffer[..])?;
+        Ok(&self.buffer[..self.len])
+    }
+}
+
+pub struct Script {
+    file: File,
+    chunk_name: ChunkName
+}
+
+impl Script {
+    pub fn from_path(path: impl AsRef<Path>) -> std::io::Result<Self> {
+        let mut builder = ChunkNameBuilder::new();
+        let file_name = path.as_ref().file_name().unwrap_or(OsStr::new("unnamed")).to_str().unwrap_or("not-unicode");
+        let _ = write!(&mut builder, "@{}", file_name);
+        let file = File::open(path)?;
+        Ok(Self {
+            file,
+            chunk_name: builder.build(),
+        })
+    }
+}
+
+impl Load for Script {
+    fn load(self, l: State) -> ThreadStatus {
+        unsafe { load_custom(l, self.chunk_name, Read::new(self.file)) }
+    }
 }

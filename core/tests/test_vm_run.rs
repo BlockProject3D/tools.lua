@@ -28,7 +28,7 @@
 
 use std::fmt::Write;
 use bp3d_lua::ffi::lua::{State, ThreadStatus};
-use bp3d_lua::vm::core::load::{load_custom, Code};
+use bp3d_lua::vm::core::load::{load_custom, Code, Script};
 use bp3d_lua::vm::core::Load;
 use bp3d_lua::vm::core::util::ChunkNameBuilder;
 use bp3d_lua::vm::{RootVm, Vm};
@@ -44,7 +44,7 @@ impl bp3d_lua::vm::core::load::Custom for BrokenReader {
 }
 
 impl Load for BrokenReader {
-    fn load(&self, l: State) -> ThreadStatus {
+    fn load(self, l: State) -> ThreadStatus {
         let mut builder = ChunkNameBuilder::new();
         let _ = write!(&mut builder, "broken");
         unsafe { load_custom(l, builder.build(), BrokenReader) }
@@ -67,5 +67,8 @@ fn test_vm_run() {
     run_assert_err(&vm, Code::new("this is an amazingly long text which should get truncated我", b"return 1 + b"), "this is an amazingly long text which should get truncated:1: attempt to perform arithmetic on global 'b' (a nil value)");
     let err = vm.run::<()>(BrokenReader).unwrap_err();
     assert_eq!(err.to_string(), "loader error: rust error: error in error handler");
+    run_assert_err(&vm, Script::from_path("./tests/lua/basic.lua").unwrap(), "basic.lua:2: nope");
+    let err = vm.run::<()>(Script::from_path("./tests/lua/broken.lua").unwrap()).unwrap_err();
+    assert_eq!(err.to_string(), "syntax error: broken.lua:2: '(' expected near 'end'");
     assert_eq!(vm.top(), top);
 }
