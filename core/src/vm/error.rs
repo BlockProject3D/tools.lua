@@ -66,7 +66,7 @@ impl RuntimeError {
         &self.traceback[self.index + 1..]
     }
 
-    pub fn traceback(&self) -> &str {
+    pub fn backtrace(&self) -> &str {
         &self.traceback
     }
 }
