@@ -33,6 +33,7 @@ use crate::ffi::laux::{luaL_checkudata, luaL_newmetatable};
 use crate::ffi::lua::{lua_pushcclosure, lua_pushvalue, lua_setfield, lua_settop, CFunction, State};
 use crate::vm::userdata::{AddGcMethod, Error, LuaDrop, UserData};
 use crate::vm::util::{LuaType, TypeName};
+use crate::vm::value::IntoLua;
 use crate::vm::Vm;
 
 pub struct Function {
@@ -80,6 +81,9 @@ impl Function {
         if self.name == c"__index" {
             return Err(Error::Index);
         }
+        if self.name == c"__metatable" {
+            return Err(Error::Metatable);
+        }
         if self.is_mutable {
             let initial = &self.args[0];
             for v in self.args.iter().skip(1) {
@@ -120,7 +124,19 @@ impl<'a, T: UserData> Registry<'a, T> {
             unsafe { lua_settop(vm.as_ptr(), -2) };
             return Err(Error::AlreadyRegistered(T::CLASS_NAME));
         }
-        Ok(Registry { vm, useless: PhantomData, has_gc: OnceCell::new() })
+        let reg = Registry { vm, useless: PhantomData, has_gc: OnceCell::new() };
+        reg.add_field(c"__metatable", T::CLASS_NAME.to_str().unwrap_unchecked()).unwrap_unchecked();
+        Ok(reg)
+    }
+
+    pub fn add_field(&self, name: &'static CStr, value: impl IntoLua) -> Result<(), Error> {
+        let num = value.into_lua(self.vm);
+        if num > 1 {
+            unsafe { lua_settop(self.vm.as_ptr(), -(num as i32) - 1) };
+            return Err(Error::MultiValueField);
+        }
+        unsafe { lua_setfield(self.vm.as_ptr(), -2, name.as_ptr()); }
+        Ok(())
     }
 
     pub fn add_method(&self, name: &'static CStr, func: CFunction) {

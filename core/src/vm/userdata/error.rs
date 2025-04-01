@@ -35,6 +35,8 @@ simple_error! {
         MutViolation(&'static CStr) => "violation of the unique type rule for mutable method {:?}",
         Gc => "__gc meta-method is reserved for internal use, if you need Vm access in drop, please use LuaDrop",
         Index => "__index meta-method is required to be surrendered to luaL_newmetatable, it is impossible to bind custom code to __index",
+        Metatable => "__metatable is set for security reasons and cannot be altered",
+        MultiValueField => "multi-value fields are not supported",
         AlreadyRegistered(&'static CStr) => "class name {:?} has already been registered",
         Alignment(usize) => "too strict alignment required ({} bytes), max is 8 bytes"
     }

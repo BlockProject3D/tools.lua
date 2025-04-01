@@ -26,11 +26,14 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use std::sync::Mutex;
 use bp3d_lua::{decl_lib_func, decl_userdata, decl_userdata_mut};
 use bp3d_lua::ffi::lua::Number;
 use bp3d_lua::vm::{RootVm, Vm};
 use bp3d_lua::vm::function::types::RFunction;
 use bp3d_lua::vm::userdata::LuaDrop;
+
+static MUTEX: Mutex<()> = Mutex::new(());
 
 static mut DROP_COUNTER: i32 = 0;
 static mut LUA_DROP_COUNTER: i32 = 0;
@@ -171,26 +174,91 @@ fn test_vm_userdata_error_handling() {
     assert_eq!(top, vm.top());
 }
 
+fn test_vm_userdata_base(vm: &Vm) {
+    unsafe {
+        DROP_COUNTER = 0;
+        LUA_DROP_COUNTER = 0;
+    }
+    let top = vm.top();
+    vm.register_userdata::<MyInt>().unwrap();
+    assert_eq!(top, vm.top());
+    vm.set_global(c"MyInt", RFunction::wrap(my_int)).unwrap();
+    assert_eq!(top, vm.top());
+    vm.run_code::<()>(c"a = MyInt(123)").unwrap();
+    vm.run_code::<()>(c"b = MyInt(456)").unwrap();
+    vm.run_code::<()>(c"c = MyInt(456)").unwrap();
+    assert_eq!(vm.run_code::<bool>(c"return a == b").unwrap(), false);
+    assert_eq!(vm.run_code::<bool>(c"return b == c").unwrap(), true);
+    assert_eq!(vm.run_code::<bool>(c"return a < b").unwrap(), true);
+    assert_eq!(vm.run_code::<bool>(c"return b > a").unwrap(), true);
+    assert_eq!(vm.run_code::<&MyInt>(c"return a + b").unwrap().0, 579);
+    assert_eq!(vm.run_code::<&str>(c"return (a + b):tostring()").unwrap(), "579");
+    assert_eq!(vm.run_code::<Number>(c"return (a + b):tonumber()").unwrap(), 579.0);
+    assert_eq!(vm.run_code::<Number>(c"return a.tonumber(b)").unwrap(), 456.0);
+    assert_eq!(top + 8, vm.top());
+}
+
 #[test]
 fn test_vm_userdata() {
+    let _guard = MUTEX.lock();
     {
         let vm = RootVm::new();
         let top = vm.top();
-        vm.register_userdata::<MyInt>().unwrap();
-        assert_eq!(top, vm.top());
-        vm.set_global(c"MyInt", RFunction::wrap(my_int)).unwrap();
-        assert_eq!(top, vm.top());
-        vm.run_code::<()>(c"a = MyInt(123)").unwrap();
-        vm.run_code::<()>(c"b = MyInt(456)").unwrap();
-        vm.run_code::<()>(c"c = MyInt(456)").unwrap();
-        assert_eq!(vm.run_code::<bool>(c"return a == b").unwrap(), false);
-        assert_eq!(vm.run_code::<bool>(c"return b == c").unwrap(), true);
-        assert_eq!(vm.run_code::<bool>(c"return a < b").unwrap(), true);
-        assert_eq!(vm.run_code::<bool>(c"return b > a").unwrap(), true);
-        assert_eq!(vm.run_code::<&MyInt>(c"return a + b").unwrap().0, 579);
-        assert_eq!(vm.run_code::<&str>(c"return (a + b):tostring()").unwrap(), "579");
-        assert_eq!(vm.run_code::<Number>(c"return (a + b):tonumber()").unwrap(), 579.0);
-        assert_eq!(top + 7, vm.top());
+        test_vm_userdata_base(&vm);
+        assert_eq!(top + 8, vm.top());
+    }
+    assert_eq!(unsafe { DROP_COUNTER }, 6);
+    assert_eq!(unsafe { LUA_DROP_COUNTER }, 6);
+}
+
+#[test]
+fn test_vm_userdata_security1() {
+    let _guard = MUTEX.lock();
+    {
+        let vm = RootVm::new();
+        test_vm_userdata_base(&vm);
+        vm.run_code::<()>(c"getmetatable(a).__gc = function() print(\"Lua has hacked Rust\") end").unwrap_err();
+    }
+    assert_eq!(unsafe { DROP_COUNTER }, 6);
+    assert_eq!(unsafe { LUA_DROP_COUNTER }, 6);
+}
+
+#[test]
+fn test_vm_userdata_security2() {
+    let _guard = MUTEX.lock();
+    {
+        let vm = RootVm::new();
+        test_vm_userdata_base(&vm);
+        vm.run_code::<()>(c"a.__gc = function() print(\"Lua has hacked Rust\") end").unwrap_err();
+    }
+    assert_eq!(unsafe { DROP_COUNTER }, 6);
+    assert_eq!(unsafe { LUA_DROP_COUNTER }, 6);
+}
+
+#[test]
+fn test_vm_userdata_security3() {
+    let _guard = MUTEX.lock();
+    {
+        let vm = RootVm::new();
+        test_vm_userdata_base(&vm);
+        vm.run_code::<()>(c"setmetatable(a, nil)").unwrap_err();
+    }
+    assert_eq!(unsafe { DROP_COUNTER }, 6);
+    assert_eq!(unsafe { LUA_DROP_COUNTER }, 6);
+}
+
+#[test]
+fn test_vm_userdata_security4() {
+    let _guard = MUTEX.lock();
+    {
+        let vm = RootVm::new();
+        test_vm_userdata_base(&vm);
+        vm.run_code::<()>(c"
+            local func = a.tonumber
+            local tbl = {}
+            tbl.tonumber = func
+            tbl:tonumber()
+        ").unwrap_err();
     }
     assert_eq!(unsafe { DROP_COUNTER }, 6);
     assert_eq!(unsafe { LUA_DROP_COUNTER }, 6);
