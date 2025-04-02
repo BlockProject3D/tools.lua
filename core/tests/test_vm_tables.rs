@@ -33,22 +33,18 @@ use bp3d_lua::vm::table::Table;
 fn tables() {
     let mut vm = RootVm::new();
     let top = vm.top();
-    let mut tbl = Table::new(&vm);
-    {
-        let mut scope = tbl.lock();
-        scope.set_field(c"a", 0.42).unwrap();
-        scope.set_field(c"b", "My great string").unwrap();
-        let mut new_table = Table::new(&vm);
-        {
-            let mut scope = new_table.lock();
-            scope.set_field(c"whatever", 42).unwrap();
-        }
-        let s: &str = scope.get_field(c"b").unwrap();
+    vm.scope(|vm| {
+        let mut tbl = Table::new(vm);
+        tbl.set_field(c"a", 0.42)?;
+        tbl.set_field(c"b", "My great string")?;
+        let mut new_table = Table::new(vm);
+        new_table.set_field(c"whatever", 42)?;
+        let s: &str = tbl.get_field(c"b")?;
         assert_eq!(s, "My great string");
-        scope.set_field(c"sub", new_table).unwrap();
-    }
-    assert_eq!(tbl.len(), 3);
-    vm.set_global(c"myTable", tbl).unwrap();
+        tbl.set_field(c"sub", new_table)?;
+        assert_eq!(tbl.len(), 3);
+        vm.set_global(c"myTable", tbl)
+    }).unwrap();
     let new_top = vm.top();
     assert_eq!(top, new_top);
     let v = vm.run_code::<f64>(c"return myTable.c");
@@ -65,20 +61,19 @@ fn tables() {
     vm.clear();
     let new_top_1 = vm.top();
     assert_eq!(new_top, new_top_1);
-    let mut tbl: Table = vm.get_global("myTable").unwrap();
-    assert_eq!(tbl.len(), 3);
-    {
-        let scope = tbl.lock();
-        let v: f64 = scope.get_field(c"a").unwrap();
+    vm.scope(|vm| {
+        let tbl: Table = vm.get_global("myTable")?;
+        assert_eq!(tbl.len(), 3);
+        let v: f64 = tbl.get_field(c"a")?;
         assert_eq!(v, 0.42);
-    }
-    let v = vm.run_code::<&str>(c"return myTable.b").unwrap();
-    assert_eq!(v, "My great string");
-    {
-        let scope = tbl.lock();
-        let v: f64 = scope.get_field(c"a").unwrap();
-        assert_eq!(v, 0.42);
-    }
-    assert_eq!(v, "My great string");
-    assert_eq!(vm.top(), new_top + 2);
+        let v = vm.run_code::<&str>(c"return myTable.b")?;
+        assert_eq!(v, "My great string");
+        {
+            let v: f64 = tbl.get_field(c"a")?;
+            assert_eq!(v, 0.42);
+        }
+        assert_eq!(v, "My great string");
+        Ok(())
+    }).unwrap();
+    assert_eq!(vm.top(), new_top);
 }

@@ -54,12 +54,12 @@ impl Parser for IntoParam {
             // Table indices starts at 1 rather than 0 in Lua.
             let index = (field.index + 1) as i32;
             quote! {
-                scope.set(#index, self.#name_idx).unwrap();
+                tbl.set(#index, self.#name_idx).unwrap();
             }
         } else {
             let name = field.unique_name;
             quote! {
-                scope.set_field(bp3d_lua::c_stringify!(#name), self.#name).unwrap();
+                tbl.set_field(bp3d_lua::c_stringify!(#name), self.#name).unwrap();
             }
         }
     }
@@ -90,10 +90,7 @@ impl Parser for IntoParam {
             unsafe impl #generics bp3d_lua::vm::function::IntoParam for #name #generics {
                 fn into_param(self, vm: &bp3d_lua::vm::Vm) -> u16 {
                     let mut tbl = bp3d_lua::vm::table::Table::new(vm);
-                    {
-                        let mut scope = tbl.lock();
-                        #(#parsed)*
-                    }
+                    #(#parsed)*
                     1
                 }
             }

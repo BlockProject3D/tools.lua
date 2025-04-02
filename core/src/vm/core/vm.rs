@@ -49,6 +49,13 @@ impl Vm {
         }
     }
 
+    pub fn scope<R: 'static, F: FnOnce(&Vm) -> crate::vm::Result<R>>(&self, f: F) -> crate::vm::Result<R> {
+        let top = self.top();
+        let r = f(self)?;
+        unsafe { lua_settop(self.l, top) };
+        Ok(r)
+    }
+
     pub fn register_userdata<T: UserData>(&self) -> crate::vm::Result<()> {
         let reg = unsafe { Registry::<T>::new(self) }.map_err(Error::UserData)?;
         let res = T::register(&reg).map_err(Error::UserData);

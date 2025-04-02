@@ -26,10 +26,12 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-mod scope;
 mod core;
 mod interface;
 mod iter;
 
 pub use core::Table;
-pub use scope::Scope;
+
+//TODO: Remove scope put back all functions into the main table structure, not a problem since
+// values which require absolute stack index already do their conversions locally.
+//TODO: Re-introduce scope as Vm tool instead of a table tool.

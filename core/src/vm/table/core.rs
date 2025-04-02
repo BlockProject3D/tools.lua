@@ -27,12 +27,11 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::ffi::ext::{lua_ext_tab_len, MSize};
-use crate::ffi::lua::{lua_createtable, lua_getfield, lua_gettop, lua_pushvalue};
+use crate::ffi::lua::{lua_createtable, lua_getfield, lua_gettop, lua_pushvalue, lua_rawgeti, lua_rawseti, lua_setfield, lua_settop};
 use crate::util::AnyStr;
 use crate::vm::core::util::{pcall, push_error_handler};
 use crate::vm::table::iter::Iter;
 use crate::vm::value::{FromLua, IntoLua};
-use crate::vm::table::Scope;
 use crate::vm::Vm;
 
 pub struct Table<'a> {
@@ -70,11 +69,6 @@ impl<'a> Table<'a> {
         unsafe { lua_createtable(vm.as_ptr(), array_capacity as _, non_array_capcity as _) };
         let index = unsafe { lua_gettop(vm.as_ptr()) };
         Self { vm, index }
-    }
-
-    #[inline(always)]
-    pub fn lock(&mut self) -> Scope {
-        Scope::new(self.vm, self.index)
     }
 
     pub fn len(&self) -> usize {
@@ -119,5 +113,51 @@ impl<'a> Table<'a> {
     /// This function borrows mutably to avoid messing up the Lua stack while iterating.
     pub fn iter(&mut self) -> Iter {
         Iter::from_raw(self.vm, self.index)
+    }
+
+    pub fn set_field(&mut self, name: impl AnyStr, value: impl IntoLua) -> crate::vm::Result<()> {
+        unsafe {
+            let nums = value.into_lua(self.vm);
+            if nums > 1 {
+                // Clear the stack.
+                lua_settop(self.vm.as_ptr(), -(nums as i32)-1);
+                return Err(crate::vm::error::Error::MultiValue);
+            }
+            lua_setfield(self.vm.as_ptr(), self.index, name.to_str()?.as_ptr());
+        }
+        Ok(())
+    }
+
+    pub fn get_field<'b, T: FromLua<'b>>(&'b self, name: impl AnyStr) -> crate::vm::Result<T> {
+        if T::num_values() > 1 {
+            return Err(crate::vm::error::Error::MultiValue);
+        }
+        unsafe {
+            lua_getfield(self.vm.as_ptr(), self.index, name.to_str()?.as_ptr());
+            T::from_lua(self.vm, -1)
+        }
+    }
+
+    pub fn set(&mut self, i: i32, value: impl IntoLua) -> crate::vm::Result<()> {
+        unsafe {
+            let nums = value.into_lua(self.vm);
+            if nums > 1 {
+                // Clear the stack.
+                lua_settop(self.vm.as_ptr(), -(nums as i32)-1);
+                return Err(crate::vm::error::Error::MultiValue);
+            }
+            lua_rawseti(self.vm.as_ptr(), self.index, i);
+        }
+        Ok(())
+    }
+
+    pub fn get<'b, T: FromLua<'b>>(&'b self, i: i32) -> crate::vm::Result<T> {
+        if T::num_values() > 1 {
+            return Err(crate::vm::error::Error::MultiValue);
+        }
+        unsafe {
+            lua_rawgeti(self.vm.as_ptr(), self.index, i);
+            T::from_lua(self.vm, -1)
+        }
     }
 }
