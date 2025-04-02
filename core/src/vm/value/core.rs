@@ -245,3 +245,23 @@ impl_into_lua_tuple!(T: 0, T1: 1, T2: 2, T3: 3, T4: 4, T5: 5, T6: 6);
 impl_into_lua_tuple!(T: 0, T1: 1, T2: 2, T3: 3, T4: 4, T5: 5, T6: 6, T7: 7);
 impl_into_lua_tuple!(T: 0, T1: 1, T2: 2, T3: 3, T4: 4, T5: 5, T6: 6, T7: 7, T8: 8);
 impl_into_lua_tuple!(T: 0, T1: 1, T2: 2, T3: 3, T4: 4, T5: 5, T6: 6, T7: 7, T8: 8, T9: 9);
+
+impl<'a, T: FromLua<'a>> FromLua<'a> for Option<T> {
+    unsafe fn from_lua_unchecked(vm: &'a Vm, index: i32) -> Self {
+        let ty = unsafe { lua_type(vm.as_ptr(), index) };
+        if ty == Type::Nil {
+            None
+        } else {
+            Some(FromLua::from_lua_unchecked(vm, index))
+        }
+    }
+
+    fn from_lua(vm: &'a Vm, index: i32) -> crate::vm::Result<Self> {
+        let ty = unsafe { lua_type(vm.as_ptr(), index) };
+        if ty == Type::Nil {
+            Ok(None)
+        } else {
+            Ok(Some(FromLua::from_lua(vm, index)?))
+        }
+    }
+}
