@@ -27,7 +27,7 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::ffi::laux::luaL_testudata;
-use crate::ffi::lua::{lua_tolstring, lua_type, lua_tointeger, lua_tonumber, Type, lua_toboolean, lua_touserdata};
+use crate::ffi::lua::{lua_tolstring, lua_type, lua_tointeger, lua_tonumber, Type, lua_toboolean, lua_touserdata, lua_settop};
 use crate::vm::function::IntoParam;
 use crate::vm::Vm;
 use crate::vm::error::{Error, TypeError};
@@ -250,6 +250,10 @@ impl<'a, T: FromLua<'a>> FromLua<'a> for Option<T> {
     unsafe fn from_lua_unchecked(vm: &'a Vm, index: i32) -> Self {
         let ty = unsafe { lua_type(vm.as_ptr(), index) };
         if ty == Type::Nil {
+            // Clear the nil value at the top of the stack.
+            if index == -1 {
+                unsafe { lua_settop(vm.as_ptr(), -2) };
+            }
             None
         } else {
             Some(FromLua::from_lua_unchecked(vm, index))
@@ -259,6 +263,10 @@ impl<'a, T: FromLua<'a>> FromLua<'a> for Option<T> {
     fn from_lua(vm: &'a Vm, index: i32) -> crate::vm::Result<Self> {
         let ty = unsafe { lua_type(vm.as_ptr(), index) };
         if ty == Type::Nil {
+            // Clear the nil value at the top of the stack.
+            if index == -1 {
+                unsafe { lua_settop(vm.as_ptr(), -2) };
+            }
             Ok(None)
         } else {
             Ok(Some(FromLua::from_lua(vm, index)?))
