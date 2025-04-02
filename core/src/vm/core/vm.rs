@@ -26,6 +26,7 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use std::cell::Cell;
 use std::ops::{Deref, DerefMut};
 use crate::ffi::laux::{luaL_newstate, luaL_openlibs};
 use crate::ffi::lua::{lua_close, lua_getfield, lua_gettop, lua_pushnil, lua_setfield, lua_settop, State, GLOBALSINDEX, REGISTRYINDEX};
@@ -134,6 +135,10 @@ impl Vm {
     }
 }
 
+thread_local! {
+    static HAS_VM: Cell<bool> = Cell::new(false);
+}
+
 pub struct RootVm {
     vm: Vm,
     leaked: Vec<Box<dyn FnOnce()>>
@@ -141,8 +146,12 @@ pub struct RootVm {
 
 impl RootVm {
     pub fn new() -> RootVm {
+        if HAS_VM.with(|v| v.get()) {
+            panic!("A VM already exists for this thread.")
+        }
         let l = unsafe { luaL_newstate() };
         unsafe { luaL_openlibs(l) };
+        HAS_VM.set(true);
         RootVm {
             vm: unsafe { Vm::from_raw(l) },
             leaked: Vec::new()
@@ -174,14 +183,15 @@ impl DerefMut for RootVm {
 
 impl Drop for RootVm {
     fn drop(&mut self) {
-        unsafe {
-            println!("Closing Lua VM...");
-            lua_close(self.vm.as_ptr());
-        }
         println!("Deleting leaked pointers...");
         let v = std::mem::replace(&mut self.leaked, Vec::new());
         for f in v {
             f()
         }
+        unsafe {
+            println!("Closing Lua VM...");
+            lua_close(self.vm.as_ptr());
+        }
+        HAS_VM.set(false);
     }
 }
