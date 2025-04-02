@@ -36,6 +36,7 @@ pub mod closure;
 pub mod registry;
 pub mod table;
 pub mod thread;
+pub mod namespace;
 
 pub use core::{Vm, RootVm};
 
