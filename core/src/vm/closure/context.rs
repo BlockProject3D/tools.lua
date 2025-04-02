@@ -40,7 +40,7 @@ use crate::vm::Vm;
 
 pub struct Context<T> {
     key: RawRegistryKey,
-    useless: PhantomData<T>
+    useless: PhantomData<*const T>
 }
 
 impl<T> Clone for Context<T> {

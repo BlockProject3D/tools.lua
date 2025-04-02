@@ -120,7 +120,7 @@ impl RawRegistryKey {
 
 pub struct RegistryKey<T> {
     raw: RawRegistryKey,
-    useless: PhantomData<T>
+    useless: PhantomData<*const T>
 }
 
 impl<T: RegistryValue> RegistryKey<T> {
@@ -160,6 +160,8 @@ impl<T: RegistryValue> RegistryKey<T> {
     pub fn delete(self, vm: &Vm) {
         unsafe { self.raw.delete(vm) };
     }
+
+    //TODO: Implement replace function
 
     /// Creates a new [RegistryKey] from the top of the lua stack.
     ///
