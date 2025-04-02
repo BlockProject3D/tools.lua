@@ -31,7 +31,3 @@ mod interface;
 mod iter;
 
 pub use core::Table;
-
-//TODO: Remove scope put back all functions into the main table structure, not a problem since
-// values which require absolute stack index already do their conversions locally.
-//TODO: Re-introduce scope as Vm tool instead of a table tool.
