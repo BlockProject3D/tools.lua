@@ -31,7 +31,7 @@ use crate::ffi::lua::{lua_gettop, lua_pushvalue, lua_type, Type};
 use crate::util::SimpleDrop;
 use crate::vm::function::{FromParam, IntoParam};
 use crate::vm::registry::core::RegistryKey;
-use crate::vm::registry::Register;
+use crate::vm::registry::Registry;
 use crate::vm::util::LuaType;
 use crate::vm::value::FromLua;
 use crate::vm::table::Table;
@@ -77,12 +77,21 @@ unsafe impl IntoParam for Table<'_> {
 
 impl LuaType for Table<'_> {}
 
-impl Register for Table<'_> {
+impl Registry for Table<'_> {
     type RegistryValue = crate::vm::registry::types::Table;
 
-    fn register(self, vm: &Vm) -> RegistryKey<Self::RegistryValue> {
+    #[inline(always)]
+    fn registry_put(self, vm: &Vm) -> RegistryKey<Self::RegistryValue> {
         // If the table is not at the top of the stack, move it to the top.
         ensure_value_top(vm, self.index());
         unsafe { RegistryKey::from_top(vm) }
+    }
+
+    #[inline(always)]
+    fn registry_swap(self, vm: &Vm, old: RegistryKey<Self::RegistryValue>) -> RegistryKey<Self::RegistryValue> {
+        // If the table is not at the top of the stack, move it to the top.
+        ensure_value_top(vm, self.index());
+        unsafe { old.as_raw().replace(vm) };
+        old
     }
 }

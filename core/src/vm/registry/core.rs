@@ -161,8 +161,6 @@ impl<T: RegistryValue> RegistryKey<T> {
         unsafe { self.raw.delete(vm) };
     }
 
-    //TODO: Implement replace function
-
     /// Creates a new [RegistryKey] from the top of the lua stack.
     ///
     /// # Arguments

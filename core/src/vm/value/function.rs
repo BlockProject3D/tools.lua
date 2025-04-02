@@ -29,7 +29,7 @@
 use crate::ffi::lua::{lua_pushvalue, Type};
 use crate::vm::core::util::{pcall, push_error_handler};
 use crate::vm::registry::core::RegistryKey;
-use crate::vm::registry::Register;
+use crate::vm::registry::Registry;
 use crate::vm::value::{FromLua, IntoLua};
 use crate::vm::value::util::{ensure_type_equals, ensure_value_top};
 use crate::vm::Vm;
@@ -64,12 +64,21 @@ impl<'a> FromLua<'a> for LuaFunction<'a> {
     }
 }
 
-impl Register for LuaFunction<'_> {
+impl Registry for LuaFunction<'_> {
     type RegistryValue = crate::vm::registry::types::LuaFunction;
 
-    fn register(self, vm: &Vm) -> RegistryKey<Self::RegistryValue> {
+    #[inline(always)]
+    fn registry_put(self, vm: &Vm) -> RegistryKey<Self::RegistryValue> {
         // If the function is not at the top of the stack, move it to the top.
         ensure_value_top(vm, self.index);
         unsafe { RegistryKey::from_top(vm) }
+    }
+
+    #[inline(always)]
+    fn registry_swap(self, vm: &Vm, old: RegistryKey<Self::RegistryValue>) -> RegistryKey<Self::RegistryValue> {
+        // If the function is not at the top of the stack, move it to the top.
+        ensure_value_top(vm, self.index);
+        unsafe { old.as_raw().replace(vm) };
+        old
     }
 }
