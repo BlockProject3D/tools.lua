@@ -28,6 +28,7 @@
 
 use crate::ffi::lua::{lua_toboolean, lua_tonumber, lua_type, Type};
 use crate::vm::error::Error;
+use crate::vm::function::IntoParam;
 use crate::vm::value::FromLua;
 use crate::vm::value::function::LuaFunction;
 use crate::vm::table::Table;
@@ -79,5 +80,29 @@ impl<'a> FromLua<'a> for AnyValue<'a> {
             Type::Userdata => Ok(unsafe { AnyValue::UserData(FromLua::from_lua_unchecked(vm, index)) }),
             Type::Thread => Ok(unsafe { AnyValue::Thread(FromLua::from_lua_unchecked(vm, index)) }),
         }
+    }
+}
+
+pub struct AnyReturn {
+    nresults: u16
+}
+
+impl FromLua<'_> for AnyReturn {
+    unsafe fn from_lua_unchecked(vm: &Vm, _: i32) -> Self {
+        AnyReturn { nresults: vm.top() as _ }
+    }
+
+    fn from_lua(vm: &Vm, index: i32) -> crate::vm::Result<Self> {
+        Ok(unsafe { Self::from_lua_unchecked(vm, index) })
+    }
+
+    fn num_values() -> i16 {
+        -1
+    }
+}
+
+unsafe impl IntoParam for AnyReturn {
+    fn into_param(self, _: &Vm) -> u16 {
+        self.nresults
     }
 }

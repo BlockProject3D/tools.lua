@@ -144,7 +144,7 @@ impl FromLua<'_> for () {
     }
 
     #[inline(always)]
-    fn num_values() -> u16 {
+    fn num_values() -> i16 {
         0
     }
 }
@@ -176,7 +176,7 @@ macro_rules! impl_from_lua_tuple {
     ($($name: ident: $name2: ident),*) => {
         impl<'a, $($name: FromLua<'a>),*> FromLua<'a> for ($($name),*) {
             #[inline(always)]
-            fn num_values() -> u16 {
+            fn num_values() -> i16 {
                 count_tts!($($name)*)
             }
 

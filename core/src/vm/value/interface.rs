@@ -58,7 +58,7 @@ pub trait FromLua<'a>: Sized {
 
     /// Returns the number of values to be expected on the lua stack, after reading this value.
     #[inline(always)]
-    fn num_values() -> u16 {
+    fn num_values() -> i16 {
         1
     }
 }
