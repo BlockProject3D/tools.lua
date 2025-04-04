@@ -29,8 +29,9 @@
 use std::cell::OnceCell;
 use std::ffi::CStr;
 use std::marker::PhantomData;
+use bp3d_debug::{debug, warning};
 use crate::ffi::laux::{luaL_checkudata, luaL_newmetatable};
-use crate::ffi::lua::{lua_pushcclosure, lua_pushvalue, lua_setfield, lua_settop, CFunction, State};
+use crate::ffi::lua::{lua_pushcclosure, lua_pushnil, lua_pushvalue, lua_setfield, lua_setmetatable, lua_settop, CFunction, State};
 use crate::vm::userdata::{AddGcMethod, Error, LuaDrop, UserData};
 use crate::vm::util::{LuaType, TypeName};
 use crate::vm::value::IntoLua;
@@ -149,11 +150,16 @@ impl<'a, T: UserData> Registry<'a, T> {
     pub fn add_gc_method(&self) {
         if std::mem::needs_drop::<T>() {
             extern "C-unwind" fn run_drop<T: UserData>(l: State) -> i32 {
-                let udata = unsafe { luaL_checkudata(l, 1, T::CLASS_NAME.as_ptr()) } as *mut T;
-                unsafe { std::ptr::drop_in_place(udata) };
+                unsafe {
+                    let udata = luaL_checkudata(l, 1, T::CLASS_NAME.as_ptr()) as *mut T;
+                    lua_pushnil(l);
+                    lua_setmetatable(l, 1);
+                    std::ptr::drop_in_place(udata);
+                }
                 0
             }
             self.add_method(c"__gc", run_drop::<T>);
+            debug!({UD=?T::CLASS_NAME}, "Type registered with simple Drop");
         }
         self.has_gc.set(()).unwrap();
     }
@@ -162,20 +168,30 @@ impl<'a, T: UserData> Registry<'a, T> {
 impl<'a, T: UserData + LuaDrop> Registry<'a, T> {
     pub fn add_gc_method_with_lua_drop(&self) {
         extern "C-unwind" fn run_lua_drop<T: UserData + LuaDrop>(l: State) -> i32 {
-            let udata = unsafe { luaL_checkudata(l, 1, T::CLASS_NAME.as_ptr()) } as *mut T;
-            unsafe { (&*udata).lua_drop(&Vm::from_raw(l)) };
+            unsafe {
+                let udata = luaL_checkudata(l, 1, T::CLASS_NAME.as_ptr()) as *mut T;
+                lua_pushnil(l);
+                lua_setmetatable(l, 1);
+                (&*udata).lua_drop(&Vm::from_raw(l));
+            }
             0
         }
         extern "C-unwind" fn run_lua_drop_full<T: UserData + LuaDrop>(l: State) -> i32 {
-            let udata = unsafe { luaL_checkudata(l, 1, T::CLASS_NAME.as_ptr()) } as *mut T;
-            unsafe { (&*udata).lua_drop(&Vm::from_raw(l)) };
-            unsafe { std::ptr::drop_in_place(udata) };
+            unsafe {
+                let udata = luaL_checkudata(l, 1, T::CLASS_NAME.as_ptr()) as *mut T;
+                lua_pushnil(l);
+                lua_setmetatable(l, 1);
+                (&*udata).lua_drop(&Vm::from_raw(l));
+                std::ptr::drop_in_place(udata);
+            }
             0
         }
         if std::mem::needs_drop::<T>() {
             self.add_method(c"__gc", run_lua_drop_full::<T>);
+            debug!({UD=?T::CLASS_NAME}, "Type registered with Drop and LuaDrop");
         } else {
             self.add_method(c"__gc", run_lua_drop::<T>);
+            debug!({UD=?T::CLASS_NAME}, "Type registered with LuaDrop");
         }
         self.has_gc.set(()).unwrap();
     }
@@ -204,7 +220,7 @@ impl<T: UserData> AddGcMethod<T> for &AddGcMethodAuto<T> {
 impl<'a, T: UserData> Drop for Registry<'a, T> {
     fn drop(&mut self) {
         if std::mem::needs_drop::<T>() && self.has_gc.get().is_none() {
-            println!("No __gc method registered on a drop userdata type!");
+            warning!("No __gc method registered on a drop userdata type!");
             // No __gc method found in object that needs it force add it before finishing it.
             self.add_gc_method();
         }

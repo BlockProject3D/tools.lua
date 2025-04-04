@@ -28,6 +28,7 @@
 
 use std::cell::Cell;
 use std::ops::{Deref, DerefMut};
+use bp3d_debug::debug;
 use crate::ffi::laux::{luaL_newstate, luaL_openlibs};
 use crate::ffi::lua::{lua_close, lua_getfield, lua_gettop, lua_pushnil, lua_setfield, lua_settop, State, GLOBALSINDEX, REGISTRYINDEX};
 use crate::util::AnyStr;
@@ -183,13 +184,13 @@ impl DerefMut for RootVm {
 
 impl Drop for RootVm {
     fn drop(&mut self) {
-        println!("Deleting leaked pointers...");
+        debug!("Deleting leaked pointers...");
         let v = std::mem::replace(&mut self.leaked, Vec::new());
         for f in v {
             f()
         }
         unsafe {
-            println!("Closing Lua VM...");
+            debug!("Closing Lua VM...");
             lua_close(self.vm.as_ptr());
         }
         HAS_VM.set(false);
