@@ -70,5 +70,6 @@ fn test_vm_run() {
     run_assert_err(&vm, Script::from_path("./tests/lua/basic.lua").unwrap(), "basic.lua:2: nope");
     let err = vm.run::<()>(Script::from_path("./tests/lua/broken.lua").unwrap()).unwrap_err();
     assert_eq!(err.to_string(), "syntax error: broken.lua:2: '(' expected near 'end'");
+    vm.run::<()>(Script::from_path("./tests/lua/class.lua").unwrap()).unwrap();
     assert_eq!(vm.top(), top);
 }
