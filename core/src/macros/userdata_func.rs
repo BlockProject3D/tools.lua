@@ -34,7 +34,7 @@ macro_rules! decl_userdata_func {
         impl $obj_name {
             $vis fn $fn_name() -> $crate::vm::userdata::core::Function {
                 extern "C-unwind" fn _cfunc(l: $crate::ffi::lua::State) -> i32 {
-                    fn _func $(<$lifetime>)? ($this: &mut $obj_name, $name: &$crate::vm::Vm$(, $($arg_name: $arg_ty),*)?) -> $ret_ty $code
+                    fn _func $(<$lifetime>)? ($this: &mut $obj_name, $name: &$($lifetime)? $crate::vm::Vm$(, $($arg_name: $arg_ty),*)?) -> $ret_ty $code
                     use $crate::vm::function::IntoParam;
                     let this_ptr = unsafe { $crate::ffi::laux::luaL_checkudata(l, 1, <$obj_name as $crate::vm::userdata::UserData>::CLASS_NAME.as_ptr()) } as *mut $obj_name;
                     let vm = unsafe { $crate::vm::Vm::from_raw(l) };
@@ -86,7 +86,7 @@ macro_rules! decl_userdata_func {
         impl $obj_name {
             $vis fn $fn_name() -> $crate::vm::userdata::core::Function {
                 extern "C-unwind" fn _cfunc(l: $crate::ffi::lua::State) -> i32 {
-                    fn _func $(<$lifetime>)? ($this: &$obj_name, $name: &$crate::vm::Vm$(, $($arg_name: $arg_ty),*)?) -> $ret_ty $code
+                    fn _func $(<$lifetime>)? ($this: &$obj_name, $name: &$($lifetime)? $crate::vm::Vm$(, $($arg_name: $arg_ty),*)?) -> $ret_ty $code
                     use $crate::vm::function::IntoParam;
                     let this_ptr = unsafe { $crate::ffi::laux::luaL_checkudata(l, 1, <$obj_name as $crate::vm::userdata::UserData>::CLASS_NAME.as_ptr()) } as *const $obj_name;
                     let vm = unsafe { $crate::vm::Vm::from_raw(l) };

@@ -32,7 +32,7 @@ macro_rules! decl_lib_func {
         $vis: vis fn $fn_name: ident $(<$lifetime: lifetime>)? ($name: ident: &Vm$(, $($arg_name: ident: $arg_ty: ty),*)?) -> $ret_ty: ty $code: block
     ) => {
         $vis extern "C-unwind" fn $fn_name(l: $crate::ffi::lua::State) -> i32 {
-            fn _func $(<$lifetime>)? ($name: &$crate::vm::Vm$(, $($arg_name: $arg_ty),*)?) -> $ret_ty $code
+            fn _func $(<$lifetime>)? ($name: &$($lifetime)? $crate::vm::Vm$(, $($arg_name: $arg_ty),*)?) -> $ret_ty $code
             use $crate::vm::function::IntoParam;
             let vm = unsafe { $crate::vm::Vm::from_raw(l) };
             #[inline(always)]
