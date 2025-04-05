@@ -273,3 +273,31 @@ unsafe impl<T: UserData> IntoParam for T {
         1
     }
 }
+
+macro_rules! count_tts {
+    () => {0};
+    ($_head:tt $($tail:tt)*) => {1 + count_tts!($($tail)*)};
+}
+
+macro_rules! impl_into_param_tuple {
+    ($($name: ident: $name2: tt),*) => {
+        unsafe impl<$($name: IntoParam),*> IntoParam for ($($name),*) {
+            fn into_param(self, vm: &Vm) -> u16 {
+                $(
+                    self.$name2.into_param(vm);
+                )*
+                count_tts!($($name)*)
+            }
+        }
+    };
+}
+
+impl_into_param_tuple!(T: 0, T1: 1);
+impl_into_param_tuple!(T: 0, T1: 1, T2: 2);
+impl_into_param_tuple!(T: 0, T1: 1, T2: 2, T3: 3);
+impl_into_param_tuple!(T: 0, T1: 1, T2: 2, T3: 3, T4: 4);
+impl_into_param_tuple!(T: 0, T1: 1, T2: 2, T3: 3, T4: 4, T5: 5);
+impl_into_param_tuple!(T: 0, T1: 1, T2: 2, T3: 3, T4: 4, T5: 5, T6: 6);
+impl_into_param_tuple!(T: 0, T1: 1, T2: 2, T3: 3, T4: 4, T5: 5, T6: 6, T7: 7);
+impl_into_param_tuple!(T: 0, T1: 1, T2: 2, T3: 3, T4: 4, T5: 5, T6: 6, T7: 7, T8: 8);
+impl_into_param_tuple!(T: 0, T1: 1, T2: 2, T3: 3, T4: 4, T5: 5, T6: 6, T7: 7, T8: 8, T9: 9);

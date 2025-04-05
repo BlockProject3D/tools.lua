@@ -223,29 +223,6 @@ impl_from_lua_tuple!(T: t, T1: t1, T2: t2, T3: t3, T4: t4, T5: t5, T6: t6, T7: t
 impl_from_lua_tuple!(T: t, T1: t1, T2: t2, T3: t3, T4: t4, T5: t5, T6: t6, T7: t7, T8: t8);
 impl_from_lua_tuple!(T: t, T1: t1, T2: t2, T3: t3, T4: t4, T5: t5, T6: t6, T7: t7, T8: t8, T9: t9);
 
-macro_rules! impl_into_lua_tuple {
-    ($($name: ident: $name2: tt),*) => {
-        unsafe impl<$($name: IntoLua),*> IntoLua for ($($name),*) {
-            fn into_lua(self, vm: &Vm) -> u16 {
-                $(
-                    self.$name2.into_lua(vm);
-                )*
-                count_tts!($($name)*)
-            }
-        }
-    };
-}
-
-impl_into_lua_tuple!(T: 0, T1: 1);
-impl_into_lua_tuple!(T: 0, T1: 1, T2: 2);
-impl_into_lua_tuple!(T: 0, T1: 1, T2: 2, T3: 3);
-impl_into_lua_tuple!(T: 0, T1: 1, T2: 2, T3: 3, T4: 4);
-impl_into_lua_tuple!(T: 0, T1: 1, T2: 2, T3: 3, T4: 4, T5: 5);
-impl_into_lua_tuple!(T: 0, T1: 1, T2: 2, T3: 3, T4: 4, T5: 5, T6: 6);
-impl_into_lua_tuple!(T: 0, T1: 1, T2: 2, T3: 3, T4: 4, T5: 5, T6: 6, T7: 7);
-impl_into_lua_tuple!(T: 0, T1: 1, T2: 2, T3: 3, T4: 4, T5: 5, T6: 6, T7: 7, T8: 8);
-impl_into_lua_tuple!(T: 0, T1: 1, T2: 2, T3: 3, T4: 4, T5: 5, T6: 6, T7: 7, T8: 8, T9: 9);
-
 impl<'a, T: FromLua<'a>> FromLua<'a> for Option<T> {
     unsafe fn from_lua_unchecked(vm: &'a Vm, index: i32) -> Self {
         let ty = unsafe { lua_type(vm.as_ptr(), index) };
