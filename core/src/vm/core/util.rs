@@ -142,10 +142,7 @@ pub unsafe fn pcall(vm: &Vm, nargs: c_int, nreturns: c_int, handler_pos: c_int) 
 ///
 /// Calling this function with a `handler_pos` which does not correspond to the actual error handler
 /// C function is UB. This is also UB if the res is not the result of a load function.
-pub unsafe fn handle_syntax_error(vm: &Vm, res: ThreadStatus, handler_pos: c_int) -> crate::vm::Result<()> {
-    if res != ThreadStatus::Ok {
-        unsafe { lua_remove(vm.as_ptr(), handler_pos) };
-    }
+pub unsafe fn handle_syntax_error(vm: &Vm, res: ThreadStatus) -> crate::vm::Result<()> {
     match res {
         ThreadStatus::Ok => Ok(()),
         ThreadStatus::ErrSyntax => {

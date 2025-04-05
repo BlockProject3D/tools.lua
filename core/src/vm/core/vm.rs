@@ -30,7 +30,7 @@ use std::cell::Cell;
 use std::ops::{Deref, DerefMut};
 use bp3d_debug::debug;
 use crate::ffi::laux::{luaL_newstate, luaL_openlibs};
-use crate::ffi::lua::{lua_close, lua_getfield, lua_gettop, lua_pushnil, lua_setfield, lua_settop, State, GLOBALSINDEX, REGISTRYINDEX};
+use crate::ffi::lua::{lua_close, lua_getfield, lua_gettop, lua_pushnil, lua_remove, lua_setfield, lua_settop, State, ThreadStatus, GLOBALSINDEX, REGISTRYINDEX};
 use crate::util::AnyStr;
 use crate::vm::core::{Load, LoadString};
 use crate::vm::core::util::{handle_syntax_error, pcall, push_error_handler};
@@ -38,6 +38,7 @@ use crate::vm::error::Error;
 use crate::vm::userdata::core::Registry;
 use crate::vm::userdata::UserData;
 use crate::vm::value::{FromLua, IntoLua};
+use crate::vm::value::function::LuaFunction;
 
 pub struct Vm {
     l: State
@@ -118,21 +119,48 @@ impl Vm {
             let handler_pos = push_error_handler(l);
             // Push the lua code.
             let res = code.load_string(l);
-            handle_syntax_error(self, res, handler_pos)?;
+            if res != ThreadStatus::Ok {
+                lua_remove(l, handler_pos);
+            }
+            handle_syntax_error(self, res)?;
             pcall(self, 0, R::num_values() as _, handler_pos)?;
         }
         // Read and return the result of the function from the stack.
         FromLua::from_lua(self, -(R::num_values() as i32))
     }
 
+    pub fn load_code(&self, code: impl LoadString) -> crate::vm::Result<LuaFunction> {
+        let l = self.as_ptr();
+        unsafe {
+            // Push the lua code.
+            let res = code.load_string(l);
+            handle_syntax_error(self, res)?;
+            Ok(FromLua::from_lua_unchecked(self, -1))
+        }
+    }
+
     pub fn run<'a, R: FromLua<'a>>(&'a self, obj: impl Load) -> crate::vm::Result<R> {
         let l = self.as_ptr();
         let handler_pos = unsafe { push_error_handler(l) };
         let res = obj.load(l);
-        unsafe { handle_syntax_error(self, res, handler_pos)? };
-        unsafe { pcall(self, 0, R::num_values() as _, handler_pos)? };
+        unsafe {
+            if res != ThreadStatus::Ok {
+                lua_remove(l, handler_pos);
+            }
+            handle_syntax_error(self, res)?;
+            pcall(self, 0, R::num_values() as _, handler_pos)?;
+        }
         // Read and return the result of the function from the stack.
         FromLua::from_lua(self, -(R::num_values() as i32))
+    }
+
+    pub fn load(&self, obj: impl Load) -> crate::vm::Result<LuaFunction> {
+        let l = self.as_ptr();
+        let res = obj.load(l);
+        unsafe {
+            handle_syntax_error(self, res)?;
+            Ok(FromLua::from_lua_unchecked(self, -1))
+        }
     }
 }
 
