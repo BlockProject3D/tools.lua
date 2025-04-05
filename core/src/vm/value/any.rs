@@ -83,17 +83,16 @@ impl<'a> FromLua<'a> for AnyValue<'a> {
     }
 }
 
-pub struct AnyReturn {
-    nresults: u16
-}
+/// A marker struct to run lua code which may return any number of values on the stack.
+pub struct AnyParam;
 
-impl FromLua<'_> for AnyReturn {
-    unsafe fn from_lua_unchecked(vm: &Vm, _: i32) -> Self {
-        AnyReturn { nresults: vm.top() as _ }
+impl FromLua<'_> for AnyParam {
+    unsafe fn from_lua_unchecked(_: &Vm, _: i32) -> Self {
+        AnyParam
     }
 
-    fn from_lua(vm: &Vm, index: i32) -> crate::vm::Result<Self> {
-        Ok(unsafe { Self::from_lua_unchecked(vm, index) })
+    fn from_lua(_: &Vm, _: i32) -> crate::vm::Result<Self> {
+        Ok(AnyParam)
     }
 
     fn num_values() -> i16 {
@@ -101,8 +100,31 @@ impl FromLua<'_> for AnyReturn {
     }
 }
 
-unsafe impl IntoParam for AnyReturn {
+/// A raw primitive to return arbitrary count of values from a C function.
+pub struct UncheckedAnyReturn(u16);
+
+impl UncheckedAnyReturn {
+    /// Construct a [UncheckedAnyReturn].
+    /// 
+    /// # Panic
+    ///
+    /// This function panics when the count of arguments is greater than the lua stack size itself.
+    ///
+    /// # Safety
+    ///
+    /// It is UB to run any operation which may alter the lua stack after constructing this
+    /// primitive.
+    pub unsafe fn new(vm: &Vm, count: u16) -> Self {
+        let top = vm.top();
+        if count > top as _ {
+            panic!()
+        }
+        UncheckedAnyReturn(count)
+    }
+}
+
+unsafe impl IntoParam for UncheckedAnyReturn {
     fn into_param(self, _: &Vm) -> u16 {
-        self.nresults
+        self.0
     }
 }
