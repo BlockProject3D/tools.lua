@@ -26,8 +26,33 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-pub mod ffi;
-pub mod vm;
-mod macros;
-pub mod util;
-pub mod libs;
+use crate::vm::namespace::Namespace;
+use crate::vm::table::Table;
+
+mod load;
+
+const PATCH_LIST: &[&str] = &[
+    "disable_lua_load",
+    "lib_init",
+    "lj_disable_jit",
+    "lua_ext",
+    "lua_load_no_bc"
+];
+
+pub fn register(vm: &crate::vm::Vm) -> crate::vm::Result<()> {
+    vm.scope(|vm| {
+        load::register(vm)?;
+        let mut namespace = Namespace::new(vm, "bp3d.lua")?;
+        namespace.add([
+            ("name", "bp3d-lua"),
+            ("version", env!("CARGO_PKG_VERSION"))
+        ])?;
+        let mut patches = Table::with_capacity(vm, PATCH_LIST.len(), 0);
+        for (i, name) in PATCH_LIST.into_iter().enumerate() {
+            // Lua indices starts at 1 not 0.
+            patches.set((i + 1) as _, *name)?;
+        }
+        namespace.add([("patches", patches)])?;
+        Ok(())
+    })
+}

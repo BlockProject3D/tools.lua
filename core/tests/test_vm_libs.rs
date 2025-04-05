@@ -26,8 +26,23 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-pub mod ffi;
-pub mod vm;
-mod macros;
-pub mod util;
-pub mod libs;
+use bp3d_lua::vm::RootVm;
+
+#[test]
+fn test_vm_lib_lua() {
+    let vm = RootVm::new();
+    let top = vm.top();
+    bp3d_lua::libs::lua::register(&vm).unwrap();
+    vm.run_code::<()>(c"
+        assert(bp3d.lua.name == 'bp3d-lua')
+        assert(bp3d.lua.version == '0.2.0')
+        assert(#bp3d.lua.patches == 5)
+        local flag, func = bp3d.lua.loadstring('return 1 + 1')
+        assert(flag)
+        assert(func() == 2)
+        local flag, err = bp3d.lua.loadstring('ret a + 2')
+        assert(not flag)
+        assert(err == \"syntax error: [string \\\"ret a + 2\\\"]:1: '=' expected near 'a'\")
+    ").unwrap();
+    assert_eq!(vm.top(), top);
+}
