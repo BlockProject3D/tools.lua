@@ -26,10 +26,14 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use crate::ffi::laux::luaL_checktype;
 use crate::ffi::lua::{lua_pushvalue, Type};
+use crate::util::SimpleDrop;
 use crate::vm::core::util::{pcall, push_error_handler};
+use crate::vm::function::{FromParam, IntoParam};
 use crate::vm::registry::core::RegistryKey;
 use crate::vm::registry::Registry;
+use crate::vm::util::LuaType;
 use crate::vm::value::{FromLua, IntoLua};
 use crate::vm::value::util::{ensure_type_equals, ensure_value_top};
 use crate::vm::Vm;
@@ -37,6 +41,28 @@ use crate::vm::Vm;
 pub struct LuaFunction<'a> {
     vm: &'a Vm,
     index: i32
+}
+
+unsafe impl SimpleDrop for LuaFunction<'_> { }
+
+impl LuaType for LuaFunction<'_> { }
+
+impl<'a> FromParam<'a> for LuaFunction<'a> {
+    unsafe fn from_param(vm: &'a Vm, index: i32) -> Self {
+        unsafe { luaL_checktype(vm.as_ptr(), index, Type::Function) };
+        LuaFunction { vm, index }
+    }
+
+    fn try_from_param(vm: &'a Vm, index: i32) -> Option<Self> {
+        FromLua::from_lua(vm, index).ok()
+    }
+}
+
+unsafe impl IntoParam for LuaFunction<'_> {
+    fn into_param(self, vm: &Vm) -> u16 {
+        unsafe { lua_pushvalue(vm.as_ptr(), self.index) };
+        1
+    }
 }
 
 impl<'a> LuaFunction<'a> {
