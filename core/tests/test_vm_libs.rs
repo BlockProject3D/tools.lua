@@ -43,6 +43,9 @@ fn test_vm_lib_lua() {
         local flag, err = bp3d.lua.loadString('ret a + 2')
         assert(not flag)
         assert(err == \"syntax error: [string \\\"ret a + 2\\\"]:1: '=' expected near 'a'\")
+        local flag, res = bp3d.lua.runString('return 1 + 1')
+        assert(flag)
+        assert(res == 2)
     ").unwrap();
     assert_eq!(vm.top(), top);
 }
