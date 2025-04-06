@@ -50,7 +50,7 @@ unsafe impl IntoParam for FunctionOrString<'_> {
 }
 
 decl_lib_func! {
-    fn dostring(vm: &Vm, s: &str, chunkname: Option<&str>) -> UncheckedAnyReturn {
+    fn run_string(vm: &Vm, s: &str, chunkname: Option<&str>) -> UncheckedAnyReturn {
         let top = vm.top();
         true.into_param(vm);
         let ret = match chunkname {
@@ -73,7 +73,7 @@ decl_lib_func! {
 }
 
 decl_lib_func! {
-    fn loadstring<'a>(vm: &Vm, s: &str, chunkname: Option<&str>) -> (bool, FunctionOrString<'a>) {
+    fn load_string<'a>(vm: &Vm, s: &str, chunkname: Option<&str>) -> (bool, FunctionOrString<'a>) {
         match chunkname {
             None => match vm.load_code(s) {
                 Ok(v) => (true, FunctionOrString::Func(v)),
@@ -90,7 +90,7 @@ decl_lib_func! {
 pub fn register(vm: &Vm) -> crate::vm::Result<()> {
     let mut namespace = Namespace::new(vm, "bp3d.lua")?;
     namespace.add([
-        ("dostring", RFunction::wrap(dostring)),
-        ("loadstring", RFunction::wrap(loadstring))
+        ("runString", RFunction::wrap(run_string)),
+        ("loadString", RFunction::wrap(load_string))
     ])
 }

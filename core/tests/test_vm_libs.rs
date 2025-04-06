@@ -37,10 +37,10 @@ fn test_vm_lib_lua() {
         assert(bp3d.lua.name == 'bp3d-lua')
         assert(bp3d.lua.version == '0.2.0')
         assert(#bp3d.lua.patches == 5)
-        local flag, func = bp3d.lua.loadstring('return 1 + 1')
+        local flag, func = bp3d.lua.loadString('return 1 + 1')
         assert(flag)
         assert(func() == 2)
-        local flag, err = bp3d.lua.loadstring('ret a + 2')
+        local flag, err = bp3d.lua.loadString('ret a + 2')
         assert(not flag)
         assert(err == \"syntax error: [string \\\"ret a + 2\\\"]:1: '=' expected near 'a'\")
     ").unwrap();
