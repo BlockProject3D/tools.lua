@@ -31,9 +31,9 @@ macro_rules! decl_closure {
     (
         $vis: vis fn $fn_name: ident $(<$lifetime: lifetime>)? |$upvalue_name: ident: $upvalue_ty: ty| ($name: ident: &Vm$(, $($arg_name: ident: $arg_ty: ty),*)?) -> $ret_ty: ty $code: block
     ) => {
-        $vis fn $fn_name(upvalue: <$upvalue_ty as $crate::vm::closure::FromUpvalue>::Into) -> $crate::vm::closure::types::RClosure<<$upvalue_ty as $crate::vm::closure::FromUpvalue>::Into> {
+        $vis fn $fn_name(upvalue: $upvalue_ty) -> $crate::vm::closure::types::RClosure<$upvalue_ty> {
             extern "C-unwind" fn _cfunc(l: $crate::ffi::lua::State) -> i32 {
-                fn _func($name: &$crate::vm::Vm, $upvalue_name: <$upvalue_ty as $crate::vm::closure::Upvalue>::From<'_>$(, $($arg_name: $arg_ty),*)?) -> $ret_ty $code
+                fn _func $(<$lifetime>)? ($name: &$($lifetime)? $crate::vm::Vm, $upvalue_name: <$upvalue_ty as $crate::vm::closure::Upvalue>::From<'_>$(, $($arg_name: $arg_ty),*)?) -> $ret_ty $code
                 use $crate::vm::function::IntoParam;
                 let vm = unsafe { $crate::vm::Vm::from_raw(l) };
                 #[inline(always)]
@@ -53,7 +53,7 @@ macro_rules! decl_closure {
     ) => {
         $vis fn $fn_name(upvalue: $upvalue_ty) -> $crate::vm::closure::types::RClosure<$upvalue_ty> {
             extern "C-unwind" fn _cfunc(l: $crate::ffi::lua::State) -> i32 {
-                fn _func<'a>($upvalue_name: <$upvalue_ty as $crate::vm::closure::Upvalue>::From<'_>, $($arg_name: $arg_ty),*) -> $ret_ty $code
+                fn _func $(<$lifetime>)? ($upvalue_name: <$upvalue_ty as $crate::vm::closure::Upvalue>::From<'_>, $($arg_name: $arg_ty),*) -> $ret_ty $code
                 use $crate::vm::function::IntoParam;
                 let vm = unsafe { $crate::vm::Vm::from_raw(l) };
                 #[inline(always)]
