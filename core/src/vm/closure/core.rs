@@ -26,6 +26,8 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use std::ffi::OsStr;
+use std::path::Path;
 use crate::ffi::lua::{lua_pushlightuserdata, lua_topointer, GLOBALSINDEX};
 use crate::vm::closure::{FromUpvalue, IntoUpvalue, Upvalue};
 use crate::vm::function::IntoParam;
@@ -114,4 +116,40 @@ impl<T> Upvalue for *mut T {
 
 impl<T> Upvalue for *const T {
     type From<'a> = *const T;
+}
+
+impl<'a> FromUpvalue<'a> for &'a OsStr {
+    #[inline(always)]
+    unsafe fn from_upvalue(vm: &'a Vm, index: i32) -> Self {
+        OsStr::from_encoded_bytes_unchecked(FromUpvalue::from_upvalue(vm, index))
+    }
+}
+
+impl IntoUpvalue for &OsStr {
+    #[inline(always)]
+    fn into_upvalue(self, vm: &Vm) -> u16 {
+        self.as_encoded_bytes().into_upvalue(vm)
+    }
+}
+
+impl Upvalue for &OsStr {
+    type From<'a> = &'a OsStr;
+}
+
+impl<'a> FromUpvalue<'a> for &'a Path {
+    #[inline(always)]
+    unsafe fn from_upvalue(vm: &'a Vm, index: i32) -> Self {
+        Path::new(OsStr::from_encoded_bytes_unchecked(FromUpvalue::from_upvalue(vm, index)))
+    }
+}
+
+impl IntoUpvalue for &Path {
+    #[inline(always)]
+    fn into_upvalue(self, vm: &Vm) -> u16 {
+        self.as_os_str().into_upvalue(vm)
+    }
+}
+
+impl Upvalue for &Path {
+    type From<'a> = &'a Path;
 }

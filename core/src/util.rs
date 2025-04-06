@@ -29,7 +29,8 @@
 //! Generic rust utilities module.
 
 use std::borrow::Cow;
-use std::ffi::{CStr, CString};
+use std::ffi::{CStr, CString, OsStr};
+use std::path::Path;
 
 pub trait AnyStr {
     fn to_str(&self) -> crate::vm::Result<Cow<CStr>>;
@@ -58,3 +59,5 @@ unsafe impl<T: SimpleDrop> SimpleDrop for Option<T> {}
 unsafe impl<T: SimpleDrop, R: SimpleDrop> SimpleDrop for Result<T, R> {}
 unsafe impl<T> SimpleDrop for &T {}
 unsafe impl SimpleDrop for &[u8] {}
+unsafe impl SimpleDrop for &OsStr { }
+unsafe impl SimpleDrop for &Path { }
