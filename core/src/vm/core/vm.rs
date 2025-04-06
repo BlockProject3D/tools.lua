@@ -187,7 +187,7 @@ impl RootVm {
         }
     }
 
-    pub fn leak<T: 'static>(&mut self, bx: Box<T>) -> *mut T {
+    pub fn attach_box<T: 'static>(&mut self, bx: Box<T>) -> *mut T {
         let ptr = Box::into_raw(bx);
         self.leaked.push(Box::new(move || {
             unsafe { drop(Box::from_raw(ptr)) };
