@@ -35,7 +35,7 @@ fn test_vm_lib_lua() {
     bp3d_lua::libs::lua::register(&vm).unwrap();
     vm.run_code::<()>(c"
         assert(bp3d.lua.name == 'bp3d-lua')
-        assert(bp3d.lua.version == '0.2.0')
+        assert(bp3d.lua.version == '1.0.0-rc.1.0.0')
         assert(#bp3d.lua.patches == 5)
         local flag, func = bp3d.lua.loadString('return 1 + 1')
         assert(flag)
