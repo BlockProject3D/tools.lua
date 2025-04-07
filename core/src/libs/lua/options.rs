@@ -26,36 +26,29 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use crate::vm::namespace::Namespace;
-use crate::vm::table::Table;
+use std::path::Path;
+use crate::libs::lua::require::Provider;
 
-mod load;
-pub mod require;
-mod options;
+pub struct Options<'a> {
+    pub(super) load_chroot_path: Option<&'a Path>,
+    pub(super) provider: Option<std::rc::Rc<Provider>>
+}
 
-pub use options::Options;
-
-const PATCH_LIST: &[&str] = &[
-    "disable_lua_load",
-    "lib_init",
-    "lj_disable_jit",
-    "lua_ext",
-    "lua_load_no_bc"
-];
-
-pub fn register(root: &mut crate::vm::RootVm, options: Options) -> crate::vm::Result<()> {
-    require::register(root, options.provider.unwrap_or_default())?;
-    load::register(root)?;
-    let mut namespace = Namespace::new(root, "bp3d.lua")?;
-    namespace.add([
-        ("name", "bp3d-lua"),
-        ("version", env!("CARGO_PKG_VERSION"))
-    ])?;
-    let mut patches = Table::with_capacity(root, PATCH_LIST.len(), 0);
-    for (i, name) in PATCH_LIST.into_iter().enumerate() {
-        // Lua indices starts at 1 not 0.
-        patches.set((i + 1) as _, *name)?;
+impl<'a> Options<'a> {
+    pub fn new() -> Self {
+        Self {
+            load_chroot_path: None,
+            provider: None
+        }
     }
-    namespace.add([("patches", patches)])?;
-    Ok(())
+
+    pub fn load_chroot_path(mut self, path: &'a Path) -> Self {
+        self.load_chroot_path = Some(path);
+        self
+    }
+
+    pub fn provider(mut self, provider: std::rc::Rc<Provider>) -> Self {
+        self.provider = Some(provider);
+        self
+    }
 }
