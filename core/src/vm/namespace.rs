@@ -40,18 +40,21 @@ pub struct Namespace<'a> {
 impl<'a> Namespace<'a> {
     fn from_table<'b>(vm: &'a Vm, table: Table<'a>, names: impl Iterator<Item=&'b str>) -> crate::vm::Result<Self> {
         let mut key = table.registry_put(vm);
-        for name in names {
-            let mut table = key.push(vm);
-            let tbl: Option<Table> = table.get_field(name)?;
-            let tab = match tbl {
-                Some(v) => v,
-                None => {
-                    table.set_field(name, Table::new(vm))?;
-                    table.get_field(name)?
-                }
-            };
-            key = tab.registry_swap(vm, key);
-        }
+        let key = vm.scope(|vm| {
+            for name in names {
+                let mut table = key.push(vm);
+                let tbl: Option<Table> = table.get_field(name)?;
+                let tab = match tbl {
+                    Some(v) => v,
+                    None => {
+                        table.set_field(name, Table::new(vm))?;
+                        table.get_field(name)?
+                    }
+                };
+                key = tab.registry_swap(vm, key);
+            }
+            Ok(key)
+        })?;
         let table = key.push(vm);
         key.delete(vm);
         Ok(Self { vm, table })
