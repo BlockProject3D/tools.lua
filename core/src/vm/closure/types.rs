@@ -63,7 +63,7 @@ unsafe impl<T: IntoUpvalue> IntoLua for RClosure<T> {
 impl RClosure<*const c_void> {
     pub fn from_rust<T, R, F: Fn(T) -> R + 'static>(root: &mut RootVm, fun: F) -> Self
         where for<'a> T: FromParam<'a>, R: IntoParam {
-        let ptr = root.attach_box(Box::new(fun));
+        let ptr = root.attach(Box::new(fun));
         extern "C-unwind" fn _cfunc<T, R, F: Fn(T) -> R>(l: State) -> i32
             where for<'a> T: FromParam<'a>, R: IntoParam {
             let vm = unsafe { Vm::from_raw(l) };

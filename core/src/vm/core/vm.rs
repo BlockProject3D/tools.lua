@@ -32,7 +32,7 @@ use bp3d_debug::debug;
 use crate::ffi::laux::{luaL_newstate, luaL_openlibs};
 use crate::ffi::lua::{lua_close, lua_getfield, lua_gettop, lua_pushnil, lua_remove, lua_setfield, lua_settop, State, ThreadStatus, GLOBALSINDEX, REGISTRYINDEX};
 use crate::util::AnyStr;
-use crate::vm::core::{Load, LoadString};
+use crate::vm::core::{Load, LoadString, Raw};
 use crate::vm::core::util::{handle_syntax_error, pcall, push_error_handler};
 use crate::vm::error::Error;
 use crate::vm::userdata::core::Registry;
@@ -175,7 +175,7 @@ pub struct RootVm {
 
 impl RootVm {
     pub fn new() -> RootVm {
-        if HAS_VM.with(|v| v.get()) {
+        if HAS_VM.get() {
             panic!("A VM already exists for this thread.")
         }
         let l = unsafe { luaL_newstate() };
@@ -187,10 +187,10 @@ impl RootVm {
         }
     }
 
-    pub fn attach_box<T: 'static>(&mut self, bx: Box<T>) -> *mut T {
-        let ptr = Box::into_raw(bx);
+    pub fn attach<R: Raw>(&mut self, raw: R) -> R::Ptr where R::Ptr: 'static {
+        let ptr = R::into_raw(raw);
         self.leaked.push(Box::new(move || {
-            unsafe { drop(Box::from_raw(ptr)) };
+            unsafe { R::delete(ptr) };
         }));
         ptr
     }

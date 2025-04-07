@@ -26,6 +26,7 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use std::rc::Rc;
 use crate::ffi::lua::{State, ThreadStatus};
 
 pub trait LoadString {
@@ -34,4 +35,43 @@ pub trait LoadString {
 
 pub trait Load {
     fn load(self, l: State) -> ThreadStatus;
+}
+
+/// This trait represents a value which can be attached to a [RootVm](crate::vm::RootVm).
+pub trait Raw {
+    type Ptr: Copy;
+
+    fn into_raw(self) -> Self::Ptr;
+
+    /// Deletes the raw pointer.
+    ///
+    /// # Safety
+    ///
+    /// This function must be called with the same pointer that originated from the same type using
+    /// the [into_raw](Raw::into_raw) method.
+    unsafe fn delete(ptr: Self::Ptr);
+}
+
+impl<T> Raw for Box<T> {
+    type Ptr = *mut T;
+
+    fn into_raw(self) -> Self::Ptr {
+        Box::into_raw(self)
+    }
+
+    unsafe fn delete(ptr: Self::Ptr) {
+        drop(Box::from_raw(ptr))
+    }
+}
+
+impl<T> Raw for Rc<T> {
+    type Ptr = *const T;
+
+    fn into_raw(self) -> Self::Ptr {
+        Rc::into_raw(self)
+    }
+
+    unsafe fn delete(ptr: Self::Ptr) {
+        drop(Rc::from_raw(ptr))
+    }
 }
