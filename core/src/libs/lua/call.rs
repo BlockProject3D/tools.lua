@@ -26,36 +26,34 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use bp3d_lua::libs::lua::Options;
-use bp3d_lua::vm::RootVm;
+use crate::decl_lib_func;
+use crate::vm::error::Error;
+use crate::vm::function::types::RFunction;
+use crate::vm::namespace::Namespace;
+use crate::vm::value::any::{AnyParam, UncheckedAnyReturn};
+use crate::vm::value::function::LuaFunction;
+use crate::vm::Vm;
 
-#[test]
-fn test_vm_lib_lua() {
-    let mut vm = RootVm::new();
-    let top = vm.top();
-    bp3d_lua::libs::lua::register(&mut vm, Options::new()).unwrap();
-    vm.run_code::<()>(c"
-        assert(bp3d.lua.name == 'bp3d-lua')
-        assert(bp3d.lua.version == '1.0.0-rc.1.0.0')
-        assert(#bp3d.lua.patches == 5)
-        local func = bp3d.lua.loadString('return 1 + 1')
-        assert(func)
-        assert(func() == 2)
-        local func, err = bp3d.lua.loadString('ret a + 2')
-        assert(func == nil)
-        assert(err == \"syntax error: [string \\\"ret a + 2\\\"]:1: '=' expected near 'a'\")
-        assert(bp3d.lua.runString('return 1 + 1') == 2)
-    ").unwrap();
-    let err = vm.run_code::<()>(c"bp3d.lua.require \"not.existing.file\"").unwrap_err().into_runtime().unwrap();
-    assert_eq!(err.msg(), "rust error: unknown source name not");
-    vm.run_code::<()>(c"
-        local function test()
-            bp3d.lua.require \"not.existing.file\"
-        end
-        local flag, err = bp3d.lua.pcall(test)
-        assert(not flag)
-        print(err)
-        assert(err ~= '')
-    ").unwrap();
-    assert_eq!(vm.top(), top);
+decl_lib_func! {
+    fn pcall(vm: &Vm, func: LuaFunction) -> UncheckedAnyReturn {
+        let top = vm.top();
+        true.into_param(vm);
+        let ret = func.call::<AnyParam>(());
+        let new_top = vm.top();
+        match ret {
+            Ok(_) => unsafe { UncheckedAnyReturn::new(vm, (new_top - top) as _) },
+            Err(e) => {
+                match e {
+                    Error::Runtime(e) => unsafe { UncheckedAnyReturn::new(vm, (false, e.backtrace()).into_param(vm)) },
+                    e => unsafe { UncheckedAnyReturn::new(vm, (false, e.to_string()).into_param(vm)) }
+                }
+            }
+        }
+    }
+}
+
+pub fn register(vm: &Vm) -> crate::vm::Result<()> {
+    let mut namespace = Namespace::new(vm, "bp3d.lua")?;
+    namespace.add([("pcall", RFunction::wrap(pcall))])?;
+    Ok(())
 }

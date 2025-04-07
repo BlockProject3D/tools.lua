@@ -32,6 +32,7 @@ use crate::vm::table::Table;
 mod load;
 pub mod require;
 mod options;
+mod call;
 
 pub use options::Options;
 
@@ -46,6 +47,7 @@ const PATCH_LIST: &[&str] = &[
 pub fn register(root: &mut crate::vm::RootVm, options: Options) -> crate::vm::Result<()> {
     require::register(root, options.provider.unwrap_or_default())?;
     load::register(root)?;
+    call::register(root)?;
     let mut namespace = Namespace::new(root, "bp3d.lua")?;
     namespace.add([
         ("name", "bp3d-lua"),
