@@ -26,26 +26,27 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use bp3d_lua::libs::lua::Options;
 use bp3d_lua::vm::RootVm;
 
 #[test]
 fn test_vm_lib_lua() {
-    let vm = RootVm::new();
+    let mut vm = RootVm::new();
     let top = vm.top();
-    bp3d_lua::libs::lua::register(&vm).unwrap();
+    bp3d_lua::libs::lua::register(&mut vm, Options::new()).unwrap();
     vm.run_code::<()>(c"
         assert(bp3d.lua.name == 'bp3d-lua')
         assert(bp3d.lua.version == '1.0.0-rc.1.0.0')
         assert(#bp3d.lua.patches == 5)
-        local flag, func = bp3d.lua.loadString('return 1 + 1')
-        assert(flag)
+        local func = bp3d.lua.loadString('return 1 + 1')
+        assert(func)
         assert(func() == 2)
-        local flag, err = bp3d.lua.loadString('ret a + 2')
-        assert(not flag)
+        local func, err = bp3d.lua.loadString('ret a + 2')
+        assert(func == nil)
         assert(err == \"syntax error: [string \\\"ret a + 2\\\"]:1: '=' expected near 'a'\")
-        local flag, res = bp3d.lua.runString('return 1 + 1')
-        assert(flag)
-        assert(res == 2)
+        assert(bp3d.lua.runString('return 1 + 1') == 2)
     ").unwrap();
+    let err = vm.run_code::<()>(c"bp3d.lua.require \"not.existing.file\"").unwrap_err().into_runtime().unwrap();
+    assert_eq!(err.msg(), "rust error: unknown source name not");
     assert_eq!(vm.top(), top);
 }
