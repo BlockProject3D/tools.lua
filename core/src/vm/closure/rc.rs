@@ -26,10 +26,49 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-mod interface;
-mod core;
-pub mod types;
-pub mod context;
-pub mod rc;
+use std::ops::Deref;
+use crate::util::SimpleDrop;
+use crate::vm::closure::{FromUpvalue, IntoUpvalue, Upvalue};
+use crate::vm::{RootVm, Vm};
 
-pub use interface::*;
+#[repr(transparent)]
+pub struct Rc<T>(*const T);
+
+#[repr(transparent)]
+pub struct Ref<'a, T>(&'a T);
+
+unsafe impl<T> SimpleDrop for Ref<'_, T> { }
+
+impl<'a, T> Deref for Ref<'a, T> {
+    type Target = T;
+
+    fn deref(&self) -> &Self::Target {
+        self.0
+    }
+}
+
+impl<'a, T> FromUpvalue<'a> for Ref<'a, T> {
+    #[inline(always)]
+    unsafe fn from_upvalue(vm: &'a Vm, index: i32) -> Self {
+        let ptr: *const T = FromUpvalue::from_upvalue(vm, index);
+        Ref(&*ptr)
+    }
+}
+
+impl<T: 'static> Upvalue for Rc<T> {
+    type From<'a> = Ref<'a, T>;
+}
+
+impl<T: 'static> IntoUpvalue for Rc<T> {
+    #[inline(always)]
+    fn into_upvalue(self, vm: &Vm) -> u16 {
+        self.0.into_upvalue(vm)
+    }
+}
+
+impl<T: 'static> Rc<T> {
+    #[inline(always)]
+    pub fn from_rust(root: &mut RootVm, rc: std::rc::Rc<T>) -> Rc<T> {
+        Rc(root.attach(rc))
+    }
+}
