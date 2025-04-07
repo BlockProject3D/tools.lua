@@ -109,6 +109,7 @@ fn main() {
     apply_patch(&path, "disable_lua_load.patch"); // Disable loadstring, dostring, etc from base lib.
     apply_patch(&path, "lua_ext.patch"); // Ext library such as lua_ext_tab_len, etc.
     apply_patch(&path, "lua_load_no_bc.patch"); // Treat all inputs as strings (no bytecode allowed).
+    //TODO: Patch to re-enable os lib with time and date
 
     // Copy the source directory to the build directory.
     println!("{}", out_path.display());

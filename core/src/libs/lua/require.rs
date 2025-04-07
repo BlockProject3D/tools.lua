@@ -31,10 +31,9 @@ use std::collections::HashMap;
 use bp3d_util::simple_error;
 use crate::decl_closure;
 use crate::vm::closure::rc::Rc;
-use crate::vm::value::any::{AnyParam, AnyValue, UncheckedAnyReturn};
+use crate::vm::value::any::{AnyParam, UncheckedAnyReturn};
 use crate::vm::{RootVm, Vm};
 use crate::vm::namespace::Namespace;
-use crate::vm::value::FromLua;
 
 simple_error! {
     pub Error {

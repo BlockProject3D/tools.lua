@@ -27,3 +27,7 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 pub mod lua;
+//TODO: maybe add a stack debug function which prints the content of the lua stack
+//TODO: os lib with basic function (mainly time and performance management) and threading (sandbox with max number of threads)
+//      make sure thread join is time-limited.
+//TODO: utf8 lib with string functions operating on UTF8-strings

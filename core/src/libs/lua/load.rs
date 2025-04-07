@@ -26,9 +26,10 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::path::Path;
+use std::path::{Path, PathBuf};
+use bp3d_util::simple_error;
 use crate::{decl_closure, decl_lib_func};
-use crate::vm::core::load::Code;
+use crate::vm::core::load::{Code, Script};
 use crate::vm::function::types::RFunction;
 use crate::vm::namespace::Namespace;
 use crate::vm::value::any::{AnyParam, UncheckedAnyReturn};
@@ -61,18 +62,67 @@ decl_lib_func! {
     }
 }
 
-decl_closure! {
-    fn load_file<'a> |chroot: &Path| (vm: &Vm, path: &str) -> (Option<LuaFunction<'a>>, Option<String>) {
-
-        todo!()
+simple_error! {
+    Error {
+        EscapeChroot(String) => "invalid path {}: attempt to escape chroot",
+        (impl From) Io(std::io::Error) => "io error: {}",
+        (impl From) Vm(crate::vm::error::Error) => "lua error: {}"
     }
 }
 
-pub fn register(vm: &Vm) -> crate::vm::Result<()> {
+fn parse_lua_path(chroot: &Path, path: &str) -> Result<PathBuf, Error> {
+    let iter = path.split("/");
+    let mut cur_path = Vec::new();
+    for component in iter {
+        if component == ".." {
+            if let None = cur_path.pop() {
+                return Err(Error::EscapeChroot(path.into()));
+            }
+        } else if component != "." {
+            cur_path.push(component);
+        }
+    }
+    Ok(chroot.join(path))
+}
 
+decl_closure! {
+    fn load_file<'a> |chroot: &Path| (vm: &Vm, path: &str) -> (Option<LuaFunction<'a>>, Option<String>) {
+        let path = match parse_lua_path(chroot, path) {
+            Ok(v) => v,
+            Err(e) => return (None, Some(e.to_string()))
+        };
+        let script = match Script::from_path(path) {
+            Ok(v) => v,
+            Err(e) => return (None, Some(e.to_string()))
+        };
+        match vm.load(script) {
+            Ok(v) => (Some(v), None),
+            Err(e) => (None, Some(e.to_string()))
+        }
+    }
+}
+
+decl_closure! {
+    fn run_file<'a> |chroot: &Path| (vm: &Vm, path: &str) -> Result<UncheckedAnyReturn, Error> {
+        let path = parse_lua_path(chroot, path)?;
+        let script = Script::from_path(path)?;
+        let top = vm.top();
+        vm.run::<AnyParam>(script)?;
+        unsafe { Ok(UncheckedAnyReturn::new(vm, (vm.top() - top) as _)) }
+    }
+}
+
+pub fn register(vm: &Vm, chroot: Option<&Path>) -> crate::vm::Result<()> {
     let mut namespace = Namespace::new(vm, "bp3d.lua")?;
     namespace.add([
         ("runString", RFunction::wrap(run_string)),
         ("loadString", RFunction::wrap(load_string))
-    ])
+    ])?;
+    if let Some(chroot) = chroot {
+        namespace.add([
+            ("loadFile", load_file(chroot)),
+            ("runFile", run_file(chroot))
+        ])?;
+    }
+    Ok(())
 }

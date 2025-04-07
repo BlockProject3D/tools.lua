@@ -46,7 +46,7 @@ const PATCH_LIST: &[&str] = &[
 
 pub fn register(root: &mut crate::vm::RootVm, options: Options) -> crate::vm::Result<()> {
     require::register(root, options.provider.unwrap_or_default())?;
-    load::register(root)?;
+    load::register(root, options.load_chroot_path)?;
     call::register(root)?;
     let mut namespace = Namespace::new(root, "bp3d.lua")?;
     namespace.add([
