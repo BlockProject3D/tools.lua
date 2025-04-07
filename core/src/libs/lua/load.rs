@@ -26,68 +26,50 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use crate::decl_lib_func;
+use std::path::Path;
+use crate::{decl_closure, decl_lib_func};
 use crate::vm::core::load::Code;
-use crate::vm::function::IntoParam;
 use crate::vm::function::types::RFunction;
 use crate::vm::namespace::Namespace;
 use crate::vm::value::any::{AnyParam, UncheckedAnyReturn};
 use crate::vm::value::function::LuaFunction;
 use crate::vm::Vm;
 
-enum FunctionOrString<'a> {
-    Func(LuaFunction<'a>),
-    String(String)
-}
-
-unsafe impl IntoParam for FunctionOrString<'_> {
-    fn into_param(self, vm: &Vm) -> u16 {
-        match self {
-            FunctionOrString::Func(v) => v.into_param(vm),
-            FunctionOrString::String(v) => v.into_param(vm)
-        }
-    }
-}
-
 decl_lib_func! {
-    fn run_string(vm: &Vm, s: &str, chunkname: Option<&str>) -> UncheckedAnyReturn {
+    fn run_string(vm: &Vm, s: &str, chunkname: Option<&str>) -> crate::vm::Result<UncheckedAnyReturn> {
         let top = vm.top();
-        true.into_param(vm);
         let ret = match chunkname {
             None => vm.run_code::<AnyParam>(s),
             Some(name) => vm.run::<AnyParam>(Code::new(name, s.as_bytes()))
         };
-        match ret {
-            Ok(_) => {
-                let new_top = vm.top();
-                unsafe { UncheckedAnyReturn::new(vm, (new_top - top) as _) }
-            },
-            Err(e) => {
-                let s = e.to_string();
-                false.into_param(vm);
-                s.into_param(vm);
-                unsafe { UncheckedAnyReturn::new(vm, 2) }
-            }
-        }
+        ret.map(|_| unsafe { UncheckedAnyReturn::new(vm, (vm.top() - top) as _) })
     }
 }
 
 decl_lib_func! {
-    fn load_string<'a>(vm: &Vm, s: &str, chunkname: Option<&str>) -> (bool, FunctionOrString<'a>) {
+    fn load_string<'a>(vm: &Vm, s: &str, chunkname: Option<&str>) -> (Option<LuaFunction<'a>>, Option<String>) {
         match chunkname {
             None => match vm.load_code(s) {
-                Ok(v) => (true, FunctionOrString::Func(v)),
-                Err(v) => (false, FunctionOrString::String(v.to_string()))
+                Ok(v) => (Some(v), None),
+                Err(v) => (None, Some(v.to_string()))
             },
             Some(name) => match vm.load(Code::new(name, s.as_bytes())) {
-                Ok(v) => (true, FunctionOrString::Func(v)),
-                Err(v) => (false, FunctionOrString::String(v.to_string()))
+                Ok(v) => (Some(v), None),
+                Err(v) => (None, Some(v.to_string()))
             }
         }
     }
 }
 
+decl_closure! {
+    fn load_file<'a> |chroot: &Path| (vm: &Vm, path: &str) -> (Option<LuaFunction<'a>>, Option<String>) {
+
+        todo!()
+    }
+}
+
 pub fn register(vm: &Vm) -> crate::vm::Result<()> {
+
     let mut namespace = Namespace::new(vm, "bp3d.lua")?;
     namespace.add([
         ("runString", RFunction::wrap(run_string)),
