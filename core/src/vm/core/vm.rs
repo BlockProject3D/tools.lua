@@ -40,6 +40,7 @@ use crate::vm::userdata::UserData;
 use crate::vm::value::{FromLua, IntoLua};
 use crate::vm::value::function::LuaFunction;
 
+#[repr(transparent)]
 pub struct Vm {
     l: State
 }
@@ -199,12 +200,14 @@ impl RootVm {
 impl Deref for RootVm {
     type Target = Vm;
 
+    #[inline(always)]
     fn deref(&self) -> &Self::Target {
         &self.vm
     }
 }
 
 impl DerefMut for RootVm {
+    #[inline(always)]
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.vm
     }
