@@ -83,11 +83,39 @@ decl_lib_func! {
     }
 }
 
+decl_lib_func! {
+    fn contains(src: Table, value: AnyValue) -> crate::vm::Result<bool> {
+        let mut src = src;
+        for res in src.iter() {
+            let (_, v) = res?;
+            if v == value {
+                return Ok(true)
+            }
+        }
+        Ok(false)
+    }
+}
+
+decl_lib_func! {
+    fn contains_key(src: Table, key: AnyValue) -> crate::vm::Result<bool> {
+        let mut src = src;
+        for res in src.iter() {
+            let (k, _) = res?;
+            if k == key {
+                return Ok(true)
+            }
+        }
+        Ok(false)
+    }
+}
+
 pub fn register(vm: &Vm) -> crate::vm::Result<()> {
     let mut namespace = Namespace::new(vm, "bp3d.util.table")?;
     namespace.add([
         ("update", RFunction::wrap(update)),
         ("count", RFunction::wrap(count)),
         ("tostring", RFunction::wrap(to_string)),
+        ("contains", RFunction::wrap(contains)),
+        ("containsKey", RFunction::wrap(contains_key))
     ])
 }

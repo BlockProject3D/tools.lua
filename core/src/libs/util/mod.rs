@@ -26,9 +26,6 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use crate::vm::namespace::Namespace;
-use crate::vm::table::Table;
-
 mod table;
 
 pub fn register(vm: &crate::vm::Vm) -> crate::vm::Result<()> {

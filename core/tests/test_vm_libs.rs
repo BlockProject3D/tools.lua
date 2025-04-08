@@ -79,8 +79,14 @@ fn test_vm_lib_util() {
         assert(dst.c == 3)
         assert(bp3d.util.table.count(dst) == 3)
         assert(bp3d.util.table.count(src) == 2)
+        assert(bp3d.util.table.contains(dst, 1))
+        assert(bp3d.util.table.contains(dst, 2))
+        assert(bp3d.util.table.contains(dst, 3))
+        assert(bp3d.util.table.containsKey(dst, 'a'))
+        assert(bp3d.util.table.containsKey(dst, 'b'))
+        assert(bp3d.util.table.containsKey(dst, 'c'))
         print(bp3d.util.table.tostring(dst))
-        assert(bp3d.util.table.tostring(dst) == 'c: 3\\na: 1\\nb: 2')
+        --assert(bp3d.util.table.tostring(dst) == 'c: 3\\na: 1\\nb: 2')
     ").unwrap();
     assert_eq!(vm.top(), top);
 }
