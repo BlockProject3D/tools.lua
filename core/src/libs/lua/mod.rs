@@ -33,6 +33,7 @@ mod load;
 pub mod require;
 mod options;
 mod call;
+mod table;
 
 pub use options::Options;
 
@@ -48,6 +49,7 @@ pub fn register(root: &mut crate::vm::RootVm, options: Options) -> crate::vm::Re
     require::register(root, options.provider.unwrap_or_default())?;
     load::register(root, options.load_chroot_path)?;
     call::register(root)?;
+    table::register(root)?;
     let mut namespace = Namespace::new(root, "bp3d.lua")?;
     namespace.add([
         ("name", "bp3d-lua"),
