@@ -26,11 +26,39 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-mod table;
-mod string;
+use crate::decl_lib_func;
+use crate::vm::function::types::RFunction;
+use crate::vm::namespace::Namespace;
+use crate::vm::table::Table;
+use crate::vm::Vm;
 
-pub fn register(vm: &crate::vm::Vm) -> crate::vm::Result<()> {
-    table::register(vm)?;
-    string::register(vm)?;
-    Ok(())
+decl_lib_func! {
+    fn contains(src: &[u8], needle: &[u8]) -> bool {
+        if needle.len() == 0 {
+            return true;
+        }
+        src.windows(needle.len()).any(|window| window == needle)
+    }
+}
+
+decl_lib_func! {
+    fn split<'a>(vm: &Vm, src: &[u8], pattern: u8) -> crate::vm::Result<Table<'a>> {
+        let split = src.split(|v| *v == pattern);
+        let mut tbl = Table::new(vm);
+        for (i, v) in split.enumerate() {
+            // Indices starts at 1 in lua.
+            tbl.set((i + 1) as _, v)?;
+        }
+        Ok(tbl)
+    }
+}
+
+//TODO: implement string replace
+
+pub fn register(vm: &Vm) -> crate::vm::Result<()> {
+    let mut namespace = Namespace::new(vm, "bp3d.util.string")?;
+    namespace.add([
+        ("contains", RFunction::wrap(contains)),
+        ("split", RFunction::wrap(split))
+    ])
 }

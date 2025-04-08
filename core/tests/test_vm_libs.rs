@@ -85,8 +85,16 @@ fn test_vm_lib_util() {
         assert(bp3d.util.table.containsKey(dst, 'a'))
         assert(bp3d.util.table.containsKey(dst, 'b'))
         assert(bp3d.util.table.containsKey(dst, 'c'))
-        print(bp3d.util.table.tostring(dst))
-        --assert(bp3d.util.table.tostring(dst) == 'c: 3\\na: 1\\nb: 2')
+        local str = bp3d.util.table.tostring(dst) .. '\\n'
+        assert(bp3d.util.string.contains(str, 'a: 1\\n'))
+        assert(bp3d.util.string.contains(str, 'b: 2\\n'))
+        assert(bp3d.util.string.contains(str, 'c: 3\\n'))
+        local str = bp3d.util.table.tostring(dst)
+        local tbl = bp3d.util.string.split(str, 0x0A)
+        assert(#tbl == 3)
+        assert(bp3d.util.table.contains(tbl, 'a: 1'))
+        assert(bp3d.util.table.contains(tbl, 'b: 2'))
+        assert(bp3d.util.table.contains(tbl, 'c: 3'))
     ").unwrap();
     assert_eq!(vm.top(), top);
 }
