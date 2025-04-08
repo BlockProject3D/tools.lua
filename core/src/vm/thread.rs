@@ -26,9 +26,10 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use std::fmt::{Debug, Display};
 use std::marker::PhantomData;
 use crate::ffi::laux::luaL_checktype;
-use crate::ffi::lua::{lua_remove, lua_resume, lua_status, lua_tothread, ThreadStatus, Type};
+use crate::ffi::lua::{lua_remove, lua_resume, lua_status, lua_topointer, lua_tothread, ThreadStatus, Type};
 use crate::util::SimpleDrop;
 use crate::vm::error::{Error, RuntimeError};
 use crate::vm::function::FromParam;
@@ -46,6 +47,18 @@ pub enum State {
 pub struct Thread<'a> {
     vm: Vm,
     useless: PhantomData<&'a ()>
+}
+
+impl Display for Thread<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "thread@{:X}", unsafe { std::mem::transmute::<_, usize>(self.vm.as_ptr()) })
+    }
+}
+
+impl Debug for Thread<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("Thread")
+    }
 }
 
 impl<'a> Thread<'a> {

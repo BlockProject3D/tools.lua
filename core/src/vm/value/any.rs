@@ -26,6 +26,7 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use std::fmt::Display;
 use crate::ffi::lua::{lua_pushnil, lua_toboolean, lua_tonumber, lua_type, Type};
 use crate::vm::error::Error;
 use crate::vm::function::IntoParam;
@@ -36,6 +37,7 @@ use crate::vm::thread::Thread;
 use crate::vm::userdata::AnyUserData;
 use crate::vm::Vm;
 
+#[derive(Debug)]
 pub enum AnyValue<'a> {
     None,
     Nil,
@@ -47,6 +49,23 @@ pub enum AnyValue<'a> {
     Table(Table<'a>),
     UserData(AnyUserData<'a>),
     Thread(Thread<'a>)
+}
+
+impl Display for AnyValue<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            AnyValue::None => f.write_str("<none>"),
+            AnyValue::Nil => f.write_str("nil"),
+            AnyValue::Number(v) => write!(f, "{}", v),
+            AnyValue::Boolean(v) => write!(f, "{}", v),
+            AnyValue::String(v) => write!(f, "{}", v),
+            AnyValue::Buffer(v) => write!(f, "{:?}", v),
+            AnyValue::Function(v) => write!(f, "{}", v),
+            AnyValue::Table(v) => write!(f, "{}", v),
+            AnyValue::UserData(v) => write!(f, "{}", v),
+            AnyValue::Thread(v) => write!(f, "{}", v)
+        }
+    }
 }
 
 impl AnyValue<'_> {

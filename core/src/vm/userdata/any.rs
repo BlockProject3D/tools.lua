@@ -26,8 +26,9 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use std::fmt::{Debug, Display};
 use crate::ffi::laux::luaL_testudata;
-use crate::ffi::lua::{lua_type, Type};
+use crate::ffi::lua::{lua_touserdata, lua_type, Type};
 use crate::vm::error::{Error, TypeError};
 use crate::vm::userdata::{UserData, UserDataImmutable};
 use crate::vm::value::FromLua;
@@ -36,6 +37,18 @@ use crate::vm::Vm;
 pub struct AnyUserData<'a> {
     vm: &'a Vm,
     index: i32
+}
+
+impl Display for AnyUserData<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "userdata@{:X}", unsafe { lua_touserdata(self.vm.as_ptr(), self.index) } as usize)
+    }
+}
+
+impl Debug for AnyUserData<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "UserData({:?})", self.index)
+    }
 }
 
 impl<'a> AnyUserData<'a> {

@@ -26,8 +26,9 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use std::fmt::{Debug, Display};
 use crate::ffi::laux::luaL_checktype;
-use crate::ffi::lua::{lua_pushvalue, Type};
+use crate::ffi::lua::{lua_pushvalue, lua_topointer, Type};
 use crate::util::SimpleDrop;
 use crate::vm::core::util::{pcall, push_error_handler};
 use crate::vm::function::{FromParam, IntoParam};
@@ -41,6 +42,18 @@ use crate::vm::Vm;
 pub struct LuaFunction<'a> {
     vm: &'a Vm,
     index: i32
+}
+
+impl Display for LuaFunction<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "function@{:X}", unsafe { lua_topointer(self.vm.as_ptr(), self.index) } as usize)
+    }
+}
+
+impl Debug for LuaFunction<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "LuaFunction({:?})", self.index)
+    }
 }
 
 unsafe impl SimpleDrop for LuaFunction<'_> { }
