@@ -29,7 +29,7 @@
 use std::fmt::{Debug, Display};
 use std::marker::PhantomData;
 use crate::ffi::laux::luaL_checktype;
-use crate::ffi::lua::{lua_remove, lua_resume, lua_status, lua_topointer, lua_tothread, ThreadStatus, Type};
+use crate::ffi::lua::{lua_remove, lua_resume, lua_status, lua_tothread, ThreadStatus, Type};
 use crate::util::SimpleDrop;
 use crate::vm::error::{Error, RuntimeError};
 use crate::vm::function::FromParam;
