@@ -58,8 +58,8 @@ impl<'a> Iterator for Iter<'a> {
         let ret = unsafe { lua_next(self.vm.as_ptr(), self.index) };
         self.has_started = true;
         if ret != 0 {
-            let value = AnyValue::from_lua(self.vm, -1);
-            let key = AnyValue::from_lua(self.vm, -2);
+            let value = AnyValue::from_lua(self.vm, -2);
+            let key = AnyValue::from_lua(self.vm, -1);
             Some(match (value, key) {
                 (Ok(key), Ok(value)) => Ok((key, value)),
                 (Ok(_), Err(e)) => Err(e),
