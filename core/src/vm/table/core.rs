@@ -118,7 +118,7 @@ impl<'a> Table<'a> {
     pub fn set_field(&mut self, name: impl AnyStr, value: impl IntoLua) -> crate::vm::Result<()> {
         unsafe {
             let nums = value.into_lua(self.vm);
-            if nums > 1 {
+            if nums != 1 {
                 // Clear the stack.
                 lua_settop(self.vm.as_ptr(), -(nums as i32)-1);
                 return Err(crate::vm::error::Error::MultiValue);
@@ -129,7 +129,7 @@ impl<'a> Table<'a> {
     }
 
     pub fn get_field<'b, T: FromLua<'b>>(&'b self, name: impl AnyStr) -> crate::vm::Result<T> {
-        if T::num_values() > 1 {
+        if T::num_values() != 1 {
             return Err(crate::vm::error::Error::MultiValue);
         }
         unsafe {
@@ -141,7 +141,7 @@ impl<'a> Table<'a> {
     pub fn set(&mut self, i: i32, value: impl IntoLua) -> crate::vm::Result<()> {
         unsafe {
             let nums = value.into_lua(self.vm);
-            if nums > 1 {
+            if nums != 1 {
                 // Clear the stack.
                 lua_settop(self.vm.as_ptr(), -(nums as i32)-1);
                 return Err(crate::vm::error::Error::MultiValue);
@@ -152,7 +152,7 @@ impl<'a> Table<'a> {
     }
 
     pub fn get<'b, T: FromLua<'b>>(&'b self, i: i32) -> crate::vm::Result<T> {
-        if T::num_values() > 1 {
+        if T::num_values() != 1 {
             return Err(crate::vm::error::Error::MultiValue);
         }
         unsafe {
