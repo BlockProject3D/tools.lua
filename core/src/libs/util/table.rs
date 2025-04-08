@@ -84,7 +84,7 @@ decl_lib_func! {
 }
 
 pub fn register(vm: &Vm) -> crate::vm::Result<()> {
-    let mut namespace = Namespace::new(vm, "bp3d.lua.table")?;
+    let mut namespace = Namespace::new(vm, "bp3d.util.table")?;
     namespace.add([
         ("update", RFunction::wrap(update)),
         ("count", RFunction::wrap(count)),

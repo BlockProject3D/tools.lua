@@ -38,13 +38,13 @@ fn test_vm_lib_lua() {
         assert(bp3d.lua.name == 'bp3d-lua')
         assert(bp3d.lua.version == '1.0.0-rc.1.0.0')
         assert(#bp3d.lua.patches == 5)
-        local func = bp3d.lua.load.loadString('return 1 + 1')
+        local func = bp3d.lua.loadString('return 1 + 1')
         assert(func)
         assert(func() == 2)
-        local func, err = bp3d.lua.load.loadString('ret a + 2')
+        local func, err = bp3d.lua.loadString('ret a + 2')
         assert(func == nil)
         assert(err == \"syntax error: [string \\\"ret a + 2\\\"]:1: '=' expected near 'a'\")
-        assert(bp3d.lua.load.runString('return 1 + 1') == 2)
+        assert(bp3d.lua.runString('return 1 + 1') == 2)
     ").unwrap();
     let err = vm.run_code::<()>(c"bp3d.lua.require \"not.existing.file\"").unwrap_err().into_runtime().unwrap();
     assert_eq!(err.msg(), "rust error: unknown source name not");
@@ -57,6 +57,14 @@ fn test_vm_lib_lua() {
         print(err)
         assert(err ~= '')
     ").unwrap();
+    assert_eq!(vm.top(), top);
+}
+
+#[test]
+fn test_vm_lib_util() {
+    let vm = RootVm::new();
+    let top = vm.top();
+    bp3d_lua::libs::util::register(&vm).unwrap();
     vm.run_code::<()>(c"
         local src = {
             a = 1,
@@ -65,13 +73,14 @@ fn test_vm_lib_lua() {
         local dst = {
             c = 3
         }
-        bp3d.lua.table.update(dst, src)
+        bp3d.util.table.update(dst, src)
         assert(dst.a == 1)
         assert(dst.b == 2)
         assert(dst.c == 3)
-        assert(bp3d.lua.table.count(dst) == 3)
-        assert(bp3d.lua.table.count(src) == 2)
-        assert(bp3d.lua.table.tostring(dst) == 'b: 2\\na: 1\\nc: 3')
+        assert(bp3d.util.table.count(dst) == 3)
+        assert(bp3d.util.table.count(src) == 2)
+        print(bp3d.util.table.tostring(dst))
+        assert(bp3d.util.table.tostring(dst) == 'c: 3\\na: 1\\nb: 2')
     ").unwrap();
     assert_eq!(vm.top(), top);
 }
