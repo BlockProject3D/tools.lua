@@ -113,7 +113,7 @@ decl_closure! {
 }
 
 pub fn register(vm: &Vm, chroot: Option<&Path>) -> crate::vm::Result<()> {
-    let mut namespace = Namespace::new(vm, "bp3d.lua")?;
+    let mut namespace = Namespace::new(vm, "bp3d.lua.load")?;
     namespace.add([
         ("runString", RFunction::wrap(run_string)),
         ("loadString", RFunction::wrap(load_string))
