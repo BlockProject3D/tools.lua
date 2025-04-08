@@ -26,10 +26,10 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use crate::ffi::lua::{lua_toboolean, lua_tonumber, lua_type, Type};
+use crate::ffi::lua::{lua_pushnil, lua_toboolean, lua_tonumber, lua_type, Type};
 use crate::vm::error::Error;
 use crate::vm::function::IntoParam;
-use crate::vm::value::FromLua;
+use crate::vm::value::{FromLua, IntoLua};
 use crate::vm::value::function::LuaFunction;
 use crate::vm::table::Table;
 use crate::vm::thread::Thread;
@@ -47,6 +47,43 @@ pub enum AnyValue<'a> {
     Table(Table<'a>),
     UserData(AnyUserData<'a>),
     Thread(Thread<'a>)
+}
+
+impl AnyValue<'_> {
+    pub fn ty(&self) -> Type {
+        match self {
+            AnyValue::None => Type::None,
+            AnyValue::Nil => Type::Nil,
+            AnyValue::Number(_) => Type::Number,
+            AnyValue::Boolean(_) => Type::Boolean,
+            AnyValue::String(_) => Type::String,
+            AnyValue::Buffer(_) => Type::String,
+            AnyValue::Function(_) => Type::Function,
+            AnyValue::Table(_) => Type::Table,
+            AnyValue::UserData(_) => Type::Userdata,
+            AnyValue::Thread(_) => Type::Thread
+        }
+    }
+}
+
+unsafe impl IntoLua for AnyValue<'_> {
+    fn into_lua(self, vm: &Vm) -> u16 {
+        match self {
+            AnyValue::None => 0,
+            AnyValue::Nil => {
+                unsafe { lua_pushnil(vm.as_ptr()) };
+                1
+            },
+            AnyValue::Number(v) => v.into_lua(vm),
+            AnyValue::Boolean(v) => v.into_lua(vm),
+            AnyValue::String(v) => v.into_lua(vm),
+            AnyValue::Buffer(v) => v.into_lua(vm),
+            AnyValue::Function(v) => v.into_lua(vm),
+            AnyValue::Table(v) => v.into_lua(vm),
+            AnyValue::UserData(_) => 0,
+            AnyValue::Thread(_) => 0
+        }
+    }
 }
 
 impl<'a> FromLua<'a> for AnyValue<'a> {
@@ -105,7 +142,7 @@ pub struct UncheckedAnyReturn(u16);
 
 impl UncheckedAnyReturn {
     /// Construct a [UncheckedAnyReturn].
-    /// 
+    ///
     /// # Panic
     ///
     /// This function panics when the count of arguments is greater than the lua stack size itself.
