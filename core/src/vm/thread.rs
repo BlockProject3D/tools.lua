@@ -49,6 +49,14 @@ pub struct Thread<'a> {
     useless: PhantomData<&'a ()>
 }
 
+impl PartialEq for Thread<'_> {
+    fn eq(&self, other: &Self) -> bool {
+        self.vm.as_ptr() == other.vm.as_ptr()
+    }
+}
+
+impl Eq for Thread<'_> { }
+
 impl Display for Thread<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "thread@{:X}", unsafe { std::mem::transmute::<_, usize>(self.vm.as_ptr()) })

@@ -40,6 +40,16 @@ pub struct Table<'a> {
     index: i32
 }
 
+impl PartialEq for Table<'_> {
+    fn eq(&self, other: &Self) -> bool {
+        let a = unsafe { lua_topointer(self.vm.as_ptr(), self.index) };
+        let b = unsafe { lua_topointer(other.vm.as_ptr(), other.index) };
+        a == b
+    }
+}
+
+impl Eq for Table<'_> { }
+
 impl Display for Table<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "table@{:X}", unsafe { lua_topointer(self.vm.as_ptr(), self.index) } as usize)

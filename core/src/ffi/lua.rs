@@ -54,7 +54,7 @@ pub enum ThreadStatus {
 }
 
 #[repr(transparent)]
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Eq, PartialEq)]
 pub struct State(*mut c_void);
 
 pub type CFunction = extern "C-unwind" fn(l: State) -> i32;

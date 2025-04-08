@@ -28,7 +28,7 @@
 
 use std::fmt::{Debug, Display};
 use crate::ffi::laux::luaL_testudata;
-use crate::ffi::lua::{lua_touserdata, lua_type, Type};
+use crate::ffi::lua::{lua_topointer, lua_touserdata, lua_type, Type};
 use crate::vm::error::{Error, TypeError};
 use crate::vm::userdata::{UserData, UserDataImmutable};
 use crate::vm::value::FromLua;
@@ -38,6 +38,16 @@ pub struct AnyUserData<'a> {
     vm: &'a Vm,
     index: i32
 }
+
+impl PartialEq for AnyUserData<'_> {
+    fn eq(&self, other: &Self) -> bool {
+        let a = unsafe { lua_topointer(self.vm.as_ptr(), self.index) };
+        let b = unsafe { lua_topointer(other.vm.as_ptr(), other.index) };
+        a == b
+    }
+}
+
+impl Eq for AnyUserData<'_> { }
 
 impl Display for AnyUserData<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

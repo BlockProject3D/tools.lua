@@ -44,6 +44,16 @@ pub struct LuaFunction<'a> {
     index: i32
 }
 
+impl PartialEq for LuaFunction<'_> {
+    fn eq(&self, other: &Self) -> bool {
+        let a = unsafe { lua_topointer(self.vm.as_ptr(), self.index) };
+        let b = unsafe { lua_topointer(other.vm.as_ptr(), other.index) };
+        a == b
+    }
+}
+
+impl Eq for LuaFunction<'_> { }
+
 impl Display for LuaFunction<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "function@{:X}", unsafe { lua_topointer(self.vm.as_ptr(), self.index) } as usize)

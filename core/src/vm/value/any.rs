@@ -28,16 +28,18 @@
 
 use std::fmt::Display;
 use crate::ffi::lua::{lua_pushnil, lua_toboolean, lua_tonumber, lua_type, Type};
+use crate::util::SimpleDrop;
 use crate::vm::error::Error;
-use crate::vm::function::IntoParam;
+use crate::vm::function::{FromParam, IntoParam};
 use crate::vm::value::{FromLua, IntoLua};
 use crate::vm::value::function::LuaFunction;
 use crate::vm::table::Table;
 use crate::vm::thread::Thread;
 use crate::vm::userdata::AnyUserData;
+use crate::vm::util::{lua_rust_error, LuaType};
 use crate::vm::Vm;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum AnyValue<'a> {
     None,
     Nil,
@@ -50,6 +52,8 @@ pub enum AnyValue<'a> {
     UserData(AnyUserData<'a>),
     Thread(Thread<'a>)
 }
+
+impl Eq for AnyValue<'_> { }
 
 impl Display for AnyValue<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -85,8 +89,8 @@ impl AnyValue<'_> {
     }
 }
 
-unsafe impl IntoLua for AnyValue<'_> {
-    fn into_lua(self, vm: &Vm) -> u16 {
+unsafe impl IntoParam for AnyValue<'_> {
+    fn into_param(self, vm: &Vm) -> u16 {
         match self {
             AnyValue::None => 0,
             AnyValue::Nil => {
@@ -106,6 +110,7 @@ unsafe impl IntoLua for AnyValue<'_> {
 }
 
 impl<'a> FromLua<'a> for AnyValue<'a> {
+    #[inline(always)]
     unsafe fn from_lua_unchecked(vm: &'a Vm, index: i32) -> Self {
         Self::from_lua(vm, index).unwrap_unchecked()
     }
@@ -139,18 +144,40 @@ impl<'a> FromLua<'a> for AnyValue<'a> {
     }
 }
 
+unsafe impl SimpleDrop for AnyValue<'_> {}
+
+impl LuaType for AnyValue<'_> { }
+
+impl<'a> FromParam<'a> for AnyValue<'a> {
+    #[inline(always)]
+    unsafe fn from_param(vm: &'a Vm, index: i32) -> Self {
+        match FromLua::from_lua(vm, index) {
+            Ok(v) => v,
+            Err(e) => lua_rust_error(vm.as_ptr(), e)
+        }
+    }
+
+    #[inline(always)]
+    fn try_from_param(vm: &'a Vm, index: i32) -> Option<Self> {
+        FromLua::from_lua(vm, index).ok()
+    }
+}
+
 /// A marker struct to run lua code which may return any number of values on the stack.
 pub struct AnyParam;
 
 impl FromLua<'_> for AnyParam {
+    #[inline(always)]
     unsafe fn from_lua_unchecked(_: &Vm, _: i32) -> Self {
         AnyParam
     }
 
+    #[inline(always)]
     fn from_lua(_: &Vm, _: i32) -> crate::vm::Result<Self> {
         Ok(AnyParam)
     }
 
+    #[inline(always)]
     fn num_values() -> i16 {
         -1
     }
@@ -180,6 +207,7 @@ impl UncheckedAnyReturn {
 }
 
 unsafe impl IntoParam for UncheckedAnyReturn {
+    #[inline(always)]
     fn into_param(self, _: &Vm) -> u16 {
         self.0
     }
