@@ -80,6 +80,8 @@ decl_lib_func! {
     }
 }
 
+//TODO: implement function to substring respecting UTF8 codes (instead of the panicking rust version).
+
 pub fn register(vm: &Vm) -> crate::vm::Result<()> {
     let mut namespace = Namespace::new(vm, "bp3d.util.utf8")?;
     namespace.add([

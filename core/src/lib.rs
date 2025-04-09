@@ -28,6 +28,6 @@
 
 pub mod ffi;
 pub mod vm;
-mod macros;
+mod r#macro;
 pub mod util;
 pub mod libs;
