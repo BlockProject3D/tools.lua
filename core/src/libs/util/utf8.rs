@@ -33,17 +33,14 @@ use crate::vm::table::Table;
 use crate::vm::Vm;
 
 decl_lib_func! {
-    fn contains(src: &[u8], needle: &[u8]) -> bool {
-        if needle.len() == 0 {
-            return true;
-        }
-        src.windows(needle.len()).any(|window| window == needle)
+    fn contains(src: &str, needle: &str) -> bool {
+        src.contains(needle)
     }
 }
 
 decl_lib_func! {
-    fn split<'a>(vm: &Vm, src: &[u8], pattern: u8) -> crate::vm::Result<Table<'a>> {
-        let split = src.split(|v| *v == pattern);
+    fn split<'a>(vm: &Vm, src: &str, pattern: &str) -> crate::vm::Result<Table<'a>> {
+        let split = src.split(pattern);
         let mut tbl = Table::new(vm);
         for (i, v) in split.enumerate() {
             // Indices starts at 1 in lua.
@@ -53,10 +50,45 @@ decl_lib_func! {
     }
 }
 
+decl_lib_func! {
+    fn replace(src: &str, pattern: &str, replacement: &str) -> String {
+        src.replace(pattern, replacement)
+    }
+}
+
+decl_lib_func! {
+    fn count(src: &str) -> u32 {
+        src.chars().count() as u32
+    }
+}
+
+decl_lib_func! {
+    fn char_at(src: &str, pos: u32) -> Option<u32> {
+        src.chars().nth(pos as usize).map(|v| v as u32)
+    }
+}
+
+decl_lib_func! {
+    fn from_string<'a>(src: &'a [u8]) -> Option<&'a str> {
+        std::str::from_utf8(src).ok()
+    }
+}
+
+decl_lib_func! {
+    fn from_string_lossy(src: &[u8]) -> String {
+        String::from_utf8_lossy(src).into()
+    }
+}
+
 pub fn register(vm: &Vm) -> crate::vm::Result<()> {
-    let mut namespace = Namespace::new(vm, "bp3d.util.string")?;
+    let mut namespace = Namespace::new(vm, "bp3d.util.utf8")?;
     namespace.add([
         ("contains", RFunction::wrap(contains)),
-        ("split", RFunction::wrap(split))
+        ("split", RFunction::wrap(split)),
+        ("replace", RFunction::wrap(replace)),
+        ("count", RFunction::wrap(count)),
+        ("charAt", RFunction::wrap(char_at)),
+        ("fromString", RFunction::wrap(from_string)),
+        ("fromStringLossy", RFunction::wrap(from_string_lossy))
     ])
 }

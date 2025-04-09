@@ -96,5 +96,19 @@ fn test_vm_lib_util() {
         assert(bp3d.util.table.contains(tbl, 'b: 2'))
         assert(bp3d.util.table.contains(tbl, 'c: 3'))
     ").unwrap();
+    vm.run_code::<()>(c"
+        local utf8 = bp3d.util.utf8
+        assert(utf8.fromString('abc') ~= nil)
+        assert(utf8.count('abc') == 3)
+        local tbl = utf8.split('a;b;c;d', ';')
+        assert(#tbl == 4)
+        assert(tbl[1] == 'a')
+        assert(tbl[2] == 'b')
+        assert(tbl[3] == 'c')
+        assert(tbl[4] == 'd')
+        assert(utf8.charAt('abc', 0) == 0x61)
+        assert(utf8.charAt('abc', 1) == 0x62)
+        assert(utf8.charAt('abc', 2) == 0x63)
+    ").unwrap();
     assert_eq!(vm.top(), top);
 }

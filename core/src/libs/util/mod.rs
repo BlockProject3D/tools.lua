@@ -28,9 +28,11 @@
 
 mod table;
 mod string;
+mod utf8;
 
 pub fn register(vm: &crate::vm::Vm) -> crate::vm::Result<()> {
     table::register(vm)?;
     string::register(vm)?;
+    utf8::register(vm)?;
     Ok(())
 }
