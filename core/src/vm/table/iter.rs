@@ -35,14 +35,15 @@ pub struct Iter<'a> {
     vm: &'a Vm,
     index: i32,
     has_ended: bool,
-    has_started: bool
+    has_started: bool,
+    last_top: i32
 }
 
 impl<'a> Iter<'a> {
     pub(super) fn from_raw(vm: &'a Vm, index: i32) -> Self {
         // Push a nil value on the stack to allow the iterator to work.
         unsafe { lua_pushnil(vm.as_ptr()) };
-        Self { vm, index, has_ended: false, has_started: false }
+        Self { vm, index, has_ended: false, has_started: false, last_top: vm.top() }
     }
 }
 
@@ -51,11 +52,16 @@ impl<'a> Iterator for Iter<'a> {
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.has_started {
+            // This ensures the iterator remains safe.
+            if self.vm.top() != self.last_top {
+                panic!("Attempt to iterate on moved values (expected Vm top: {}, got: {})", self.last_top, self.vm.top());
+            }
             // Pop the last value on the stack which corresponds to the last value from lua_next.
             // Only if the iterator was started.
             unsafe { lua_settop(self.vm.as_ptr(), -2) };
         }
         let ret = unsafe { lua_next(self.vm.as_ptr(), self.index) };
+        self.last_top = self.vm.top();
         self.has_started = true;
         if ret != 0 {
             let value = AnyValue::from_lua(self.vm, -2);
