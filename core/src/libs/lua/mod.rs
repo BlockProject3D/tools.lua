@@ -35,6 +35,8 @@ mod options;
 mod call;
 
 pub use options::Options;
+use crate::libs::interface::Lib;
+use crate::vm::RootVm;
 
 const PATCH_LIST: &[&str] = &[
     "disable_lua_load",
@@ -44,20 +46,25 @@ const PATCH_LIST: &[&str] = &[
     "lua_load_no_bc"
 ];
 
-pub fn register(root: &mut crate::vm::RootVm, options: Options) -> crate::vm::Result<()> {
-    require::register(root, options.provider.unwrap_or_default())?;
-    load::register(root, options.load_chroot_path)?;
-    call::register(root)?;
-    let mut namespace = Namespace::new(root, "bp3d.lua")?;
-    namespace.add([
-        ("name", "bp3d-lua"),
-        ("version", env!("CARGO_PKG_VERSION"))
-    ])?;
-    let mut patches = Table::with_capacity(root, PATCH_LIST.len(), 0);
-    for (i, name) in PATCH_LIST.into_iter().enumerate() {
-        // Lua indices starts at 1 not 0.
-        patches.set((i + 1) as _, *name)?;
+impl<'a> Lib for Options<'a> {
+    const NAMESPACE: &'static str = "bp3d.lua";
+
+    fn load(&self, namespace: &mut Namespace) -> crate::vm::Result<()> {
+        namespace.add([
+            ("name", "bp3d-lua"),
+            ("version", env!("CARGO_PKG_VERSION"))
+        ])?;
+        let mut patches = Table::with_capacity(namespace.vm(), PATCH_LIST.len(), 0);
+        for (i, name) in PATCH_LIST.into_iter().enumerate() {
+            // Lua indices starts at 1 not 0.
+            patches.set((i + 1) as _, *name)?;
+        }
+        namespace.add([("patches", patches)])
     }
-    namespace.add([("patches", patches)])?;
-    Ok(())
+
+    fn load_libs(&self, vm: &mut RootVm) -> crate::vm::Result<()> {
+        require::Require(self.provider.clone().unwrap_or_default()).register(vm)?;
+        load::Load(self.load_chroot_path).register(vm)?;
+        call::Call.register(vm)
+    }
 }

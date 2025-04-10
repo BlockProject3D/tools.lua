@@ -29,12 +29,12 @@
 use std::path::{Path, PathBuf};
 use bp3d_util::simple_error;
 use crate::{decl_closure, decl_lib_func};
+use crate::libs::interface::Lib;
 use crate::vm::core::load::{Code, Script};
 use crate::vm::function::types::RFunction;
 use crate::vm::namespace::Namespace;
 use crate::vm::value::any::{AnyParam, UncheckedAnyReturn};
 use crate::vm::value::function::LuaFunction;
-use crate::vm::Vm;
 
 decl_lib_func! {
     fn run_string(vm: &Vm, s: &str, chunkname: Option<&str>) -> crate::vm::Result<UncheckedAnyReturn> {
@@ -112,17 +112,22 @@ decl_closure! {
     }
 }
 
-pub fn register(vm: &Vm, chroot: Option<&Path>) -> crate::vm::Result<()> {
-    let mut namespace = Namespace::new(vm, "bp3d.lua")?;
-    namespace.add([
-        ("runString", RFunction::wrap(run_string)),
-        ("loadString", RFunction::wrap(load_string))
-    ])?;
-    if let Some(chroot) = chroot {
+pub struct Load<'a>(pub Option<&'a Path>);
+
+impl Lib for Load<'_> {
+    const NAMESPACE: &'static str = "bp3d.lua";
+
+    fn load(&self, namespace: &mut Namespace) -> crate::vm::Result<()> {
         namespace.add([
-            ("loadFile", load_file(chroot)),
-            ("runFile", run_file(chroot))
+            ("runString", RFunction::wrap(run_string)),
+            ("loadString", RFunction::wrap(load_string))
         ])?;
+        if let Some(chroot) = self.0 {
+            namespace.add([
+                ("loadFile", load_file(chroot)),
+                ("runFile", run_file(chroot))
+            ])?;
+        }
+        Ok(())
     }
-    Ok(())
 }

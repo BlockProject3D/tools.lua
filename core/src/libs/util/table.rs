@@ -109,6 +109,8 @@ decl_lib_func! {
     }
 }
 
+//TODO: table.protect
+
 pub fn register(vm: &Vm) -> crate::vm::Result<()> {
     let mut namespace = Namespace::new(vm, "bp3d.util.table")?;
     namespace.add([

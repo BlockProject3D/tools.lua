@@ -80,6 +80,10 @@ impl<'a> Namespace<'a> {
         }
         Ok(())
     }
+
+    pub fn vm(&self) -> &'a Vm {
+        self.vm
+    }
 }
 
 impl Drop for Namespace<'_> {

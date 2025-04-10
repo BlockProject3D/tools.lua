@@ -26,12 +26,22 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-pub mod lua;
-pub mod util;
-mod interface;
-//TODO: maybe add a stack debug function which prints the content of the lua stack
-//TODO: os lib with basic function (mainly time and performance management) and threading (sandbox with max number of threads)
-//      make sure thread join is time-limited.
-//TODO: utf8 lib with string functions operating on UTF8-strings
+use crate::vm::namespace::Namespace;
+use crate::vm::RootVm;
 
-pub use interface::*;
+pub trait Lib {
+    const NAMESPACE: &'static str;
+
+    fn load(&self, namespace: &mut Namespace) -> crate::vm::Result<()>;
+
+    fn load_libs(&self, _: &mut RootVm) -> crate::vm::Result<()> {
+        Ok(())
+    }
+
+    fn register(&self, vm: &mut RootVm) -> crate::vm::Result<()> {
+        self.load_libs(vm)?;
+        let mut namespace = Namespace::new(vm, Self::NAMESPACE)?;
+        self.load(&mut namespace)?;
+        Ok(())
+    }
+}

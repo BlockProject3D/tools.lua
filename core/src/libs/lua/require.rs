@@ -30,6 +30,7 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use bp3d_util::simple_error;
 use crate::decl_closure;
+use crate::libs::interface::Lib;
 use crate::vm::closure::rc::Rc;
 use crate::vm::value::any::{AnyParam, UncheckedAnyReturn};
 use crate::vm::{RootVm, Vm};
@@ -78,9 +79,18 @@ decl_closure! {
     }
 }
 
-pub(super) fn register(root: &mut RootVm, provider: std::rc::Rc<Provider>) -> crate::vm::Result<()> {
-    let rc = Rc::from_rust(root, provider);
-    let mut namespace = Namespace::new(root, "bp3d.lua")?;
-    namespace.add([("require", require(rc))])?;
-    Ok(())
+pub struct Require(pub std::rc::Rc<Provider>);
+
+impl Lib for Require {
+    const NAMESPACE: &'static str = "bp3d.lua";
+
+    fn load(&self, _: &mut Namespace) -> crate::vm::Result<()> {
+        std::unreachable!()
+    }
+
+    fn register(&self, vm: &mut RootVm) -> crate::vm::Result<()> {
+        let rc = Rc::from_rust(vm, self.0.clone());
+        let mut namespace = Namespace::new(vm, "bp3d.lua")?;
+        namespace.add([("require", require(rc))])
+    }
 }

@@ -27,12 +27,12 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::decl_lib_func;
+use crate::libs::interface::Lib;
 use crate::vm::error::Error;
 use crate::vm::function::types::RFunction;
 use crate::vm::namespace::Namespace;
 use crate::vm::value::any::{AnyParam, UncheckedAnyReturn};
 use crate::vm::value::function::LuaFunction;
-use crate::vm::Vm;
 
 decl_lib_func! {
     fn pcall(vm: &Vm, func: LuaFunction) -> UncheckedAnyReturn {
@@ -52,8 +52,12 @@ decl_lib_func! {
     }
 }
 
-pub fn register(vm: &Vm) -> crate::vm::Result<()> {
-    let mut namespace = Namespace::new(vm, "bp3d.lua")?;
-    namespace.add([("pcall", RFunction::wrap(pcall))])?;
-    Ok(())
+pub struct Call;
+
+impl Lib for Call {
+    const NAMESPACE: &'static str = "bp3d.lua";
+
+    fn load(&self, namespace: &mut Namespace) -> crate::vm::Result<()> {
+        namespace.add([("pcall", RFunction::wrap(pcall))])
+    }
 }
