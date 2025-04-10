@@ -263,3 +263,17 @@ fn test_vm_userdata_security4() {
     assert_eq!(unsafe { DROP_COUNTER }, 6);
     assert_eq!(unsafe { LUA_DROP_COUNTER }, 6);
 }
+
+#[test]
+fn test_vm_userdata_security5() {
+    let _guard = MUTEX.lock();
+    {
+        let vm = RootVm::new();
+        test_vm_userdata_base(&vm);
+        vm.run_code::<()>(c"
+            rawset(a, '__gc', nil)
+        ").unwrap_err();
+    }
+    assert_eq!(unsafe { DROP_COUNTER }, 6);
+    assert_eq!(unsafe { LUA_DROP_COUNTER }, 6);
+}
