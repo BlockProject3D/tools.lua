@@ -28,6 +28,7 @@
 
 use bp3d_lua::libs::Lib;
 use bp3d_lua::libs::lua::Lua;
+use bp3d_lua::libs::util::Util;
 use bp3d_lua::vm::RootVm;
 
 #[test]
@@ -63,9 +64,9 @@ fn test_vm_lib_lua() {
 
 #[test]
 fn test_vm_lib_util() {
-    let vm = RootVm::new();
+    let mut vm = RootVm::new();
     let top = vm.top();
-    bp3d_lua::libs::util::register(&vm).unwrap();
+    Util.register(&mut vm).unwrap();
     vm.run_code::<()>(c"
         local src = {
             a = 1,

@@ -32,4 +32,9 @@ mod options;
 mod call;
 mod base;
 
+pub use base::Base;
+pub use call::Call;
+pub use load::Load;
+pub use require::Require;
+
 pub use options::Lua;

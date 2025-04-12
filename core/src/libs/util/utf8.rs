@@ -27,10 +27,10 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::decl_lib_func;
+use crate::libs::Lib;
 use crate::vm::function::types::RFunction;
 use crate::vm::namespace::Namespace;
 use crate::vm::table::Table;
-use crate::vm::Vm;
 
 decl_lib_func! {
     fn contains(src: &str, needle: &str) -> bool {
@@ -82,15 +82,20 @@ decl_lib_func! {
 
 //TODO: implement function to substring respecting UTF8 codes (instead of the panicking rust version).
 
-pub fn register(vm: &Vm) -> crate::vm::Result<()> {
-    let mut namespace = Namespace::new(vm, "bp3d.util.utf8")?;
-    namespace.add([
-        ("contains", RFunction::wrap(contains)),
-        ("split", RFunction::wrap(split)),
-        ("replace", RFunction::wrap(replace)),
-        ("count", RFunction::wrap(count)),
-        ("charAt", RFunction::wrap(char_at)),
-        ("fromString", RFunction::wrap(from_string)),
-        ("fromStringLossy", RFunction::wrap(from_string_lossy))
-    ])
+pub struct Utf8;
+
+impl Lib for Utf8 {
+    const NAMESPACE: &'static str = "bp3d.util.utf8";
+
+    fn load(&self, namespace: &mut Namespace) -> crate::vm::Result<()> {
+        namespace.add([
+            ("contains", RFunction::wrap(contains)),
+            ("split", RFunction::wrap(split)),
+            ("replace", RFunction::wrap(replace)),
+            ("count", RFunction::wrap(count)),
+            ("charAt", RFunction::wrap(char_at)),
+            ("fromString", RFunction::wrap(from_string)),
+            ("fromStringLossy", RFunction::wrap(from_string_lossy))
+        ])
+    }
 }

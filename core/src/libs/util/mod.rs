@@ -30,9 +30,10 @@ mod table;
 mod string;
 mod utf8;
 
-pub fn register(vm: &crate::vm::Vm) -> crate::vm::Result<()> {
-    table::register(vm)?;
-    string::register(vm)?;
-    utf8::register(vm)?;
-    Ok(())
-}
+pub use table::Table;
+pub use string::String;
+pub use utf8::Utf8;
+
+// Workaround for language defect #22259.
+#[allow(non_upper_case_globals)]
+pub const Util: (Table, String, Utf8) = (Table, String, Utf8);

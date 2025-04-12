@@ -27,10 +27,10 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::decl_lib_func;
+use crate::libs::Lib;
 use crate::vm::function::types::RFunction;
 use crate::vm::namespace::Namespace;
 use crate::vm::table::Table;
-use crate::vm::Vm;
 
 decl_lib_func! {
     fn contains(src: &[u8], needle: &[u8]) -> bool {
@@ -53,10 +53,15 @@ decl_lib_func! {
     }
 }
 
-pub fn register(vm: &Vm) -> crate::vm::Result<()> {
-    let mut namespace = Namespace::new(vm, "bp3d.util.string")?;
-    namespace.add([
-        ("contains", RFunction::wrap(contains)),
-        ("split", RFunction::wrap(split))
-    ])
+pub struct String;
+
+impl Lib for String {
+    const NAMESPACE: &'static str = "bp3d.util.string";
+
+    fn load(&self, namespace: &mut Namespace) -> crate::vm::Result<()> {
+        namespace.add([
+            ("contains", RFunction::wrap(contains)),
+            ("split", RFunction::wrap(split))
+        ])
+    }
 }

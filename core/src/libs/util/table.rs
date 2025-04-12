@@ -26,17 +26,17 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use crate::vm::table::Table;
+use crate::vm::table::Table as LuaTable;
 use crate::decl_lib_func;
 use crate::ffi::lua::Type;
+use crate::libs::Lib;
 use crate::vm::error::{Error, TypeError};
 use crate::vm::function::types::RFunction;
 use crate::vm::namespace::Namespace;
 use crate::vm::value::any::AnyValue;
-use crate::vm::Vm;
 
 decl_lib_func! {
-    fn update(dst: Table, src: Table) -> crate::vm::Result<()> {
+    fn update(dst: LuaTable, src: LuaTable) -> crate::vm::Result<()> {
         let mut src = src;
         let mut dst = dst;
         for res in src.iter() {
@@ -57,12 +57,12 @@ decl_lib_func! {
 }
 
 decl_lib_func! {
-    fn count(src: Table) -> u64 {
+    fn count(src: LuaTable) -> u64 {
         src.len() as _
     }
 }
 
-fn to_string_rec(prefix: String, mut table: Table) -> crate::vm::Result<Vec<String>> {
+fn to_string_rec(prefix: String, mut table: LuaTable) -> crate::vm::Result<Vec<String>> {
     let mut lines = Vec::new();
     for res in table.iter() {
         let (k, v) = res?;
@@ -78,13 +78,13 @@ fn to_string_rec(prefix: String, mut table: Table) -> crate::vm::Result<Vec<Stri
 }
 
 decl_lib_func! {
-    fn to_string(src: Table) -> crate::vm::Result<String> {
+    fn to_string(src: LuaTable) -> crate::vm::Result<String> {
         to_string_rec("".into(), src).map(|v| v.join("\n"))
     }
 }
 
 decl_lib_func! {
-    fn contains(src: Table, value: AnyValue) -> crate::vm::Result<bool> {
+    fn contains(src: LuaTable, value: AnyValue) -> crate::vm::Result<bool> {
         let mut src = src;
         for res in src.iter() {
             let (_, v) = res?;
@@ -97,7 +97,7 @@ decl_lib_func! {
 }
 
 decl_lib_func! {
-    fn contains_key(src: Table, key: AnyValue) -> crate::vm::Result<bool> {
+    fn contains_key(src: LuaTable, key: AnyValue) -> crate::vm::Result<bool> {
         let mut src = src;
         for res in src.iter() {
             let (k, _) = res?;
@@ -111,13 +111,18 @@ decl_lib_func! {
 
 //TODO: table.protect
 
-pub fn register(vm: &Vm) -> crate::vm::Result<()> {
-    let mut namespace = Namespace::new(vm, "bp3d.util.table")?;
-    namespace.add([
-        ("update", RFunction::wrap(update)),
-        ("count", RFunction::wrap(count)),
-        ("tostring", RFunction::wrap(to_string)),
-        ("contains", RFunction::wrap(contains)),
-        ("containsKey", RFunction::wrap(contains_key))
-    ])
+pub struct Table;
+
+impl Lib for Table {
+    const NAMESPACE: &'static str = "bp3d.util.table";
+
+    fn load(&self, namespace: &mut Namespace) -> crate::vm::Result<()> {
+        namespace.add([
+            ("update", RFunction::wrap(update)),
+            ("count", RFunction::wrap(count)),
+            ("tostring", RFunction::wrap(to_string)),
+            ("contains", RFunction::wrap(contains)),
+            ("containsKey", RFunction::wrap(contains_key))
+        ])
+    }
 }
