@@ -17,6 +17,8 @@ bp3d-util = { version = "1.4.2", features = ["simple-error", "format"] }
 log = "0.4.26"
 bp3d-lua-codegen = { version = "0.1.0", path = "../codegen" }
 bp3d-debug = "1.0.0-rc.6.1.0"
+bp3d-os = { version = "1.0.0-rc.4.2.1", features = ["fs", "time"] }
+time = { version = "0.3.37", features = ["formatting"] }
 
 [build-dependencies]
 bp3d-os = { version = "1.0.0-rc.4.2.1", features = ["fs"] }
