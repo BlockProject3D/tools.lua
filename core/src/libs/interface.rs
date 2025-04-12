@@ -34,14 +34,52 @@ pub trait Lib {
 
     fn load(&self, namespace: &mut Namespace) -> crate::vm::Result<()>;
 
-    fn load_libs(&self, _: &mut RootVm) -> crate::vm::Result<()> {
-        Ok(())
-    }
-
     fn register(&self, vm: &mut RootVm) -> crate::vm::Result<()> {
-        self.load_libs(vm)?;
         let mut namespace = Namespace::new(vm, Self::NAMESPACE)?;
         self.load(&mut namespace)?;
         Ok(())
     }
 }
+
+macro_rules! impl_tuple_lib {
+    ($($t: ident: $id: tt),*) => {
+        impl<$($t: $crate::libs::Lib),*> $crate::libs::Lib for ($($t),*) {
+            const NAMESPACE: &'static str = "";
+
+            fn load(&self, namespace: &mut Namespace) -> crate::vm::Result<()> {
+                $(
+                    self.$id.load(namespace)?;
+                )*
+                Ok(())
+            }
+
+            fn register(&self, vm: &mut RootVm) -> crate::vm::Result<()> {
+                $(
+                    self.$id.register(vm)?;
+                )*
+                Ok(())
+            }
+        }
+    };
+}
+
+impl_tuple_lib!(T: 0, T1: 1);
+impl_tuple_lib!(T: 0, T1: 1, T2: 2);
+impl_tuple_lib!(T: 0, T1: 1, T2: 2, T3: 3);
+impl_tuple_lib!(T: 0, T1: 1, T2: 2, T3: 3, T4: 4);
+impl_tuple_lib!(T: 0, T1: 1, T2: 2, T3: 3, T4: 4, T5: 5);
+impl_tuple_lib!(T: 0, T1: 1, T2: 2, T3: 3, T4: 4, T5: 5, T6: 6);
+impl_tuple_lib!(T: 0, T1: 1, T2: 2, T3: 3, T4: 4, T5: 5, T6: 6, T7: 7);
+impl_tuple_lib!(T: 0, T1: 1, T2: 2, T3: 3, T4: 4, T5: 5, T6: 6, T7: 7, T8: 8);
+impl_tuple_lib!(T: 0, T1: 1, T2: 2, T3: 3, T4: 4, T5: 5, T6: 6, T7: 7, T8: 8, T9: 9);
+impl_tuple_lib!(T: 0, T1: 1, T2: 2, T3: 3, T4: 4, T5: 5, T6: 6, T7: 7, T8: 8, T9: 9, T10: 10);
+impl_tuple_lib!(T: 0, T1: 1, T2: 2, T3: 3, T4: 4, T5: 5, T6: 6, T7: 7, T8: 8, T9: 9, T10: 10, T11: 11);
+impl_tuple_lib!(T: 0, T1: 1, T2: 2, T3: 3, T4: 4, T5: 5, T6: 6, T7: 7, T8: 8, T9: 9, T10: 10, T11: 11, T12: 12);
+impl_tuple_lib!(T: 0, T1: 1, T2: 2, T3: 3, T4: 4, T5: 5, T6: 6, T7: 7, T8: 8, T9: 9, T10: 10, T11: 11, T12: 12, T13: 13);
+impl_tuple_lib!(T: 0, T1: 1, T2: 2, T3: 3, T4: 4, T5: 5, T6: 6, T7: 7, T8: 8, T9: 9, T10: 10, T11: 11, T12: 12, T13: 13, T14: 14);
+impl_tuple_lib!(T: 0, T1: 1, T2: 2, T3: 3, T4: 4, T5: 5, T6: 6, T7: 7, T8: 8, T9: 9, T10: 10, T11: 11, T12: 12, T13: 13, T14: 14, T15: 15);
+impl_tuple_lib!(T: 0, T1: 1, T2: 2, T3: 3, T4: 4, T5: 5, T6: 6, T7: 7, T8: 8, T9: 9, T10: 10, T11: 11, T12: 12, T13: 13, T14: 14, T15: 15, T16: 16);
+impl_tuple_lib!(T: 0, T1: 1, T2: 2, T3: 3, T4: 4, T5: 5, T6: 6, T7: 7, T8: 8, T9: 9, T10: 10, T11: 11, T12: 12, T13: 13, T14: 14, T15: 15, T16: 16, T17: 17);
+impl_tuple_lib!(T: 0, T1: 1, T2: 2, T3: 3, T4: 4, T5: 5, T6: 6, T7: 7, T8: 8, T9: 9, T10: 10, T11: 11, T12: 12, T13: 13, T14: 14, T15: 15, T16: 16, T17: 17, T18: 18);
+impl_tuple_lib!(T: 0, T1: 1, T2: 2, T3: 3, T4: 4, T5: 5, T6: 6, T7: 7, T8: 8, T9: 9, T10: 10, T11: 11, T12: 12, T13: 13, T14: 14, T15: 15, T16: 16, T17: 17, T18: 18, T19: 19);
+impl_tuple_lib!(T: 0, T1: 1, T2: 2, T3: 3, T4: 4, T5: 5, T6: 6, T7: 7, T8: 8, T9: 9, T10: 10, T11: 11, T12: 12, T13: 13, T14: 14, T15: 15, T16: 16, T17: 17, T18: 18, T19: 19, T20: 20);

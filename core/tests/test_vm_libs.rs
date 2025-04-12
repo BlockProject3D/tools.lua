@@ -27,14 +27,14 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use bp3d_lua::libs::Lib;
-use bp3d_lua::libs::lua::Options;
+use bp3d_lua::libs::lua::Lua;
 use bp3d_lua::vm::RootVm;
 
 #[test]
 fn test_vm_lib_lua() {
     let mut vm = RootVm::new();
     let top = vm.top();
-    Options::new().register(&mut vm).unwrap();
+    Lua::new().build().register(&mut vm).unwrap();
     vm.run_code::<()>(c"
         assert(bp3d.lua.name == 'bp3d-lua')
         assert(bp3d.lua.version == '1.0.0-rc.1.0.0')
