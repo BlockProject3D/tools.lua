@@ -28,7 +28,7 @@
 
 use std::fmt::{Debug, Display};
 use crate::ffi::ext::{lua_ext_tab_len, MSize};
-use crate::ffi::lua::{lua_createtable, lua_getfield, lua_gettop, lua_pushvalue, lua_rawgeti, lua_rawseti, lua_setfield, lua_settop, lua_topointer};
+use crate::ffi::lua::{lua_createtable, lua_getfield, lua_gettop, lua_pushvalue, lua_rawgeti, lua_rawseti, lua_setfield, lua_setmetatable, lua_settop, lua_topointer};
 use crate::util::AnyStr;
 use crate::vm::core::util::{pcall, push_error_handler};
 use crate::vm::table::iter::Iter;
@@ -101,6 +101,11 @@ impl<'a> Table<'a> {
             return size as _;
         }
         Iter::from_raw(self.vm, self.index).count() as _
+    }
+
+    pub fn set_metatable(&mut self, other: Table) {
+        other.into_lua(self.vm);
+        unsafe { lua_setmetatable(self.vm.as_ptr(), self.index) };
     }
 
     /// Returns the absolute index of this table on the Lua stack.
