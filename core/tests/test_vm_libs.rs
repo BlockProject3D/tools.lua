@@ -112,5 +112,15 @@ fn test_vm_lib_util() {
         assert(utf8.charAt('abc', 1) == 0x62)
         assert(utf8.charAt('abc', 2) == 0x63)
     ").unwrap();
+    vm.run_code::<()>(c"
+        local tbl = { value = 42 }
+        local protected = bp3d.util.table.protect(tbl)
+        assert(protected.value == 42)
+    ").unwrap();
+    vm.run_code::<()>(c"
+        local tbl = { value = 42 }
+        local protected = bp3d.util.table.protect(tbl)
+        protected.value = 84
+    ").unwrap_err();
     assert_eq!(vm.top(), top);
 }

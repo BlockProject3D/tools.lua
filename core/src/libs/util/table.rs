@@ -26,6 +26,7 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use bp3d_util::simple_error;
 use crate::vm::table::Table as LuaTable;
 use crate::decl_lib_func;
 use crate::ffi::lua::Type;
@@ -109,7 +110,28 @@ decl_lib_func! {
     }
 }
 
-//TODO: table.protect
+simple_error! {
+    ProtectError {
+        NewIndex => "attempt to set value into protected table."
+    }
+}
+
+decl_lib_func! {
+    fn __newindex() -> Result<(), ProtectError> {
+        Err(ProtectError::NewIndex)
+    }
+}
+
+decl_lib_func! {
+    fn protect<'a>(vm: &Vm, src: LuaTable) -> crate::vm::Result<LuaTable<'a>> {
+        let mut wrapper = LuaTable::new(vm);
+        let mut metatable = LuaTable::new(vm);
+        metatable.set_field(c"__index", src)?;
+        metatable.set_field(c"__newindex", RFunction::wrap(__newindex))?;
+        wrapper.set_metatable(metatable);
+        Ok(wrapper)
+    }
+}
 
 pub struct Table;
 
@@ -122,7 +144,8 @@ impl Lib for Table {
             ("count", RFunction::wrap(count)),
             ("tostring", RFunction::wrap(to_string)),
             ("contains", RFunction::wrap(contains)),
-            ("containsKey", RFunction::wrap(contains_key))
+            ("containsKey", RFunction::wrap(contains_key)),
+            ("protect", RFunction::wrap(protect))
         ])
     }
 }
