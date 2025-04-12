@@ -27,6 +27,7 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use std::error::Error;
+use std::ffi::OsString;
 use std::slice;
 use crate::ffi::laux::{luaL_checklstring, luaL_checkudata, luaL_setmetatable, luaL_testudata};
 use crate::ffi::lua::{lua_newuserdata, lua_pushboolean, lua_pushinteger, lua_pushlstring, lua_pushnil, lua_pushnumber, lua_type, Integer, Number, Type};
@@ -117,6 +118,12 @@ unsafe impl IntoParam for String {
     #[inline(always)]
     fn into_param(self, vm: &Vm) -> u16 {
         (&*self).into_param(vm)
+    }
+}
+
+unsafe impl IntoParam for OsString {
+    fn into_param(self, vm: &Vm) -> u16 {
+        self.as_encoded_bytes().into_param(vm)
     }
 }
 
