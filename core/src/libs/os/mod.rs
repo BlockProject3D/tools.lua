@@ -29,5 +29,5 @@
 mod base;
 mod time;
 
-pub use base::Base;
+pub use base::Compat;
 pub use time::Time;

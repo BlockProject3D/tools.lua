@@ -179,9 +179,9 @@ decl_lib_func! {
     }
 }
 
-pub struct Base;
+pub struct Compat;
 
-impl Lib for Base {
+impl Lib for Compat {
     const NAMESPACE: &'static str = "os";
 
     fn load(&self, namespace: &mut Namespace) -> crate::vm::Result<()> {
