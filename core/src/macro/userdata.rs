@@ -50,13 +50,13 @@ macro_rules! decl_userdata {
     (
         impl $obj_name: ident {
             $(
-                $vis: vis fn $fn_name: ident($this: ident: &$obj_name2: ident $($tokens: tt)*) -> $ret_ty: ty $code: block
+                $vis: vis fn $fn_name: ident $(<$lifetime: lifetime>)? ($this: ident: &$obj_name2: ident $($tokens: tt)*) -> $ret_ty: ty $code: block
             )*
         }
     ) => {
         $(
             $crate::decl_userdata_func! {
-                $vis fn $fn_name($this: &$obj_name $($tokens)*) -> $ret_ty $code
+                $vis fn $fn_name $(<$lifetime>)? ($this: &$obj_name $($tokens)*) -> $ret_ty $code
             }
         )*
 
@@ -71,13 +71,13 @@ macro_rules! decl_userdata_mut {
     (
         impl $obj_name: ident {
             $(
-                $vis: vis fn $fn_name: ident($($tokens: tt)*) -> $ret_ty: ty $code: block
+                $vis: vis fn $fn_name: ident $(<$lifetime: lifetime>)? ($($tokens: tt)*) -> $ret_ty: ty $code: block
             )*
         }
     ) => {
         $(
             $crate::decl_userdata_func! {
-                $vis fn $fn_name($($tokens)*) -> $ret_ty $code
+                $vis fn $fn_name $(<$lifetime>)? ($($tokens)*) -> $ret_ty $code
             }
         )*
 
