@@ -26,10 +26,34 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-mod base;
-mod time;
-mod instant;
+use crate::{decl_lib_func, decl_userdata};
+use crate::libs::Lib;
+use crate::vm::function::types::RFunction;
+use crate::vm::namespace::Namespace;
 
-pub use base::Compat;
-pub use time::Time;
-pub use instant::Instant;
+struct Wrapper(bp3d_os::time::Instant);
+
+decl_userdata! {
+    impl Wrapper {
+        fn elapsed(this: &Wrapper) -> f64 {
+            this.0.elapsed().as_secs_f64()
+        }
+    }
+}
+
+decl_lib_func! {
+    fn now() -> Wrapper {
+        Wrapper(bp3d_os::time::Instant::now())
+    }
+}
+
+pub struct Instant;
+
+impl Lib for Instant {
+    const NAMESPACE: &'static str = "bp3d.os.instant";
+
+    fn load(&self, namespace: &mut Namespace) -> crate::vm::Result<()> {
+        namespace.vm().register_userdata::<Wrapper>()?;
+        namespace.add([("now", RFunction::wrap(now))])
+    }
+}

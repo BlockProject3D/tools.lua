@@ -164,8 +164,6 @@ decl_lib_func! {
     }
 }
 
-//TODO: Implement the performance counter using actual bp3d_os::time::Instant
-
 pub struct Time;
 
 impl Lib for Time {
