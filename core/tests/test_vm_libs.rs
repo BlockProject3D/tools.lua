@@ -164,3 +164,17 @@ fn test_vm_lib_os_instant() {
         assert((diff - 0.5) < 0.1)
     ").unwrap();
 }
+
+#[test]
+fn test_vm_lib_os() {
+    let mut vm = RootVm::new();
+    bp3d_lua::libs::os::Compat.register(&mut vm).unwrap();
+    vm.run_code::<()>(c"
+        clock = os.clock()
+    ").unwrap();
+    std::thread::sleep(std::time::Duration::from_millis(500));
+    vm.run_code::<()>(c"
+        local now = os.clock()
+        assert((clock - now) < 0.1)
+    ").unwrap();
+}
