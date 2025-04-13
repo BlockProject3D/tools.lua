@@ -124,3 +124,43 @@ fn test_vm_lib_util() {
     ").unwrap_err();
     assert_eq!(vm.top(), top);
 }
+
+#[test]
+fn test_vm_lib_os_time() {
+    let mut vm = RootVm::new();
+    bp3d_lua::libs::os::Time.register(&mut vm).unwrap();
+    vm.run_code::<()>(c"
+        time = bp3d.os.time.nowLocal()
+        time2 = bp3d.os.time.nowUtc()
+    ").unwrap();
+    std::thread::sleep(std::time::Duration::from_millis(500));
+    vm.run_code::<()>(c"
+        local function testDateTime(a, b)
+            local ymd = a:get_date()
+            local ymd2 = b:get_date()
+            assert(ymd.year == ymd2.year)
+            assert(ymd.month == ymd2.month)
+            assert(ymd.day == ymd2.day)
+        end
+        local now2 = bp3d.os.time.nowUtc()
+        local now = bp3d.os.time.nowLocal()
+        assert(now > time)
+        assert(now2 > time2)
+        testDateTime(now, time)
+        testDateTime(now2, time2)
+    ").unwrap();
+}
+
+#[test]
+fn test_vm_lib_os_instant() {
+    let mut vm = RootVm::new();
+    bp3d_lua::libs::os::Instant.register(&mut vm).unwrap();
+    vm.run_code::<()>(c"
+        instant = bp3d.os.instant.now()
+    ").unwrap();
+    std::thread::sleep(std::time::Duration::from_millis(500));
+    vm.run_code::<()>(c"
+        local diff = instant:elapsed()
+        assert((diff - 0.5) < 0.1)
+    ").unwrap();
+}
