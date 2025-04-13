@@ -27,5 +27,7 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 mod base;
+mod time;
 
 pub use base::Base;
+pub use time::Time;

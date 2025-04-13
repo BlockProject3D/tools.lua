@@ -26,10 +26,16 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+/// The bp3d-lua core library.
 pub mod lua;
+
+/// Utility toolkit.
 pub mod util;
+
+/// OS toolkit.
+pub mod os;
+
 mod interface;
-mod os;
 //TODO: maybe add a stack debug function which prints the content of the lua stack
 //TODO: os lib with basic function (mainly time and performance management) and threading (sandbox with max number of threads)
 //      make sure thread join is time-limited.
