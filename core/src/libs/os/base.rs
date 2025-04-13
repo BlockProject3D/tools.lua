@@ -182,7 +182,7 @@ decl_lib_func! {
 pub struct Base;
 
 impl Lib for Base {
-    const NAMESPACE: &'static str = "bp3d.os";
+    const NAMESPACE: &'static str = "os";
 
     fn load(&self, namespace: &mut Namespace) -> crate::vm::Result<()> {
         namespace.add([
