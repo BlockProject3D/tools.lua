@@ -26,6 +26,7 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use std::borrow::Cow;
 use std::error::Error;
 use std::ffi::OsString;
 use std::slice;
@@ -124,6 +125,16 @@ unsafe impl IntoParam for String {
 unsafe impl IntoParam for OsString {
     fn into_param(self, vm: &Vm) -> u16 {
         self.as_encoded_bytes().into_param(vm)
+    }
+}
+
+unsafe impl<'a, T: IntoParam + Clone> IntoParam for Cow<'a, T>
+    where &'a T: IntoParam {
+    fn into_param(self, vm: &Vm) -> u16 {
+        match self {
+            Cow::Borrowed(v) => v.into_param(vm),
+            Cow::Owned(v) => v.into_param(vm)
+        }
     }
 }
 
