@@ -145,29 +145,29 @@ fn test_vm_userdata_forgot_reg() {
 fn test_vm_userdata_error_handling() {
     let vm = RootVm::new();
     let top = vm.top();
-    vm.register_userdata::<MyInt>().unwrap();
+    vm.register_userdata::<MyInt>(bp3d_lua::vm::userdata::case::Snake).unwrap();
     assert_eq!(top, vm.top());
-    let res = vm.register_userdata::<BrokenObject>();
+    let res = vm.register_userdata::<BrokenObject>(bp3d_lua::vm::userdata::case::Snake);
     assert!(res.is_err());
     let msg = res.unwrap_err().to_string();
     assert_eq!(msg, "userdata: violation of the unique type rule for mutable method \"replace\"");
     assert_eq!(top, vm.top());
-    let res = vm.register_userdata::<BrokenObject2>();
+    let res = vm.register_userdata::<BrokenObject2>(bp3d_lua::vm::userdata::case::Snake);
     assert!(res.is_err());
     let msg = res.unwrap_err().to_string();
     assert_eq!(msg, "userdata: too strict alignment required (16 bytes), max is 8 bytes");
     assert_eq!(top, vm.top());
-    let res = vm.register_userdata::<BrokenObject3>();
+    let res = vm.register_userdata::<BrokenObject3>(bp3d_lua::vm::userdata::case::Snake);
     assert!(res.is_err());
     let msg = res.unwrap_err().to_string();
     assert_eq!(msg, "userdata: __gc meta-method is reserved for internal use, if you need Vm access in drop, please use LuaDrop");
     assert_eq!(top, vm.top());
-    let res = vm.register_userdata::<MyInt>();
+    let res = vm.register_userdata::<MyInt>(bp3d_lua::vm::userdata::case::Snake);
     assert!(res.is_err());
     let msg = res.unwrap_err().to_string();
     assert_eq!(msg, "userdata: class name \"MyInt\" has already been registered");
     assert_eq!(top, vm.top());
-    let res = vm.register_userdata::<BrokenObject4>();
+    let res = vm.register_userdata::<BrokenObject4>(bp3d_lua::vm::userdata::case::Snake);
     assert!(res.is_err());
     let msg = res.unwrap_err().to_string();
     assert_eq!(msg, "userdata: __index meta-method is required to be surrendered to luaL_newmetatable, it is impossible to bind custom code to __index");
@@ -180,7 +180,7 @@ fn test_vm_userdata_base(vm: &Vm) {
         LUA_DROP_COUNTER = 0;
     }
     let top = vm.top();
-    vm.register_userdata::<MyInt>().unwrap();
+    vm.register_userdata::<MyInt>(bp3d_lua::vm::userdata::case::Snake).unwrap();
     assert_eq!(top, vm.top());
     vm.set_global(c"MyInt", RFunction::wrap(my_int)).unwrap();
     assert_eq!(top, vm.top());

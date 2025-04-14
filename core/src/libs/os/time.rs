@@ -170,8 +170,7 @@ impl Lib for Time {
     const NAMESPACE: &'static str = "bp3d.os.time";
 
     fn load(&self, namespace: &mut Namespace) -> crate::vm::Result<()> {
-        //TODO: Support rename userdata methods to camelCase.
-        namespace.vm().register_userdata::<Wrapper>()?;
+        namespace.vm().register_userdata::<Wrapper>(crate::vm::userdata::case::Camel)?;
         namespace.add([
             ("nowUtc", RFunction::wrap(now_utc)),
             ("nowLocal", RFunction::wrap(now_local)),

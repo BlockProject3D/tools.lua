@@ -30,6 +30,7 @@ mod interface;
 mod error;
 pub mod core;
 mod any;
+pub mod case;
 
 pub use error::Error;
 pub use interface::*;

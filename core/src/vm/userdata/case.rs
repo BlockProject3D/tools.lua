@@ -26,34 +26,60 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use crate::{decl_lib_func, decl_userdata};
-use crate::libs::Lib;
-use crate::vm::function::types::RFunction;
-use crate::vm::namespace::Namespace;
+use std::borrow::Cow;
+use std::ffi::{CStr, CString};
+use bp3d_util::string::BufTools;
+use itertools::Itertools;
+use crate::vm::userdata::NameConvert;
 
-struct Wrapper(bp3d_os::time::Instant);
-
-decl_userdata! {
-    impl Wrapper {
-        fn elapsed(this: &Wrapper) -> f64 {
-            this.0.elapsed().as_secs_f64()
-        }
+fn to_string_lossy(bytes: Cow<[u8]>) -> Cow<str> {
+    match bytes {
+        Cow::Borrowed(v) => String::from_utf8_lossy(v),
+        Cow::Owned(v) => String::from(&*String::from_utf8_lossy(&*v)).into(),
     }
 }
 
-decl_lib_func! {
-    fn now() -> Wrapper {
-        Wrapper(bp3d_os::time::Instant::now())
+pub struct Snake;
+
+impl NameConvert for Snake {
+    fn name_convert(&self, name: &'static CStr) -> Cow<'static, CStr> {
+        Cow::Borrowed(name)
     }
 }
 
-pub struct Instant;
+pub struct Camel;
 
-impl Lib for Instant {
-    const NAMESPACE: &'static str = "bp3d.os.instant";
+impl NameConvert for Camel {
+    fn name_convert(&self, name: &'static CStr) -> Cow<'static, CStr> {
+        let s = match name.to_str() {
+            Ok(v) => v,
+            // Return the same unconverted string if we failed.
+            Err(_) => return Cow::Borrowed(name),
+        };
+        let s: String = s.split("_")
+            .enumerate()
+            .map(|(i, v)| if i != 0 { v.as_bytes().capitalise_ascii() } else { v.as_bytes().into() })
+            .map(to_string_lossy)
+            .join("")
+            .into();
+        CString::new(s).unwrap().into()
+    }
+}
 
-    fn load(&self, namespace: &mut Namespace) -> crate::vm::Result<()> {
-        namespace.vm().register_userdata::<Wrapper>(crate::vm::userdata::case::Camel)?;
-        namespace.add([("now", RFunction::wrap(now))])
+pub struct Pascal;
+
+impl NameConvert for Pascal {
+    fn name_convert(&self, name: &'static CStr) -> Cow<'static, CStr> {
+        let s = match name.to_str() {
+            Ok(v) => v,
+            // Return the same unconverted string if we failed.
+            Err(_) => return Cow::Borrowed(name),
+        };
+        let s: String = s.split("_")
+            .map(|v| v.as_bytes().capitalise_ascii())
+            .map(to_string_lossy)
+            .join("")
+            .into();
+        CString::new(s).unwrap().into()
     }
 }

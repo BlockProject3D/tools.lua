@@ -136,8 +136,8 @@ fn test_vm_lib_os_time() {
     std::thread::sleep(std::time::Duration::from_millis(500));
     vm.run_code::<()>(c"
         local function testDateTime(a, b)
-            local ymd = a:get_date()
-            local ymd2 = b:get_date()
+            local ymd = a:getDate()
+            local ymd2 = b:getDate()
             assert(ymd.year == ymd2.year)
             assert(ymd.month == ymd2.month)
             assert(ymd.day == ymd2.day)

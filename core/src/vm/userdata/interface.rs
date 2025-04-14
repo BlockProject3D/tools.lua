@@ -26,6 +26,7 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use std::borrow::Cow;
 use std::ffi::CStr;
 use crate::vm::userdata::{Error, core::Registry};
 use crate::vm::Vm;
@@ -33,7 +34,7 @@ use crate::vm::Vm;
 pub trait UserData: Sized {
     const CLASS_NAME: &'static CStr;
 
-    fn register(registry: &Registry<Self>) -> Result<(), Error>;
+    fn register<C: NameConvert>(registry: &Registry<Self, C>) -> Result<(), Error>;
 }
 
 pub unsafe trait UserDataImmutable: UserData {}
@@ -43,5 +44,9 @@ pub trait LuaDrop {
 }
 
 pub trait AddGcMethod<T: UserData> {
-    fn add_gc_method(&self, reg: &Registry<T>);
+    fn add_gc_method<C: NameConvert>(&self, reg: &Registry<T, C>);
+}
+
+pub trait NameConvert {
+    fn name_convert(&self, name: &'static CStr) -> Cow<'static, CStr>;
 }

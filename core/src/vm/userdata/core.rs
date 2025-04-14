@@ -32,7 +32,7 @@ use std::marker::PhantomData;
 use bp3d_debug::{debug, warning};
 use crate::ffi::laux::{luaL_checkudata, luaL_newmetatable};
 use crate::ffi::lua::{lua_pushcclosure, lua_pushnil, lua_pushvalue, lua_setfield, lua_setmetatable, lua_settop, CFunction, State};
-use crate::vm::userdata::{AddGcMethod, Error, LuaDrop, UserData};
+use crate::vm::userdata::{AddGcMethod, NameConvert, Error, LuaDrop, UserData};
 use crate::vm::util::{LuaType, TypeName};
 use crate::vm::value::IntoLua;
 use crate::vm::Vm;
@@ -97,18 +97,20 @@ impl Function {
     }
 }
 
-pub struct Registry<'a, T: UserData> {
+pub struct Registry<'a, T: UserData, C: NameConvert> {
     vm: &'a Vm,
     useless: PhantomData<T>,
-    has_gc: OnceCell<()>
+    has_gc: OnceCell<()>,
+    case: C
 }
 
-impl<'a, T: UserData> Registry<'a, T> {
+impl<'a, T: UserData, C: NameConvert> Registry<'a, T, C> {
     /// Creates a new [Registry] from the given Vm.
     ///
     /// # Arguments
     ///
     /// * `vm`: the vm in which to register the userdata metatable.
+    /// * `case`: the case converter to apply to each name to be registered.
     ///
     /// returns: Result<Registry<T>, Error>
     ///
@@ -116,7 +118,7 @@ impl<'a, T: UserData> Registry<'a, T> {
     ///
     /// Running operations on the vm after calling this method is UB unless this [Registry] object
     /// is dropped.
-    pub unsafe fn new(vm: &'a Vm) -> Result<Self, Error> {
+    pub unsafe fn new(vm: &'a Vm, case: C) -> Result<Self, Error> {
         if align_of::<T>() > 8 {
             return Err(Error::Alignment(align_of::<T>()));
         }
@@ -125,7 +127,7 @@ impl<'a, T: UserData> Registry<'a, T> {
             unsafe { lua_settop(vm.as_ptr(), -2) };
             return Err(Error::AlreadyRegistered(T::CLASS_NAME));
         }
-        let reg = Registry { vm, useless: PhantomData, has_gc: OnceCell::new() };
+        let reg = Registry { vm, useless: PhantomData, has_gc: OnceCell::new(), case };
         reg.add_field(c"__metatable", T::CLASS_NAME.to_str().unwrap_unchecked()).unwrap_unchecked();
         Ok(reg)
     }
@@ -136,14 +138,18 @@ impl<'a, T: UserData> Registry<'a, T> {
             unsafe { lua_settop(self.vm.as_ptr(), -(num as i32) - 1) };
             return Err(Error::MultiValueField);
         }
-        unsafe { lua_setfield(self.vm.as_ptr(), -2, name.as_ptr()); }
+        unsafe { lua_setfield(self.vm.as_ptr(), -2, self.case.name_convert(name).as_ptr()); }
         Ok(())
     }
 
     pub fn add_method(&self, name: &'static CStr, func: CFunction) {
         unsafe {
             lua_pushcclosure(self.vm.as_ptr(), func, 0);
-            lua_setfield(self.vm.as_ptr(), -2, name.as_ptr());
+            if &name.to_bytes()[..2] == b"__" {
+                lua_setfield(self.vm.as_ptr(), -2, name.as_ptr());
+            } else {
+                lua_setfield(self.vm.as_ptr(), -2, self.case.name_convert(name).as_ptr());
+            }
         }
     }
 
@@ -165,7 +171,7 @@ impl<'a, T: UserData> Registry<'a, T> {
     }
 }
 
-impl<'a, T: UserData + LuaDrop> Registry<'a, T> {
+impl<'a, T: UserData + LuaDrop, C: NameConvert> Registry<'a, T, C> {
     pub fn add_gc_method_with_lua_drop(&self) {
         extern "C-unwind" fn run_lua_drop<T: UserData + LuaDrop>(l: State) -> i32 {
             unsafe {
@@ -206,18 +212,18 @@ impl<T> Default for AddGcMethodAuto<T> {
 }
 
 impl<T: UserData + LuaDrop> AddGcMethod<T> for AddGcMethodAuto<T> {
-    fn add_gc_method(&self, reg: &Registry<T>) {
+    fn add_gc_method<C: NameConvert>(&self, reg: &Registry<T, C>) {
         reg.add_gc_method_with_lua_drop();
     }
 }
 
 impl<T: UserData> AddGcMethod<T> for &AddGcMethodAuto<T> {
-    fn add_gc_method(&self, reg: &Registry<T>) {
+    fn add_gc_method<C: NameConvert>(&self, reg: &Registry<T, C>) {
         reg.add_gc_method();
     }
 }
 
-impl<'a, T: UserData> Drop for Registry<'a, T> {
+impl<'a, T: UserData, C: NameConvert> Drop for Registry<'a, T, C> {
     fn drop(&mut self) {
         if std::mem::needs_drop::<T>() && self.has_gc.get().is_none() {
             warning!("No __gc method registered on a drop userdata type!");

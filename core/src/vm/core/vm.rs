@@ -36,7 +36,7 @@ use crate::vm::core::{Load, LoadString, Raw};
 use crate::vm::core::util::{handle_syntax_error, pcall, push_error_handler};
 use crate::vm::error::Error;
 use crate::vm::userdata::core::Registry;
-use crate::vm::userdata::UserData;
+use crate::vm::userdata::{NameConvert, UserData};
 use crate::vm::value::{FromLua, IntoLua};
 use crate::vm::value::function::LuaFunction;
 
@@ -60,8 +60,8 @@ impl Vm {
         Ok(r)
     }
 
-    pub fn register_userdata<T: UserData>(&self) -> crate::vm::Result<()> {
-        let reg = unsafe { Registry::<T>::new(self) }.map_err(Error::UserData)?;
+    pub fn register_userdata<T: UserData>(&self, case: impl NameConvert) -> crate::vm::Result<()> {
+        let reg = unsafe { Registry::<T, _>::new(self, case) }.map_err(Error::UserData)?;
         let res = T::register(&reg).map_err(Error::UserData);
         match res {
             Ok(_) => Ok(()),
