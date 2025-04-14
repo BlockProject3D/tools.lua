@@ -28,7 +28,6 @@
 
 use std::borrow::Cow;
 use std::error::Error;
-use std::ffi::OsString;
 use std::slice;
 use crate::ffi::laux::{luaL_checklstring, luaL_checkudata, luaL_setmetatable, luaL_testudata};
 use crate::ffi::lua::{lua_newuserdata, lua_pushboolean, lua_pushinteger, lua_pushlstring, lua_pushnil, lua_pushnumber, lua_type, Integer, Number, Type};
