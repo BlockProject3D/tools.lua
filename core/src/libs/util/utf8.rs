@@ -26,6 +26,7 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use std::borrow::Cow;
 use crate::decl_lib_func;
 use crate::libs::Lib;
 use crate::vm::function::types::RFunction;
@@ -75,8 +76,8 @@ decl_lib_func! {
 }
 
 decl_lib_func! {
-    fn from_string_lossy(src: &[u8]) -> String {
-        String::from_utf8_lossy(src).into()
+    fn from_string_lossy(src: &[u8]) -> Cow<str> {
+        String::from_utf8_lossy(src)
     }
 }
 
