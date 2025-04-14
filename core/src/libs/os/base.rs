@@ -26,7 +26,6 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::ffi::OsString;
 use std::time::Instant;
 use bp3d_os::time::{LocalUtcOffset, MonthExt};
 use bp3d_util::simple_error;
@@ -174,8 +173,8 @@ decl_lib_func! {
 }
 
 decl_lib_func! {
-    fn getenv(key: &str) -> Option<OsString> {
-        std::env::var_os(key)
+    fn getenv(key: &str) -> Option<Vec<u8>> {
+        std::env::var_os(key).map(|v| v.into_encoded_bytes())
     }
 }
 

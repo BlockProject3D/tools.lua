@@ -122,9 +122,9 @@ unsafe impl IntoParam for String {
     }
 }
 
-unsafe impl IntoParam for OsString {
+unsafe impl IntoParam for Vec<u8> {
     fn into_param(self, vm: &Vm) -> u16 {
-        self.as_encoded_bytes().into_param(vm)
+        self.as_slice().into_param(vm)
     }
 }
 
