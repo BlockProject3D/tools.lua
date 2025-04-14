@@ -26,6 +26,8 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use std::borrow::Cow;
+use bp3d_util::string::BufTools;
 use crate::decl_lib_func;
 use crate::libs::Lib;
 use crate::vm::function::types::RFunction;
@@ -53,6 +55,18 @@ decl_lib_func! {
     }
 }
 
+decl_lib_func! {
+    fn capitalise(src: &[u8]) -> Cow<[u8]> {
+        src.capitalise_ascii()
+    }
+}
+
+decl_lib_func! {
+    fn decapitalise(src: &[u8]) -> Cow<[u8]> {
+        src.decapitalise_ascii()
+    }
+}
+
 pub struct String;
 
 impl Lib for String {
@@ -61,7 +75,9 @@ impl Lib for String {
     fn load(&self, namespace: &mut Namespace) -> crate::vm::Result<()> {
         namespace.add([
             ("contains", RFunction::wrap(contains)),
-            ("split", RFunction::wrap(split))
+            ("split", RFunction::wrap(split)),
+            ("capitalise", RFunction::wrap(capitalise)),
+            ("decapitalise", RFunction::wrap(decapitalise))
         ])
     }
 }

@@ -27,6 +27,7 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use std::borrow::Cow;
+use bp3d_util::string::StrTools;
 use crate::decl_lib_func;
 use crate::libs::Lib;
 use crate::vm::function::types::RFunction;
@@ -81,7 +82,38 @@ decl_lib_func! {
     }
 }
 
-//TODO: implement function to substring respecting UTF8 codes (instead of the panicking rust version).
+decl_lib_func! {
+    fn capitalise(src: &str) -> Cow<str> {
+        src.capitalise()
+    }
+}
+
+decl_lib_func! {
+    fn decapitalise(src: &str) -> Cow<str> {
+        src.decapitalise()
+    }
+}
+
+decl_lib_func! {
+    fn upper(src: &str) -> String {
+        src.to_uppercase()
+    }
+}
+
+decl_lib_func! {
+    fn lower(src: &str) -> String {
+        src.to_lowercase()
+    }
+}
+
+decl_lib_func! {
+    fn sub(src: &str, start: u32, end: Option<u32>) -> &str {
+        match end {
+            None => src.sub_nearest((start as usize)..),
+            Some(v) => src.sub_nearest((start as usize)..(v as usize))
+        }
+    }
+}
 
 pub struct Utf8;
 
@@ -96,7 +128,12 @@ impl Lib for Utf8 {
             ("count", RFunction::wrap(count)),
             ("charAt", RFunction::wrap(char_at)),
             ("fromString", RFunction::wrap(from_string)),
-            ("fromStringLossy", RFunction::wrap(from_string_lossy))
+            ("fromStringLossy", RFunction::wrap(from_string_lossy)),
+            ("capitalise", RFunction::wrap(capitalise)),
+            ("decapitalise", RFunction::wrap(decapitalise)),
+            ("upper", RFunction::wrap(upper)),
+            ("lower", RFunction::wrap(lower)),
+            ("sub", RFunction::wrap(sub))
         ])
     }
 }
