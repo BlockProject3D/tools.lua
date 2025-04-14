@@ -111,6 +111,8 @@ fn test_vm_lib_util() {
         assert(utf8.charAt('abc', 0) == 0x61)
         assert(utf8.charAt('abc', 1) == 0x62)
         assert(utf8.charAt('abc', 2) == 0x63)
+        local s = '我是'
+        assert(utf8.sub(s, 1) == '是')
     ").unwrap();
     vm.run_code::<()>(c"
         local tbl = { value = 42 }
