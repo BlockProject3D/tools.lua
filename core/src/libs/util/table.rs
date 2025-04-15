@@ -46,7 +46,7 @@ decl_lib_func! {
                 AnyValue::String(name) => {
                     dst.set_field(name, v)?
                 },
-                AnyValue::Number(num) => dst.set(num as _, v)?,
+                AnyValue::Number(num) => dst.seti(num as _, v)?,
                 _ => return Err(Error::Type(TypeError {
                     expected: Type::String,
                     actual: k.ty()

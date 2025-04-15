@@ -173,7 +173,7 @@ impl<'a> Table<'a> {
         }
     }
 
-    pub fn set(&mut self, i: i32, value: impl IntoLua) -> crate::vm::Result<()> {
+    pub fn seti(&mut self, i: i32, value: impl IntoLua) -> crate::vm::Result<()> {
         unsafe {
             let nums = value.into_lua(self.vm);
             if nums != 1 {
@@ -186,7 +186,7 @@ impl<'a> Table<'a> {
         Ok(())
     }
 
-    pub fn get<'b, T: FromLua<'b>>(&'b self, i: i32) -> crate::vm::Result<T> {
+    pub fn geti<'b, T: FromLua<'b>>(&'b self, i: i32) -> crate::vm::Result<T> {
         if T::num_values() != 1 {
             return Err(crate::vm::error::Error::MultiValue);
         }
