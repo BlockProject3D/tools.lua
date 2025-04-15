@@ -26,8 +26,9 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use crate::ffi::lua::{lua_pushnil, lua_pushvalue, lua_replace, Type};
+use crate::ffi::lua::{lua_pushnil, lua_pushvalue, lua_replace, lua_settop, Type};
 use crate::vm::error::{Error, TypeError};
+use crate::vm::value::IntoLua;
 use crate::vm::Vm;
 
 /// Ensures the given lua value at index is of a specified type.
@@ -57,4 +58,21 @@ pub fn ensure_value_top(vm: &Vm, index: i32) {
             lua_replace(l, index); // Replace the value at index by a nil.
         }
     }
+}
+
+/// Ensures a single value is pushed onto the lua stack, this function automatically reverts the
+/// stack if value pushed more than 1 element onto the stack.
+///
+/// # Arguments
+///
+/// * `vm`: the vm to operate on.
+/// * `value`: the value to be placed on the lua stack.
+pub fn ensure_single_into_lua(vm: &Vm, value: impl IntoLua) -> crate::vm::Result<()> {
+    let nums = value.into_lua(vm);
+    if nums != 1 {
+        // Clear the stack.
+        unsafe { lua_settop(vm.as_ptr(), -(nums as i32)-1) };
+        return Err(Error::MultiValue);
+    }
+    Ok(())
 }

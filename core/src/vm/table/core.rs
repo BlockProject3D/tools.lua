@@ -28,11 +28,12 @@
 
 use std::fmt::{Debug, Display};
 use crate::ffi::ext::{lua_ext_tab_len, MSize};
-use crate::ffi::lua::{lua_createtable, lua_getfield, lua_gettable, lua_gettop, lua_pushvalue, lua_rawgeti, lua_rawseti, lua_setfield, lua_setmetatable, lua_settable, lua_settop, lua_topointer};
+use crate::ffi::lua::{lua_createtable, lua_getfield, lua_gettable, lua_gettop, lua_objlen, lua_pushvalue, lua_rawgeti, lua_rawseti, lua_setfield, lua_setmetatable, lua_settable, lua_topointer};
 use crate::util::AnyStr;
 use crate::vm::core::util::{pcall, push_error_handler};
 use crate::vm::table::iter::Iter;
 use crate::vm::value::{FromLua, IntoLua};
+use crate::vm::value::util::ensure_single_into_lua;
 use crate::vm::Vm;
 
 pub struct Table<'a> {
@@ -152,12 +153,7 @@ impl<'a> Table<'a> {
 
     pub fn set_field(&mut self, name: impl AnyStr, value: impl IntoLua) -> crate::vm::Result<()> {
         unsafe {
-            let nums = value.into_lua(self.vm);
-            if nums != 1 {
-                // Clear the stack.
-                lua_settop(self.vm.as_ptr(), -(nums as i32)-1);
-                return Err(crate::vm::error::Error::MultiValue);
-            }
+            ensure_single_into_lua(self.vm, value)?;
             lua_setfield(self.vm.as_ptr(), self.index, name.to_str()?.as_ptr());
         }
         Ok(())
@@ -175,12 +171,7 @@ impl<'a> Table<'a> {
 
     pub fn seti(&mut self, i: i32, value: impl IntoLua) -> crate::vm::Result<()> {
         unsafe {
-            let nums = value.into_lua(self.vm);
-            if nums != 1 {
-                // Clear the stack.
-                lua_settop(self.vm.as_ptr(), -(nums as i32)-1);
-                return Err(crate::vm::error::Error::MultiValue);
-            }
+            ensure_single_into_lua(self.vm, value)?;
             lua_rawseti(self.vm.as_ptr(), self.index, i);
         }
         Ok(())
@@ -198,18 +189,8 @@ impl<'a> Table<'a> {
 
     pub fn set(&mut self, key: impl IntoLua, value: impl IntoLua) -> crate::vm::Result<()> {
         unsafe {
-            let nums = key.into_lua(self.vm);
-            if nums != 1 {
-                // Clear the stack.
-                lua_settop(self.vm.as_ptr(), -(nums as i32)-1);
-                return Err(crate::vm::error::Error::MultiValue);
-            }
-            let nums = value.into_lua(self.vm);
-            if nums != 1 {
-                // Clear the stack.
-                lua_settop(self.vm.as_ptr(), -(nums as i32)-1);
-                return Err(crate::vm::error::Error::MultiValue);
-            }
+            ensure_single_into_lua(self.vm, key)?;
+            ensure_single_into_lua(self.vm, value)?;
             lua_settable(self.vm.as_ptr(), self.index);
         }
         Ok(())
@@ -220,14 +201,18 @@ impl<'a> Table<'a> {
             return Err(crate::vm::error::Error::MultiValue);
         }
         unsafe {
-            let nums = key.into_lua(self.vm);
-            if nums != 1 {
-                // Clear the stack.
-                lua_settop(self.vm.as_ptr(), -(nums as i32)-1);
-                return Err(crate::vm::error::Error::MultiValue);
-            }
+            ensure_single_into_lua(self.vm, key)?;
             lua_gettable(self.vm.as_ptr(), self.index);
             T::from_lua(self.vm, -1)
         }
+    }
+
+    pub fn push(&mut self, value: impl IntoLua) -> crate::vm::Result<()> {
+        unsafe {
+            let len = lua_objlen(self.vm.as_ptr(), self.index);
+            ensure_single_into_lua(self.vm, value)?;
+            lua_rawseti(self.vm.as_ptr(), self.index, len as i32 + 1);
+        }
+        Ok(())
     }
 }
