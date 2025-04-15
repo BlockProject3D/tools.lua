@@ -29,31 +29,62 @@
 use bp3d_util::simple_error;
 use crate::vm::table::Table as LuaTable;
 use crate::decl_lib_func;
-use crate::ffi::lua::Type;
 use crate::libs::Lib;
-use crate::vm::error::{Error, TypeError};
 use crate::vm::function::types::RFunction;
 use crate::vm::namespace::Namespace;
 use crate::vm::value::any::AnyValue;
+use crate::vm::Vm;
+
+fn update_rec(vm: &Vm, mut dst: LuaTable, mut src: LuaTable) -> crate::vm::Result<()> {
+    for res in src.iter() {
+        let (k, v) = res?;
+        match v {
+            AnyValue::Table(v) => {
+                vm.scope(|_| {
+                    let dst1: Option<LuaTable> = dst.get(k.clone())?;
+                    match dst1 {
+                        None => {
+                            let tbl = LuaTable::new(vm);
+                            update_rec(vm, tbl.clone(), v)?;
+                            dst.set(k, tbl)?;
+                        },
+                        Some(v1) => update_rec(vm, v1, v)?
+                    }
+                    Ok(())
+                })?
+            }
+            _ => dst.set(k, v)?
+        }
+    }
+    Ok(())
+}
 
 decl_lib_func! {
-    fn update(dst: LuaTable, src: LuaTable) -> crate::vm::Result<()> {
-        let mut src = src;
+    fn update(vm: &Vm, dst: LuaTable, src: LuaTable) -> crate::vm::Result<()> {
+        update_rec(vm, dst, src)
+    }
+}
+
+decl_lib_func! {
+    fn concat(vm: &Vm, dst: LuaTable) -> crate::vm::Result<()> {
         let mut dst = dst;
-        for res in src.iter() {
-            let (k, v) = res?;
-            match k {
-                AnyValue::String(name) => {
-                    dst.set_field(name, v)?
-                },
-                AnyValue::Number(num) => dst.seti(num as _, v)?,
-                _ => return Err(Error::Type(TypeError {
-                    expected: Type::String,
-                    actual: k.ty()
-                }))
+        let iter = crate::vm::core::iter::start::<LuaTable>(vm, 2);
+        for res in iter {
+            let mut src = res?;
+            for res in src.iter() {
+                let (_, v) = res?;
+                dst.push(v)?;
             }
         }
         Ok(())
+    }
+}
+
+decl_lib_func! {
+    fn copy<'a>(vm: &Vm, src: LuaTable) -> crate::vm::Result<LuaTable<'a>> {
+        let tbl = crate::vm::table::Table::new(vm);
+        update_rec(vm, tbl.clone(), src)?;
+        Ok(tbl)
     }
 }
 
@@ -145,7 +176,9 @@ impl Lib for Table {
             ("tostring", RFunction::wrap(to_string)),
             ("contains", RFunction::wrap(contains)),
             ("containsKey", RFunction::wrap(contains_key)),
-            ("protect", RFunction::wrap(protect))
+            ("protect", RFunction::wrap(protect)),
+            ("copy", RFunction::wrap(copy)),
+            ("concat", RFunction::wrap(concat))
         ])
     }
 }

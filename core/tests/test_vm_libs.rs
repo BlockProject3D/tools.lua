@@ -124,6 +124,37 @@ fn test_vm_lib_util() {
         local protected = bp3d.util.table.protect(tbl)
         protected.value = 84
     ").unwrap_err();
+    vm.run_code::<()>(c"
+        local src = { value = 42, adding = { a = 1 } }
+        local dst = { value = 42, adding = { } }
+        bp3d.util.table.update(dst, src)
+        assert(dst.value == 42)
+        assert(dst.adding.a == 1)
+        local dst2 = { value = 42 }
+        bp3d.util.table.update(dst2, src)
+        assert(dst2.value == 42)
+        assert(dst2.adding.a == 1)
+    ").unwrap();
+    vm.run_code::<()>(c"
+        local src = { value = 42, adding = { a = 1 } }
+        local dst = bp3d.util.table.copy(src)
+        assert(dst.value == 42)
+        assert(dst.adding.a == 1)
+        dst.adding.b = 2
+        dst.b = 84
+        assert(dst.b == 84)
+        assert(src.b == nil)
+        assert(dst.adding.b == 2)
+        assert(src.adding.b == nil)
+    ").unwrap();
+    vm.run_code::<()>(c"
+        local list = { 1, 2, 3, 4 }
+        local list2 = { 5, 6, 7, 8 }
+        bp3d.util.table.concat(list, list2)
+        assert(#list == 8)
+        local str = bp3d.util.table.tostring(list)
+        assert(str == '1: 1\\n2: 2\\n3: 3\\n4: 4\\n5: 5\\n6: 6\\n7: 7\\n8: 8')
+    ").unwrap();
     assert_eq!(vm.top(), top);
 }
 
