@@ -40,6 +40,13 @@ pub struct Table<'a> {
     index: i32
 }
 
+impl Clone for Table<'_> {
+    fn clone(&self) -> Self {
+        unsafe { lua_pushvalue(self.vm.as_ptr(), self.index) };
+        Table { vm: self.vm, index: self.vm.top() }
+    }
+}
+
 impl PartialEq for Table<'_> {
     fn eq(&self, other: &Self) -> bool {
         let a = unsafe { lua_topointer(self.vm.as_ptr(), self.index) };

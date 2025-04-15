@@ -44,6 +44,13 @@ pub struct LuaFunction<'a> {
     index: i32
 }
 
+impl Clone for LuaFunction<'_> {
+    fn clone(&self) -> Self {
+        unsafe { lua_pushvalue(self.vm.as_ptr(), self.index) };
+        LuaFunction { vm: self.vm, index: self.vm.top() }
+    }
+}
+
 impl PartialEq for LuaFunction<'_> {
     fn eq(&self, other: &Self) -> bool {
         let a = unsafe { lua_topointer(self.vm.as_ptr(), self.index) };

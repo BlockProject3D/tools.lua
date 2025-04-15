@@ -28,7 +28,7 @@
 
 use std::fmt::{Debug, Display};
 use crate::ffi::laux::luaL_testudata;
-use crate::ffi::lua::{lua_topointer, lua_touserdata, lua_type, Type};
+use crate::ffi::lua::{lua_pushvalue, lua_topointer, lua_touserdata, lua_type, Type};
 use crate::vm::error::{Error, TypeError};
 use crate::vm::userdata::{UserData, UserDataImmutable};
 use crate::vm::value::FromLua;
@@ -37,6 +37,13 @@ use crate::vm::Vm;
 pub struct AnyUserData<'a> {
     vm: &'a Vm,
     index: i32
+}
+
+impl Clone for AnyUserData<'_> {
+    fn clone(&self) -> Self {
+        unsafe { lua_pushvalue(self.vm.as_ptr(), self.index) };
+        AnyUserData { vm: self.vm, index: self.vm.top() }
+    }
 }
 
 impl PartialEq for AnyUserData<'_> {

@@ -39,7 +39,7 @@ use crate::vm::userdata::AnyUserData;
 use crate::vm::util::{lua_rust_error, LuaType};
 use crate::vm::Vm;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum AnyValue<'a> {
     None,
     Nil,

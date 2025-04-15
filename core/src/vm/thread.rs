@@ -49,6 +49,15 @@ pub struct Thread<'a> {
     useless: PhantomData<&'a ()>
 }
 
+impl Clone for Thread<'_> {
+    fn clone(&self) -> Self {
+        Self {
+            vm: unsafe { Vm::from_raw(self.vm.as_ptr()) },
+            useless: PhantomData
+        }
+    }
+}
+
 impl PartialEq for Thread<'_> {
     fn eq(&self, other: &Self) -> bool {
         self.vm.as_ptr() == other.vm.as_ptr()
