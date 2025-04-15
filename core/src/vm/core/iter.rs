@@ -26,11 +26,33 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-mod interface;
-pub mod util;
-mod vm;
-pub mod load;
-pub mod iter;
+use std::marker::PhantomData;
+use crate::vm::value::FromLua;
+use crate::vm::Vm;
 
-pub use vm::{Vm, RootVm};
-pub use interface::*;
+pub struct Iter<'a, T> {
+    vm: &'a Vm,
+    index: i32,
+    useless: PhantomData<T>
+}
+
+impl<'a, T: FromLua<'a>> Iterator for Iter<'a, T> {
+    type Item = crate::vm::Result<T>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.index > self.vm.top() {
+            return None;
+        }
+        let item = T::from_lua(self.vm, self.index);
+        self.index += 1;
+        Some(item)
+    }
+}
+
+pub fn start<'a, T: FromLua<'a>>(vm: &'a Vm, start_index: i32) -> Iter<'a, T> {
+    Iter {
+        vm,
+        index: start_index,
+        useless: PhantomData
+    }
+}
