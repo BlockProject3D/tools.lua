@@ -28,7 +28,7 @@
 
 use std::fmt::{Debug, Display};
 use crate::ffi::ext::{lua_ext_tab_len, MSize};
-use crate::ffi::lua::{lua_createtable, lua_getfield, lua_gettop, lua_pushvalue, lua_rawgeti, lua_rawseti, lua_setfield, lua_setmetatable, lua_settop, lua_topointer};
+use crate::ffi::lua::{lua_createtable, lua_getfield, lua_gettable, lua_gettop, lua_pushvalue, lua_rawgeti, lua_rawseti, lua_setfield, lua_setmetatable, lua_settable, lua_settop, lua_topointer};
 use crate::util::AnyStr;
 use crate::vm::core::util::{pcall, push_error_handler};
 use crate::vm::table::iter::Iter;
@@ -192,6 +192,41 @@ impl<'a> Table<'a> {
         }
         unsafe {
             lua_rawgeti(self.vm.as_ptr(), self.index, i);
+            T::from_lua(self.vm, -1)
+        }
+    }
+
+    pub fn set(&mut self, key: impl IntoLua, value: impl IntoLua) -> crate::vm::Result<()> {
+        unsafe {
+            let nums = key.into_lua(self.vm);
+            if nums != 1 {
+                // Clear the stack.
+                lua_settop(self.vm.as_ptr(), -(nums as i32)-1);
+                return Err(crate::vm::error::Error::MultiValue);
+            }
+            let nums = value.into_lua(self.vm);
+            if nums != 1 {
+                // Clear the stack.
+                lua_settop(self.vm.as_ptr(), -(nums as i32)-1);
+                return Err(crate::vm::error::Error::MultiValue);
+            }
+            lua_settable(self.vm.as_ptr(), self.index);
+        }
+        Ok(())
+    }
+
+    pub fn get<'b, T: FromLua<'b>>(&'b self, key: impl IntoLua) -> crate::vm::Result<T> {
+        if T::num_values() != 1 {
+            return Err(crate::vm::error::Error::MultiValue);
+        }
+        unsafe {
+            let nums = key.into_lua(self.vm);
+            if nums != 1 {
+                // Clear the stack.
+                lua_settop(self.vm.as_ptr(), -(nums as i32)-1);
+                return Err(crate::vm::error::Error::MultiValue);
+            }
+            lua_gettable(self.vm.as_ptr(), self.index);
             T::from_lua(self.vm, -1)
         }
     }
