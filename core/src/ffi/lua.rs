@@ -221,8 +221,23 @@ extern "C" {
 //-------------------------
 // Miscellaneous functions
 //-------------------------
+pub type Debug = *mut c_void;
+pub type Hook = extern "C-unwind" fn(l: State, debug: Debug);
+
+const HOOKCALL: c_int = 0;
+const HOOKRET: c_int = 1;
+const HOOKLINE: c_int = 2;
+const HOOKCOUNT: c_int = 3;
+
+pub const MASKCALL: c_int = 1 << HOOKCALL;
+pub const MASKRET: c_int = 1 << HOOKRET;
+pub const MASKLINE: c_int = 1 << HOOKLINE;
+pub const MASKCOUNT: c_int = 1 << HOOKCOUNT;
+
 extern "C" {
     pub fn lua_error(l: State) -> c_int;
     pub fn lua_next(l: State, idx: c_int) -> c_int;
     pub fn lua_concat(l: State, n: c_int);
+
+    pub fn lua_sethook(l: State, hook: Hook, mask: c_int, count: c_int) -> c_int;
 }
