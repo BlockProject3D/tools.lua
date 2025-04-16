@@ -45,3 +45,13 @@ simple_error! {
         Timeout => "the lua hook did not trigger in the requested time (is the JIT enabled?)"
     }
 }
+
+pub fn spawn_interruptible(f: impl FnOnce(&mut crate::vm::RootVm) + Send + 'static) -> Signal {
+    let (send, recv) = std::sync::mpsc::channel();
+    std::thread::spawn(move || {
+        let mut vm = crate::vm::RootVm::new();
+        send.send(Signal::create(&mut vm)).unwrap();
+        f(&mut vm);
+    });
+    recv.recv().unwrap()
+}
