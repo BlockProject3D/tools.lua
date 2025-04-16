@@ -26,14 +26,22 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-mod interface;
-pub mod util;
-mod vm;
-pub mod load;
-pub mod iter;
+//! This module contains tools to allow interrupting a root Vm.
 
-#[cfg(feature = "interrupt")]
-pub mod interrupt;
+#[cfg(unix)]
+mod unix;
 
-pub use vm::{Vm, RootVm};
-pub use interface::*;
+#[cfg(unix)]
+pub use unix::Signal;
+
+unsafe impl Send for Signal {}
+unsafe impl Sync for Signal {}
+
+use bp3d_util::simple_error;
+simple_error! {
+    pub Error {
+        AlreadyInterrupting => "attempt to interrupt a Vm while interrupting a different Vm",
+        IncorrectThread => "attempt to interrupt a Vm from the wrong thread",
+        Timeout => "the lua hook did not trigger in the requested time (is the JIT enabled?)"
+    }
+}

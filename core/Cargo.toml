@@ -21,9 +21,13 @@ bp3d-os = { version = "1.0.0-rc.4.2.1", features = ["fs", "time"] }
 time = { version = "0.3.37", features = ["formatting"] }
 itertools = { version = "0.14.0" }
 
+[target.'cfg(unix)'.dependencies]
+libc = { version = "0.2.170", optional = true }
+
 [build-dependencies]
 bp3d-os = { version = "1.0.0-rc.4.2.1", features = ["fs"] }
 phf = { version = "0.11.3", features = ["macros"] }
 cc = "1.2.15"
 
 [features]
+interrupt = ["libc"]
