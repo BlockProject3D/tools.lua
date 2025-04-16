@@ -68,7 +68,7 @@ extern "C-unwind" fn lua_interrupt(l: State, _: Debug) {
 extern "C" fn signal_handler(_: c_int) {
     let res = SIG_STATE.try_lock();
     match res {
-        Ok(mut v) => {
+        Ok(v) => {
             if let Some(v) = &*v {
                 let current_id = std::thread::current().id();
                 if current_id != v.thread {
@@ -99,7 +99,8 @@ impl Signal {
                 sa_mask: 0,
                 sa_flags: 0,
             };
-            unsafe { libc::sigaction(SIGUSR1, &sig as _, std::ptr::null_mut()) };
+            let ret = unsafe { libc::sigaction(SIGUSR1, &sig as _, std::ptr::null_mut()) };
+            assert_eq!(ret, 0);
         });
         Self {
             l,
@@ -120,7 +121,10 @@ impl Signal {
                 notify_chan: send2,
             });
         }
-        unsafe { pthread_kill(self.th, SIGUSR1) };
+        let ret = unsafe { pthread_kill(self.th, SIGUSR1) };
+        if ret != 0 {
+            return Err(Error::Unknown);
+        }
         recv.recv().unwrap()?;
         match recv2.recv_timeout(duration) {
             Ok(()) => Ok(()),

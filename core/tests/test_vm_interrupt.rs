@@ -26,34 +26,28 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-//! This module contains tools to allow interrupting a root Vm.
+#![cfg(feature = "interrupt")]
 
-#[cfg(unix)]
-mod unix;
+use std::time::Duration;
+use bp3d_lua::libs::Lib;
+use bp3d_lua::vm::core::interrupt;
 
-use std::thread::JoinHandle;
-#[cfg(unix)]
-pub use unix::Signal;
-
-unsafe impl Send for Signal {}
-unsafe impl Sync for Signal {}
-
-use bp3d_util::simple_error;
-simple_error! {
-    pub Error {
-        AlreadyInterrupting => "attempt to interrupt a Vm while interrupting a different Vm",
-        IncorrectThread => "attempt to interrupt a Vm from the wrong thread",
-        Timeout => "the lua hook did not trigger in the requested time (is the JIT enabled?)",
-        Unknown => "unknown system error"
-    }
-}
-
-pub fn spawn_interruptible<R: Send + 'static>(f: impl FnOnce(&mut crate::vm::RootVm) -> R + Send + 'static) -> (Signal, JoinHandle<R>) {
-    let (send, recv) = std::sync::mpsc::channel();
-    let handle = std::thread::spawn(move || {
-        let mut vm = crate::vm::RootVm::new();
-        send.send(Signal::create(&mut vm)).unwrap();
-        f(&mut vm)
+#[test]
+fn test_vm_interrupt() {
+    let (signal, handle) = interrupt::spawn_interruptible(|vm| {
+        bp3d_lua::libs::os::Compat.register(vm).unwrap();
+        // Run the malicious code.
+        vm.run_code::<()>(c"
+            local tbl = {}
+            while (true) do
+                local time = os.date('%H:%M:%S')
+                table.insert(tbl, time)
+            end
+        ")
     });
-    (recv.recv().unwrap(), handle)
+    // Give the chance to the thread to run and pump a bit of RAM.
+    std::thread::sleep(Duration::from_millis(500));
+    signal.send(Duration::from_secs(2)).unwrap();
+    let res = handle.join().unwrap();
+    assert!(res.is_err());
 }
