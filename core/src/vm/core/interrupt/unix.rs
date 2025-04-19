@@ -32,7 +32,7 @@ use std::thread::ThreadId;
 use std::time::Duration;
 use bp3d_debug::error;
 use libc::{c_int, pthread_kill, pthread_self, pthread_t, SIGUSR1};
-use crate::ffi::lua::{lua_error, lua_pushstring, lua_sethook, Debug, State, MASKCOUNT};
+use crate::ffi::lua::{lua_error, lua_pushstring, lua_sethook, Debug, Hook, State, MASKCOUNT};
 use crate::vm::core::interrupt::Error;
 use crate::vm::RootVm;
 
@@ -61,6 +61,7 @@ extern "C-unwind" fn lua_interrupt(l: State, _: Debug) {
         }
     }
     unsafe {
+        lua_sethook(l, std::mem::transmute::<*const (), Hook>(std::ptr::null()), 0, 0);
         lua_pushstring(l, c"interrupted".as_ptr());
         lua_error(l);
     }
