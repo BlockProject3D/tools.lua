@@ -43,7 +43,7 @@ impl CommandRunner {
         if stat.success() {
             Ok(())
         } else {
-            Err(Error::new(ErrorKind::Other, "failed to patch"))
+            Err(Error::new(ErrorKind::Other, self.msg))
         }
     }
 }
