@@ -27,95 +27,41 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use std::ffi::OsStr;
-use std::path::Path;
-use std::process::{Command, ExitStatus};
+use std::path::{Path, PathBuf};
 use bp3d_os::fs::CopyOptions;
-use phf::phf_map;
+use bp3d_lua_build::{BuildInfo, Patch, Target};
+use bp3d_lua_build::build::{Build, Lib, Linux, MacOS, Windows};
 
-pub enum Target {
-    MacAmd64,
-    MacAarch64,
-    Linux,
-    Windows,
-    Unsupported
-}
+#[cfg(feature = "dynamic")]
+const DYNAMIC: bool = true;
+#[cfg(not(feature = "dynamic"))]
+const DYNAMIC: bool = false;
 
-static TARGET_MAP: phf::Map<&'static str, Target> = phf_map! {
-    "aarch64-apple-darwin" => Target::MacAarch64,
-    "aarch64-unknown-linux-gnu" => Target::Linux,
-    "i686-pc-windows-msvc" => Target::Windows,
-    "x86_64-pc-windows-msvc" => Target::Windows,
-    "x86_64-apple-darwin" => Target::MacAmd64,
-    "x86_64-unknown-linux-gnu" => Target::Linux
-};
+fn apply_patches(out_path: &Path) -> std::io::Result<()> {
+    let mut patch = Patch::new(&Path::new("..").join("patch"), &Path::new("..").join("LuaJIT"))?;
+    patch.apply("lib_init")?; // Disable unsafe/un-sandboxed libs.
+    patch.apply("lj_disable_jit")?; // Disable global JIT state changes from Lua code.
+    patch.apply("disable_lua_load")?; // Disable loadstring, dostring, etc from base lib.
+    patch.apply("lua_ext")?; // Ext library such as lua_ext_tab_len, etc.
+    patch.apply("lua_load_no_bc")?; // Treat all inputs as strings (no bytecode allowed).
 
-fn run_command_in_luajit(text: &str, cmd: &str, args: impl IntoIterator<Item = impl AsRef<OsStr>>) -> ExitStatus {
-    let path = bp3d_os::fs::get_absolute_path("../").expect("Failed to acquire current path");
-    Command::new(cmd)
-        .args(args)
-        .current_dir(path.join("LuaJIT")).status().expect(text)
-}
-
-fn build_luajit(build_dir: &Path) {
-    let target_name = std::env::var("TARGET").expect("Failed to read build target");
-    let target = TARGET_MAP.get(&target_name).unwrap_or(&Target::Unsupported);
-    let cmd = match target {
-        Target::MacAmd64 => Command::new("make")
-            .env("MACOSX_DEPLOYMENT_TARGET", "10.11")
-            .current_dir(build_dir).status(),
-        Target::MacAarch64 => Command::new("make")
-            .env("MACOSX_DEPLOYMENT_TARGET", "11.0")
-            .current_dir(build_dir).status(),
-        Target::Linux => Command::new("make")
-            .arg("TARGET_SONAME=libbp3d-luajit-1.0.0-rc.1.0.0.so")
-            .current_dir(build_dir).status(),
-        Target::Windows => {
-            let mut cmd = Command::new("msvcbuild.bat");
-            let cl = cc::windows_registry::find_tool(&target_name, "cl.exe").expect("failed to find cl");
-            for (k, v) in cl.env() {
-                cmd.env(k, v);
-            }
-            cmd.current_dir(build_dir.join("src")).status()
-        },
-        Target::Unsupported => panic!("Unsupported build target {}", target_name)
-    }.expect("Failed to run build command");
-    if !cmd.success() {
-        panic!("Failed to build LuaJIT");
+    // Copy the source directory to the build directory.
+    println!("{}", out_path.display());
+    if !out_path.is_dir() {
+        bp3d_os::fs::copy(&Path::new("..").join("LuaJIT"), &out_path, CopyOptions::new().exclude(OsStr::new(".git")))?;
     }
+    Ok(())
 }
 
-#[cfg(feature="dynamic")]
-fn post_build(build_dir: &Path) {
+fn run_build(build_dir: &Path) -> std::io::Result<Lib> {
+    let manifest = std::env::var_os("CARGO_MANIFEST_PATH").map(PathBuf::from).expect("Failed to read manifest path");
     let target_name = std::env::var("TARGET").expect("Failed to read build target");
-    let target = TARGET_MAP.get(&target_name).unwrap_or(&Target::Unsupported);
-    match target {
-        Target::MacAmd64 | Target::MacAarch64 => {
-            //TODO: parse crate version.
-            let path_to_so = build_dir.join("src");
-            let cmd = Command::new("install_name_tool").args(["-id", "libbp3d-luajit-1.0.0-rc.1.0.0.dylib", "libluajit.so"])
-                .current_dir(&path_to_so).status().unwrap();
-            assert!(cmd.success());
-            let path_to_dylib = build_dir.join("libbp3d-luajit-1.0.0-rc.1.0.0.dylib");
-            std::fs::copy(path_to_so.join("libluajit.so"), path_to_dylib).expect("Failed to copy bp3d luajit dynamic lib");
-            let path_to_dylib2 = build_dir.join("../../../../libbp3d-luajit-1.0.0-rc.1.0.0.dylib");
-            std::fs::copy(path_to_so.join("libluajit.so"), path_to_dylib2).expect("Failed to copy bp3d luajit dynamic lib");
-        },
-        Target::Linux => {
-            let path_to_so = build_dir.join("src").join("libluajit.so");
-            let path_to_dylib = build_dir.join("libbp3d-luajit-1.0.0-rc.1.0.0.so");
-            std::fs::copy(&path_to_so, path_to_dylib).expect("Failed to copy bp3d luajit dynamic lib");
-            let path_to_dylib2 = build_dir.join("../../../../libbp3d-luajit-1.0.0-rc.1.0.0.so");
-            std::fs::copy(path_to_so, path_to_dylib2).expect("Failed to copy bp3d luajit dynamic lib");
-        },
-        Target::Windows => {},
-        Target::Unsupported => panic!("Unsupported build target {}", target_name)
-    }
-}
-
-fn apply_patch(path: &Path, name: &str) {
-    let result = run_command_in_luajit("Failed to patch LuaJIT", "git", &[OsStr::new("apply"), path.join("patch").join(name).as_os_str()]);
-    if !result.success() {
-        panic!("Failed to patch LuaJIT");
+    let info = BuildInfo::new(DYNAMIC, target_name, build_dir.into(), &manifest)?;
+    match info.target() {
+        Target::MacAmd64 | Target::MacAarch64 => MacOS::run(&info),
+        Target::Linux => Linux::run(&info),
+        Target::Windows => Windows::run(&info),
+        Target::Unsupported => panic!("attempt to build on currently unsupported target")
     }
 }
 
@@ -124,44 +70,24 @@ fn main() {
     println!("cargo:rerun-if-changed=build.rs");
     println!("cargo:rerun-if-changed=patch");
 
-    // Revert patch to LuaJIT source code and cleanup.
-    run_command_in_luajit("Failed to revert LuaJIT patch", "git", &["checkout", "."]);
-
     // Create build directory.
     let out = std::env::var_os("OUT_DIR").expect("Failed to acquire output directory");
     let out_path = Path::new(&out).join("luajit-build");
 
     // Apply patches to LuaJIT source code.
-    let path = bp3d_os::fs::get_absolute_path("../").expect("Failed to acquire current path");
-    apply_patch(&path, "lib_init.patch"); // Disable unsafe/un-sandboxed libs.
-    apply_patch(&path, "lj_disable_jit.patch"); // Disable global JIT state changes from Lua code.
-    apply_patch(&path, "disable_lua_load.patch"); // Disable loadstring, dostring, etc from base lib.
-    apply_patch(&path, "lua_ext.patch"); // Ext library such as lua_ext_tab_len, etc.
-    apply_patch(&path, "lua_load_no_bc.patch"); // Treat all inputs as strings (no bytecode allowed).
+    apply_patches(&out_path).expect("Failed to patch LuaJIT");
 
     // Copy the source directory to the build directory.
-    println!("{}", out_path.display());
-    if !out_path.is_dir() {
-        bp3d_os::fs::copy(&path.join("LuaJIT"), &out_path, CopyOptions::new().exclude(OsStr::new(".git"))).expect("Failed to copy LuaJIT sources to build directory");
-    }
-
-    // Revert patch to LuaJIT source code and cleanup.
-    run_command_in_luajit("Failed to revert LuaJIT patch", "git", &["checkout", "."]);
+    println!("Internal LuaJIT build directory: {}", out_path.display());
 
     // Build LuaJIT.
-    build_luajit(&out_path);
-    #[cfg(feature="dynamic")]
-    post_build(&out_path);
+    let lib = run_build(&out_path).expect("Failed to build LuaJIT");
 
     // Attempt to setup linkage.
-    #[cfg(not(feature="dynamic"))]
-    {
-        println!("cargo:rustc-link-search=native={}", out_path.join("src").display());
-        println!("cargo:rustc-link-lib=static:-bundle,+whole-archive=luajit");
-    }
-    #[cfg(feature="dynamic")]
-    {
-        println!("cargo:rustc-link-search=native={}", out_path.display());
-        println!("cargo:rustc-link-lib=dylib=bp3d-luajit-1.0.0-rc.1.0.0");
+    println!("cargo:rustc-link-search=native={}", lib.path.display());
+    if lib.dynamic {
+        println!("cargo:rustc-link-lib=dylib={}", lib.name);
+    } else {
+        println!("cargo:rustc-link-lib=static={}", lib.name);
     }
 }
