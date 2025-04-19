@@ -26,10 +26,10 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-mod base;
+mod compat;
 mod time;
 mod instant;
 
-pub use base::Compat;
+pub use compat::Compat;
 pub use time::Time;
 pub use instant::Instant;
