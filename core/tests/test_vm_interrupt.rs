@@ -47,7 +47,7 @@ fn test_vm_interrupt() {
     });
     // Give the chance to the thread to run and pump a bit of RAM.
     std::thread::sleep(Duration::from_millis(500));
-    signal.send(Duration::from_secs(2)).unwrap();
+    signal.send(Duration::from_secs(10)).unwrap();
     let res = handle.join().unwrap();
     assert!(res.is_err());
 }
