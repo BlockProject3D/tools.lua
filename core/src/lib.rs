@@ -26,6 +26,9 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+//TODO: Support dynamic linking and modules by dynamic linking to luajit.
+//TODO: Use features to disable RootVm related stuff, such as destructors, interruption, etc.
+
 pub mod ffi;
 pub mod vm;
 mod r#macro;

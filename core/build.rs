@@ -83,6 +83,34 @@ fn build_luajit(build_dir: &Path) {
     }
 }
 
+#[cfg(feature="dynamic")]
+fn post_build(build_dir: &Path) {
+    let target_name = std::env::var("TARGET").expect("Failed to read build target");
+    let target = TARGET_MAP.get(&target_name).unwrap_or(&Target::Unsupported);
+    match target {
+        Target::MacAmd64 | Target::MacAarch64 => {
+            //TODO: parse crate version.
+            let path_to_so = build_dir.join("src");
+            let cmd = Command::new("install_name_tool").args(["-id", "libbp3d-luajit-1.0.0-rc.1.0.0.dylib", "libluajit.so"])
+                .current_dir(&path_to_so).status().unwrap();
+            assert!(cmd.success());
+            let path_to_dylib = build_dir.join("libbp3d-luajit-1.0.0-rc.1.0.0.dylib");
+            std::fs::copy(path_to_so.join("libluajit.so"), path_to_dylib).expect("Failed to copy bp3d luajit dynamic lib");
+            let path_to_dylib2 = build_dir.join("../../../../libbp3d-luajit-1.0.0-rc.1.0.0.dylib");
+            std::fs::copy(path_to_so.join("libluajit.so"), path_to_dylib2).expect("Failed to copy bp3d luajit dynamic lib");
+        },
+        Target::Linux => {
+            let path_to_so = build_dir.join("src").join("libluajit.so");
+            let path_to_dylib = build_dir.join("libbp3d-luajit-1.0.0-rc.1.0.0.so");
+            std::fs::copy(&path_to_so, path_to_dylib).expect("Failed to copy bp3d luajit dynamic lib");
+            let path_to_dylib2 = build_dir.join("../../../../libbp3d-luajit-1.0.0-rc.1.0.0.so");
+            std::fs::copy(path_to_so, path_to_dylib2).expect("Failed to copy bp3d luajit dynamic lib");
+        },
+        Target::Windows => {},
+        Target::Unsupported => panic!("Unsupported build target {}", target_name)
+    }
+}
+
 fn apply_patch(path: &Path, name: &str) {
     let result = run_command_in_luajit("Failed to patch LuaJIT", "git", &[OsStr::new("apply"), path.join("patch").join(name).as_os_str()]);
     if !result.success() {
@@ -109,7 +137,6 @@ fn main() {
     apply_patch(&path, "disable_lua_load.patch"); // Disable loadstring, dostring, etc from base lib.
     apply_patch(&path, "lua_ext.patch"); // Ext library such as lua_ext_tab_len, etc.
     apply_patch(&path, "lua_load_no_bc.patch"); // Treat all inputs as strings (no bytecode allowed).
-    //TODO: Patch to re-enable os lib with time and date
 
     // Copy the source directory to the build directory.
     println!("{}", out_path.display());
@@ -122,8 +149,18 @@ fn main() {
 
     // Build LuaJIT.
     build_luajit(&out_path);
+    #[cfg(feature="dynamic")]
+    post_build(&out_path);
 
     // Attempt to setup linkage.
-    println!("cargo:rustc-link-search=native={}", out_path.join("src").display());
-    println!("cargo:rustc-link-lib=static:-bundle,+whole-archive=luajit");
+    #[cfg(not(feature="dynamic"))]
+    {
+        println!("cargo:rustc-link-search=native={}", out_path.join("src").display());
+        println!("cargo:rustc-link-lib=static:-bundle,+whole-archive=luajit");
+    }
+    #[cfg(feature="dynamic")]
+    {
+        println!("cargo:rustc-link-search=native={}", out_path.display());
+        println!("cargo:rustc-link-lib=dylib=bp3d-luajit-1.0.0-rc.1.0.0");
+    }
 }
