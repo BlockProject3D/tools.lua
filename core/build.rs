@@ -67,6 +67,7 @@ fn build_luajit(build_dir: &Path) {
             .env("MACOSX_DEPLOYMENT_TARGET", "11.0")
             .current_dir(build_dir).status(),
         Target::Linux => Command::new("make")
+            .arg("TARGET_SONAME=libbp3d-luajit-1.0.0-rc.1.0.0.so")
             .current_dir(build_dir).status(),
         Target::Windows => {
             let mut cmd = Command::new("msvcbuild.bat");
