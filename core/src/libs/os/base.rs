@@ -63,6 +63,8 @@ fn get_std_offset() -> UtcOffset {
 }
 
 const REPLACEMENTS: &[(&str, &str)] = &[
+    ("[", "[["),
+    ("%%", "%"),
     ("%a", "[weekday repr:short]"),
     ("%A", "[weekday repr:long]"),
     ("%b", "[month repr:short]"),
@@ -76,9 +78,7 @@ const REPLACEMENTS: &[(&str, &str)] = &[
     ("%S", "[second]"),
     ("%w", "[weekday]"),
     ("%Y", "[year]"),
-    ("%y", "[year repr:last_two]"),
-    ("%%", "%"),
-    ("[", "[["),
+    ("%y", "[year repr:last_two]")
 ];
 
 decl_lib_func! {

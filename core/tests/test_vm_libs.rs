@@ -210,4 +210,10 @@ fn test_vm_lib_os() {
         local now = os.clock()
         assert((clock - now) < 0.1)
     ").unwrap();
+    let s = vm.run_code::<&str>(c"
+        return os.date('%H:%M:%S')
+    ").unwrap();
+    assert!(s.contains(":"));
+    assert!(!s.contains("["));
+    assert!(!s.contains("]"));
 }
