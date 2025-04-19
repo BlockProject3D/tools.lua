@@ -44,6 +44,8 @@ fn apply_patches(out_path: &Path) -> std::io::Result<()> {
     patch.apply("disable_lua_load")?; // Disable loadstring, dostring, etc from base lib.
     patch.apply("lua_ext")?; // Ext library such as lua_ext_tab_len, etc.
     patch.apply("lua_load_no_bc")?; // Treat all inputs as strings (no bytecode allowed).
+    patch.apply("windows_set_lib_names")?; // Allow setting LJLIBNAME and LJDLLNAME from
+    // environment variables.
 
     // Copy the source directory to the build directory.
     println!("{}", out_path.display());
