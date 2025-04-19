@@ -26,12 +26,13 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use std::mem::MaybeUninit;
 use std::sync::{Mutex, Once};
 use std::thread::ThreadId;
 use std::time::Duration;
 use bp3d_debug::error;
 use libc::{c_int, pthread_kill, pthread_self, pthread_t, SIGUSR1};
-use crate::ffi::lua::{lua_error, lua_pushstring, lua_sethook, Debug, State, MASKCOUNT};
+use crate::ffi::lua::{lua_error, lua_pushstring, lua_sethook, Debug, Hook, State, MASKCOUNT};
 use crate::vm::core::interrupt::Error;
 use crate::vm::RootVm;
 
@@ -60,6 +61,7 @@ extern "C-unwind" fn lua_interrupt(l: State, _: Debug) {
         }
     }
     unsafe {
+        lua_sethook(l, std::mem::transmute::<*const (), Hook>(std::ptr::null()), 0, 0);
         lua_pushstring(l, c"interrupted".as_ptr());
         lua_error(l);
     }
@@ -94,11 +96,8 @@ impl Signal {
         let l = vm.as_ptr();
         let thread = std::thread::current().id();
         SIG_BOUND.call_once(|| {
-            let sig = libc::sigaction {
-                sa_sigaction: signal_handler as _,
-                sa_mask: 0,
-                sa_flags: 0,
-            };
+            let mut sig: libc::sigaction = unsafe { MaybeUninit::zeroed().assume_init() };
+            sig.sa_sigaction = signal_handler as _;
             let ret = unsafe { libc::sigaction(SIGUSR1, &sig as _, std::ptr::null_mut()) };
             assert_eq!(ret, 0);
         });
