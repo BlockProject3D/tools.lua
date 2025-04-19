@@ -177,11 +177,11 @@ fn test_vm_lib_os_time() {
         end
         local now2 = bp3d.os.time.nowUtc()
         local now = bp3d.os.time.nowLocal()
-        if (now ~= nil and time ~= nil then
+        if (now ~= nil and time ~= nil) then
             assert(now > time)
         end
         assert(now2 > time2)
-        if (now ~= nil and time ~= nil then
+        if (now ~= nil and time ~= nil) then
             testDateTime(now, time)
         end
         testDateTime(now2, time2)
@@ -215,7 +215,7 @@ fn test_vm_lib_os() {
         assert((clock - now) < 0.1)
     ").unwrap();
     let s = vm.run_code::<&str>(c"
-        return os.date('%H:%M:%S')
+        return os.date('!%H:%M:%S')
     ").unwrap();
     assert!(s.contains(":"));
     assert!(!s.contains("["));
