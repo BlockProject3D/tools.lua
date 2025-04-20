@@ -27,7 +27,7 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use bp3d_lua::decl_closure;
-use bp3d_lua::vm::closure::context::ContextMut;
+use bp3d_lua::vm::closure::context2::ContextMut;
 use bp3d_lua::vm::closure::types::RClosure;
 use bp3d_lua::vm::namespace::Namespace;
 use bp3d_lua::vm::RootVm;
@@ -108,8 +108,9 @@ fn test_vm_context() {
         value: 0,
         value3: vec![],
     };
+    let ctx = ctx.get();
     {
-        let _obj = ctx.bind(&vm, &mut obj);
+        let _obj = ctx.bind(&mut obj);
         vm.run_code::<()>(c"context.set_value(42)").unwrap();
     }
     let res = vm.run_code::<()>(c"context.set_value(84)");
@@ -117,7 +118,7 @@ fn test_vm_context() {
     assert_eq!(res.unwrap_err().into_runtime().unwrap().msg(), "[string \"context.set_value(84)\"]:1: Context is not available in this function.");
     assert_eq!(obj.value, 42);
     {
-        let _obj = ctx.bind(&vm, &mut obj);
+        let _obj = ctx.bind(&mut obj);
         vm.run_code::<()>(c"assert(context.pop() == nil)").unwrap();
         vm.run_code::<()>(c"context.push(1)").unwrap();
         vm.run_code::<()>(c"context.push(2)").unwrap();
@@ -125,7 +126,7 @@ fn test_vm_context() {
     }
     assert_eq!(obj.value3.len(), 3);
     {
-        let _obj = ctx.bind(&vm, &mut obj);
+        let _obj = ctx.bind(&mut obj);
         vm.run_code::<()>(c"assert(context.pop() == 3)").unwrap();
         vm.run_code::<()>(c"assert(context.pop() == 2)").unwrap();
         vm.run_code::<()>(c"assert(context.pop() == 1)").unwrap();
