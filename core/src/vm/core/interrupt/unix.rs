@@ -30,7 +30,7 @@ use std::mem::MaybeUninit;
 use std::sync::{Mutex, Once};
 use std::thread::ThreadId;
 use std::time::Duration;
-use bp3d_debug::error;
+use bp3d_debug::{error, warning};
 use libc::{c_int, pthread_kill, pthread_self, pthread_t, SIGUSR1};
 use crate::ffi::lua::{lua_error, lua_pushstring, lua_sethook, Debug, Hook, State, MASKCOUNT};
 use crate::vm::core::interrupt::Error;
@@ -57,7 +57,9 @@ extern "C-unwind" fn lua_interrupt(l: State, _: Debug) {
     {
         let mut state = SIG_STATE.lock().unwrap();
         if let Some(sig) = state.take() {
-            let _ = sig.notify_chan.send(());
+            if let Err(e) = sig.notify_chan.send(()) {
+                error!({error=?e}, "Failed to notify interrupt signal")
+            }
         }
     }
     unsafe {
@@ -127,7 +129,8 @@ impl Signal {
         recv.recv().unwrap()?;
         match recv2.recv_timeout(duration) {
             Ok(()) => Ok(()),
-            Err(_) => {
+            Err(e) => {
+                warning!({error=?e}, "Error attempting to wait for interrupt notification");
                 {
                     let mut guard = SIG_STATE.lock().unwrap();
                     *guard = None;
