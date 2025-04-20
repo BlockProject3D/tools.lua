@@ -27,7 +27,6 @@ libc = { version = "0.2.170", optional = true }
 
 [build-dependencies]
 bp3d-lua-build = { version = "1.0.0-rc.1.0.0", path = "../build" }
-bp3d-os = { version = "1.0.0-rc.4.2.1", features = ["fs"] }
 
 [features]
 interrupt = ["libc"]
