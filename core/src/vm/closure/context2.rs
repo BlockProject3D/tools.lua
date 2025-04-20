@@ -37,12 +37,16 @@ use crate::vm::closure::{FromUpvalue, IntoUpvalue, Upvalue};
 use crate::vm::registry::core::RawRegistryKey;
 use crate::vm::Vm;
 
-pub struct Binder<T> {
+pub struct Cell<T> {
     ptr: *mut *const T
 }
 
-impl<T> Binder<T> {
-    pub fn bind<'a>(&self, obj: &'a T) -> Guard<'a, T> {
+impl<T> Cell<T> {
+    pub fn new(ctx: Context<T>) -> Self {
+        Self { ptr: ctx.ptr }
+    }
+
+    pub fn bind<'a>(&mut self, obj: &'a T) -> Guard<'a, T> {
         unsafe { *self.ptr = obj as _ };
         Guard {
             useless: PhantomData,
@@ -51,12 +55,16 @@ impl<T> Binder<T> {
     }
 }
 
-pub struct BinderMut<T> {
+pub struct CellMut<T> {
     ptr: *mut *const T
 }
 
-impl<T> BinderMut<T> {
-    pub fn bind<'a>(&self, obj: &'a mut T) -> Guard<'a, T> {
+impl<T> CellMut<T> {
+    pub fn new(ctx: ContextMut<T>) -> Self {
+        Self { ptr: ctx.0.ptr }
+    }
+
+    pub fn bind<'a>(&mut self, obj: &'a mut T) -> Guard<'a, T> {
         unsafe { *self.ptr = obj as _ };
         Guard {
             useless: PhantomData,
@@ -102,26 +110,15 @@ impl<T: 'static> Context<T> {
             ptr: ptr as *mut *const T
         }
     }
-
-    pub fn get(self) -> Binder<T> {
-        Binder {
-            ptr: self.ptr
-        }
-    }
 }
 
 impl<T: 'static> ContextMut<T> {
     pub fn new(vm: &Vm) -> Self {
         Self(Context::new(vm))
     }
-
-    pub fn get(self) -> BinderMut<T> {
-        BinderMut {
-            ptr: self.0.ptr
-        }
-    }
 }
 
+#[repr(transparent)]
 pub struct Guard<'a, T> {
     ud: *mut *const T,
     useless: PhantomData<&'a T>
@@ -129,9 +126,7 @@ pub struct Guard<'a, T> {
 
 impl<'a, T> Drop for Guard<'a, T> {
     fn drop(&mut self) {
-        unsafe {
-            *self.ud = std::ptr::null();
-        }
+        unsafe { *self.ud = std::ptr::null(); }
     }
 }
 
