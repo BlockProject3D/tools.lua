@@ -29,6 +29,7 @@
 use std::ffi::OsStr;
 use std::path::{Path, PathBuf};
 use std::process::Command;
+use bp3d_os::fs::CopyOptions;
 use crate::util::CommandRunner;
 
 pub struct Patch {
@@ -60,6 +61,16 @@ impl Patch {
 
     pub fn get_patch_list(&self) -> impl Iterator<Item=&str> {
         self.patch_list.iter().map(|v| &**v)
+    }
+
+    pub fn apply_all<'a>(mut self, patches: impl IntoIterator<Item=&'a str>, out_path: &Path) -> std::io::Result<Vec<String>> {
+        for patch in patches {
+            self.apply(patch)?;
+        }
+        if !out_path.is_dir() {
+            bp3d_os::fs::copy(&self.src_path, out_path, CopyOptions::new().exclude(OsStr::new(".git")))?;
+        }
+        Ok(self.get_patch_list().map(String::from).collect())
     }
 }
 

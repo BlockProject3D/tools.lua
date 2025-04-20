@@ -26,9 +26,7 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::ffi::OsStr;
 use std::path::{Path, PathBuf};
-use bp3d_os::fs::CopyOptions;
 use bp3d_lua_build::{BuildInfo, BuildInfoBase, Patch};
 use bp3d_lua_build::build::Lib;
 
@@ -37,22 +35,18 @@ const DYNAMIC: bool = true;
 #[cfg(not(feature = "dynamic"))]
 const DYNAMIC: bool = false;
 
-fn apply_patches(out_path: &Path) -> std::io::Result<()> {
-    let mut patch = Patch::new(&Path::new("..").join("patch"), &Path::new("..").join("LuaJIT"))?;
-    patch.apply("lib_init")?; // Disable unsafe/un-sandboxed libs.
-    patch.apply("lj_disable_jit")?; // Disable global JIT state changes from Lua code.
-    patch.apply("disable_lua_load")?; // Disable loadstring, dostring, etc from base lib.
-    patch.apply("lua_ext")?; // Ext library such as lua_ext_tab_len, etc.
-    patch.apply("lua_load_no_bc")?; // Treat all inputs as strings (no bytecode allowed).
-    patch.apply("windows_set_lib_names")?; // Allow setting LJLIBNAME and LJDLLNAME from
-    // environment variables.
+const PATCH_LIST: &[&str] = &[
+    "lib_init", // Disable unsafe/un-sandboxed libs.
+    "lj_disable_jit", // Disable global JIT state changes from Lua code.
+    "disable_lua_load", // Disable loadstring, dostring, etc from base lib.
+    "lua_ext", // Ext library such as lua_ext_tab_len, etc.
+    "lua_load_no_bc", // Treat all inputs as strings (no bytecode allowed).
+    "windows_set_lib_names" // Allow setting LJLIBNAME and LJDLLNAME from environment variables.
+];
 
-    // Copy the source directory to the build directory.
-    println!("{}", out_path.display());
-    if !out_path.is_dir() {
-        bp3d_os::fs::copy(&Path::new("..").join("LuaJIT"), &out_path, CopyOptions::new().exclude(OsStr::new(".git")))?;
-    }
-    Ok(())
+fn apply_patches(out_path: &Path) -> std::io::Result<Vec<String>> {
+    Patch::new(&Path::new("..").join("patch"), &Path::new("..").join("LuaJIT"))?
+        .apply_all(PATCH_LIST.iter().map(|v| *v), out_path)
 }
 
 fn run_build(build_dir: &Path) -> std::io::Result<Lib> {
