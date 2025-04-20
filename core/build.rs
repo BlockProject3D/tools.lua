@@ -29,8 +29,8 @@
 use std::ffi::OsStr;
 use std::path::{Path, PathBuf};
 use bp3d_os::fs::CopyOptions;
-use bp3d_lua_build::{BuildInfo, Patch, Target};
-use bp3d_lua_build::build::{Build, Lib, Linux, MacOS, Windows};
+use bp3d_lua_build::{BuildInfo, BuildInfoBase, Patch};
+use bp3d_lua_build::build::Lib;
 
 #[cfg(feature = "dynamic")]
 const DYNAMIC: bool = true;
@@ -58,13 +58,13 @@ fn apply_patches(out_path: &Path) -> std::io::Result<()> {
 fn run_build(build_dir: &Path) -> std::io::Result<Lib> {
     let manifest = std::env::var_os("CARGO_MANIFEST_PATH").map(PathBuf::from).expect("Failed to read manifest path");
     let target_name = std::env::var("TARGET").expect("Failed to read build target");
-    let info = BuildInfo::new(DYNAMIC, target_name, build_dir.into(), &manifest)?;
-    match info.target() {
-        Target::MacAmd64 | Target::MacAarch64 => MacOS::run(&info),
-        Target::Linux => Linux::run(&info),
-        Target::Windows => Windows::run(&info),
-        Target::Unsupported => panic!("attempt to build on currently unsupported target")
-    }
+    let base = BuildInfoBase {
+        dynamic: DYNAMIC,
+        target_name: &target_name,
+        build_dir,
+        manifest: &manifest
+    };
+    BuildInfo::new(base)?.build()
 }
 
 fn main() {

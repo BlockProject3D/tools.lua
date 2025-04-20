@@ -28,42 +28,48 @@
 
 use std::io::{Error, ErrorKind};
 use std::path::{Path, PathBuf};
+use crate::build::{Build, Lib, Linux, MacOS, Windows};
 use crate::Target;
 
-pub struct BuildInfo {
-    build_dir: PathBuf,
+pub struct BuildInfoBase<'a> {
+    pub dynamic: bool,
+    pub target_name: &'a str,
+    pub build_dir: &'a Path,
+    pub manifest: &'a Path
+}
+
+pub struct BuildInfo<'a> {
+    base: BuildInfoBase<'a>,
     target_dir: PathBuf,
     crate_version: String,
-    target_name: String,
-    dynamic: bool
 }
 
 const VERSION: &str = "version = \"";
 
-impl BuildInfo {
-    pub fn new(dynamic: bool, target_name: String, build_dir: PathBuf, path_to_manifest: &Path) -> std::io::Result<Self> {
-        let manifest = std::fs::read_to_string(path_to_manifest)?;
-        let target_dir = build_dir.join("../../../..");
+impl<'a> BuildInfo<'a> {
+    pub fn new(base: BuildInfoBase<'a>) -> std::io::Result<Self> {
+        let manifest = std::fs::read_to_string(&base.manifest)?;
+        let target_dir = base.build_dir.join("../../../..");
         let start = manifest.find(VERSION).ok_or(Error::new(ErrorKind::Other, "failed to find crate version"))?;
         let version = &manifest[start + VERSION.len()..];
         let end = version.find("\"").ok_or(Error::new(ErrorKind::Other, "failed to find crate version"))?;
-        Ok(Self { dynamic, target_name, build_dir, target_dir, crate_version: String::from(&version[..end]) })
+        Ok(Self { base, target_dir, crate_version: String::from(&version[..end]) })
     }
 
     pub fn build_dir(&self) -> &Path {
-        &self.build_dir
+        &self.base.build_dir
     }
 
     pub fn dynamic(&self) -> bool {
-        self.dynamic
+        self.base.dynamic
     }
 
     pub fn target(&self) -> Target {
-        Target::get(&self.target_name)
+        Target::get(&self.base.target_name)
     }
 
     pub fn target_name(&self) -> &str {
-        &self.target_name
+        &self.base.target_name
     }
 
     pub fn target_dir(&self) -> &Path {
@@ -72,5 +78,14 @@ impl BuildInfo {
 
     pub fn version(&self) -> &str {
         &self.crate_version
+    }
+
+    pub fn build(self) -> std::io::Result<Lib> {
+        match self.target() {
+            Target::MacAmd64 | Target::MacAarch64 => MacOS::run(&self),
+            Target::Linux => Linux::run(&self),
+            Target::Windows => Windows::run(&self),
+            Target::Unsupported => Err(Error::new(ErrorKind::Other, "unsupported target"))
+        }
     }
 }

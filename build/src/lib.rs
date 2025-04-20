@@ -34,4 +34,4 @@ pub mod build;
 
 pub use crate::patch::Patch;
 pub use crate::target::Target;
-pub use crate::info::BuildInfo;
+pub use crate::info::{BuildInfo, BuildInfoBase};
