@@ -28,6 +28,9 @@
 
 //! A module to simplify declaring functions with associated to a context (rust object).
 
+//TODO: Investigate if wrapping the raw pointer in a userdata instead of a lightuserdata is any
+// faster.
+
 use std::ffi::c_void;
 use std::marker::PhantomData;
 use std::ops::{Deref, DerefMut};
