@@ -63,7 +63,7 @@ impl Build for Linux {
         } else {
             Lib {
                 name: "luajit".into(),
-                path: info.build_dir().into(),
+                path: info.build_dir().join("src"),
                 dynamic: false
             }
         }
