@@ -32,7 +32,7 @@ use std::thread::ThreadId;
 use std::time::Duration;
 use bp3d_debug::{error, warning};
 use libc::{c_int, pthread_kill, pthread_self, pthread_t, SIGUSR1};
-use crate::ffi::lua::{lua_error, lua_pushstring, lua_sethook, Debug, Hook, State, MASKCOUNT};
+use crate::ffi::lua::{lua_error, lua_pushstring, lua_sethook, Debug, Hook, State, MASKCALL, MASKCOUNT, MASKLINE, MASKRET};
 use crate::vm::core::interrupt::Error;
 use crate::vm::RootVm;
 
@@ -80,7 +80,7 @@ extern "C" fn signal_handler(_: c_int) {
                     return;
                 }
                 // Run the hook 1 instruction later.
-                unsafe { lua_sethook(v.l, lua_interrupt, MASKCOUNT, 1) };
+                unsafe { lua_sethook(v.l, lua_interrupt, MASKCOUNT | MASKCALL | MASKLINE | MASKRET, 1) };
                 v.return_chan.send(Ok(())).unwrap();
             }
         }
