@@ -37,7 +37,8 @@ pub struct Windows;
 
 impl Build for Windows {
     fn build(info: &BuildInfo, runner: &CommandRunner) -> std::io::Result<()> {
-        let mut cmd = Command::new("msvcbuild.bat");
+        let mut cmd = Command::new("cmd");
+        cmd.arg("/C").arg("msvcbuild.bat");
         let cl = cc::windows_registry::find_tool(info.target_name(), "cl.exe")
             .ok_or(Error::new(ErrorKind::Other, "unable to find cl.exe"))?;
         for (k, v) in cl.env() {
@@ -67,7 +68,7 @@ impl Build for Windows {
     }
 
     fn get_linked_lib(info: &BuildInfo) -> Lib {
-        let libname = format!("libbp3d-luajit-{}.lib", info.version());
+        let libname = format!("libbp3d-luajit-{}", info.version());
         Lib {
             name: libname,
             path: info.build_dir().join("src"),
