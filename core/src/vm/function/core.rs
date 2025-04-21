@@ -26,18 +26,21 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::borrow::Cow;
-use std::error::Error;
-use std::slice;
+use crate::ffi::ext::{lua_ext_fast_checkinteger, lua_ext_fast_checknumber};
 use crate::ffi::laux::{luaL_checklstring, luaL_checkudata, luaL_setmetatable, luaL_testudata};
-use crate::ffi::lua::{lua_newuserdata, lua_pushboolean, lua_pushinteger, lua_pushlstring, lua_pushnil, lua_pushnumber, lua_type, Integer, Number, Type};
-use crate::ffi::ext::{lua_ext_fast_checknumber, lua_ext_fast_checkinteger};
+use crate::ffi::lua::{
+    lua_newuserdata, lua_pushboolean, lua_pushinteger, lua_pushlstring, lua_pushnil,
+    lua_pushnumber, lua_type, Integer, Number, Type,
+};
 use crate::util::SimpleDrop;
 use crate::vm::function::{FromParam, IntoParam};
 use crate::vm::userdata::UserData;
 use crate::vm::util::{lua_rust_error, LuaType, TypeName};
 use crate::vm::value::FromLua;
 use crate::vm::Vm;
+use std::borrow::Cow;
+use std::error::Error;
+use std::slice;
 
 impl<'a, T: FromParam<'a> + SimpleDrop> FromParam<'a> for Option<T> {
     unsafe fn from_param(vm: &'a Vm, index: i32) -> Self {
@@ -61,14 +64,14 @@ impl<'a, T: FromParam<'a> + SimpleDrop> FromParam<'a> for Option<T> {
     }
 }
 
-impl LuaType for &str { }
+impl LuaType for &str {}
 
 impl<'a> FromParam<'a> for &'a str {
     unsafe fn from_param(vm: &'a Vm, index: i32) -> Self {
         let mut len: usize = 0;
         let str = luaL_checklstring(vm.as_ptr(), index, &mut len as _);
         let slice = slice::from_raw_parts(str as *const u8, len);
-        match std::str::from_utf8(slice){
+        match std::str::from_utf8(slice) {
             Ok(v) => v,
             Err(e) => {
                 lua_rust_error(vm.as_ptr(), e);
@@ -101,7 +104,9 @@ impl<'a> FromParam<'a> for &'a [u8] {
 unsafe impl IntoParam for &str {
     #[inline(always)]
     fn into_param(self, vm: &Vm) -> u16 {
-        unsafe { lua_pushlstring(vm.as_ptr(), self.as_ptr() as _, self.len()); }
+        unsafe {
+            lua_pushlstring(vm.as_ptr(), self.as_ptr() as _, self.len());
+        }
         1
     }
 }
@@ -109,7 +114,9 @@ unsafe impl IntoParam for &str {
 unsafe impl IntoParam for &[u8] {
     #[inline(always)]
     fn into_param(self, vm: &Vm) -> u16 {
-        unsafe { lua_pushlstring(vm.as_ptr(), self.as_ptr() as _, self.len()); }
+        unsafe {
+            lua_pushlstring(vm.as_ptr(), self.as_ptr() as _, self.len());
+        }
         1
     }
 }
@@ -128,11 +135,13 @@ unsafe impl IntoParam for Vec<u8> {
 }
 
 unsafe impl<'a, T: IntoParam + Clone> IntoParam for Cow<'a, T>
-    where &'a T: IntoParam {
+where
+    &'a T: IntoParam,
+{
     fn into_param(self, vm: &Vm) -> u16 {
         match self {
             Cow::Borrowed(v) => v.into_param(vm),
-            Cow::Owned(v) => v.into_param(vm)
+            Cow::Owned(v) => v.into_param(vm),
         }
     }
 }
@@ -228,11 +237,9 @@ unsafe impl<T: IntoParam, E: Error> IntoParam for Result<T, E> {
     fn into_param(self, vm: &Vm) -> u16 {
         match self {
             Ok(v) => v.into_param(vm),
-            Err(e) => {
-                unsafe {
-                    lua_rust_error(vm.as_ptr(), e);
-                }
-            }
+            Err(e) => unsafe {
+                lua_rust_error(vm.as_ptr(), e);
+            },
         }
     }
 }
@@ -240,13 +247,11 @@ unsafe impl<T: IntoParam, E: Error> IntoParam for Result<T, E> {
 unsafe impl<T: IntoParam> IntoParam for Option<T> {
     fn into_param(self, vm: &Vm) -> u16 {
         match self {
-            None => {
-                unsafe {
-                    lua_pushnil(vm.as_ptr());
-                    1
-                }
-            }
-            Some(v) => v.into_param(vm)
+            None => unsafe {
+                lua_pushnil(vm.as_ptr());
+                1
+            },
+            Some(v) => v.into_param(vm),
         }
     }
 }
@@ -260,7 +265,9 @@ unsafe impl IntoParam for () {
 
 impl<T: UserData> LuaType for &T {
     fn lua_type() -> Vec<TypeName> {
-        vec![TypeName::Some(unsafe { T::CLASS_NAME.to_str().unwrap_unchecked() })]
+        vec![TypeName::Some(unsafe {
+            T::CLASS_NAME.to_str().unwrap_unchecked()
+        })]
     }
 }
 

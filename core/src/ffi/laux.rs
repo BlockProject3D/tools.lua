@@ -26,8 +26,8 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::ffi::{c_char, c_int, c_void};
 use crate::ffi::lua::{Integer, Number, State, ThreadStatus, Type};
+use std::ffi::{c_char, c_int, c_void};
 
 //--------------------
 // State manipulation
@@ -53,7 +53,12 @@ extern "C" {
 //---------------
 extern "C" {
     pub fn luaL_checklstring(l: State, numarg: c_int, len: *mut usize) -> *const c_char;
-    pub fn luaL_optlstring(l: State, numarg: c_int, def: *const c_char, len: *mut usize) -> *const c_char;
+    pub fn luaL_optlstring(
+        l: State,
+        numarg: c_int,
+        def: *const c_char,
+        len: *mut usize,
+    ) -> *const c_char;
 
     pub fn luaL_checknumber(l: State, numarg: c_int) -> Number;
     pub fn luaL_optnumber(l: State, narg: c_int, def: Number) -> Number;
@@ -85,7 +90,12 @@ extern "C" {
 extern "C" {
     pub fn luaL_where(l: State, lvl: c_int);
 
-    pub fn luaL_checkoption(l: State, narg: c_int, def: *const c_char, lst: *const *const c_char) -> c_int;
+    pub fn luaL_checkoption(
+        l: State,
+        narg: c_int,
+        def: *const c_char,
+        lst: *const *const c_char,
+    ) -> c_int;
 }
 
 //----------
@@ -104,6 +114,11 @@ extern "C" {
 //------------------
 extern "C" {
     pub fn luaL_loadfile(l: State, filename: *const c_char) -> ThreadStatus;
-    pub fn luaL_loadbuffer(l: State, buff: *const c_char, sz: usize, name: *const c_char) -> ThreadStatus;
+    pub fn luaL_loadbuffer(
+        l: State,
+        buff: *const c_char,
+        sz: usize,
+        name: *const c_char,
+    ) -> ThreadStatus;
     pub fn luaL_loadstring(l: State, s: *const c_char) -> ThreadStatus;
 }

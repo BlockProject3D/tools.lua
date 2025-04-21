@@ -26,12 +26,12 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-mod interface;
-mod error;
-pub mod core;
 mod any;
 pub mod case;
+pub mod core;
+mod error;
+mod interface;
 
+pub use any::AnyUserData;
 pub use error::Error;
 pub use interface::*;
-pub use any::AnyUserData;

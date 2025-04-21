@@ -26,37 +26,45 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::time::Instant;
-use bp3d_os::time::{LocalUtcOffset, MonthExt};
-use bp3d_util::simple_error;
-use time::{Date, Month, OffsetDateTime, PrimitiveDateTime, Time, UtcOffset};
-use time::format_description::parse;
 use crate::decl_lib_func;
 use crate::libs::Lib;
-use crate::vm::function::IntoParam;
 use crate::vm::function::types::RFunction;
+use crate::vm::function::IntoParam;
 use crate::vm::namespace::Namespace;
 use crate::vm::table::Table;
 use crate::vm::Vm;
+use bp3d_os::time::{LocalUtcOffset, MonthExt};
+use bp3d_util::simple_error;
+use std::time::Instant;
+use time::format_description::parse;
+use time::{Date, Month, OffsetDateTime, PrimitiveDateTime, Time, UtcOffset};
 
 enum TableOrString<'a> {
     Table(Table<'a>),
-    String(String)
+    String(String),
 }
 
 unsafe impl IntoParam for TableOrString<'_> {
     fn into_param(self, vm: &Vm) -> u16 {
         match self {
             TableOrString::Table(t) => t.into_param(vm),
-            TableOrString::String(s) => s.into_param(vm)
+            TableOrString::String(s) => s.into_param(vm),
         }
     }
 }
 
 fn get_std_offset() -> UtcOffset {
     let now = OffsetDateTime::now_utc();
-    let jan = PrimitiveDateTime::new(Date::from_calendar_date(now.year(), Month::January, 1).unwrap(), Time::MIDNIGHT).assume_utc();
-    let jul = PrimitiveDateTime::new(Date::from_calendar_date(now.year(), Month::July, 1).unwrap(), Time::MIDNIGHT).assume_utc();
+    let jan = PrimitiveDateTime::new(
+        Date::from_calendar_date(now.year(), Month::January, 1).unwrap(),
+        Time::MIDNIGHT,
+    )
+    .assume_utc();
+    let jul = PrimitiveDateTime::new(
+        Date::from_calendar_date(now.year(), Month::July, 1).unwrap(),
+        Time::MIDNIGHT,
+    )
+    .assume_utc();
     let offset_jan = UtcOffset::local_offset_at(jan).unwrap();
     let offset_jul = UtcOffset::local_offset_at(jul).unwrap();
     std::cmp::max(offset_jan, offset_jul)
@@ -78,7 +86,7 @@ const REPLACEMENTS: &[(&str, &str)] = &[
     ("%S", "[second]"),
     ("%w", "[weekday]"),
     ("%Y", "[year]"),
-    ("%y", "[year repr:last_two]")
+    ("%y", "[year repr:last_two]"),
 ];
 
 decl_lib_func! {
@@ -127,7 +135,11 @@ fn get_time_from_table(table: Table) -> Result<OffsetDateTime, TimeFormatError> 
     let year: i32 = table.get_field(c"year")?;
     let month: u8 = table.get_field(c"month")?;
     let day: u8 = table.get_field(c"day")?;
-    let date = Date::from_calendar_date(year, Month::from_index(month).ok_or(TimeFormatError::InvalidMonthIndex(month))?, day)?;
+    let date = Date::from_calendar_date(
+        year,
+        Month::from_index(month).ok_or(TimeFormatError::InvalidMonthIndex(month))?,
+        day,
+    )?;
     let hour: Option<u8> = table.get_field(c"hour")?;
     let minute: Option<u8> = table.get_field(c"min")?;
     let second: Option<u8> = table.get_field(c"sec")?;
@@ -189,7 +201,7 @@ impl Lib for Compat {
             ("time", RFunction::wrap(time)),
             ("clock", RFunction::wrap(clock)),
             ("difftime", RFunction::wrap(difftime)),
-            ("getenv", RFunction::wrap(getenv))
+            ("getenv", RFunction::wrap(getenv)),
         ])
     }
 }

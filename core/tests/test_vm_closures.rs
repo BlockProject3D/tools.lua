@@ -34,7 +34,7 @@ use bp3d_lua::vm::RootVm;
 
 struct TestContext {
     value: i32,
-    value3: Vec<u64>
+    value3: Vec<u64>,
 }
 
 decl_closure! {
@@ -78,9 +78,7 @@ fn test_vm_fast_closure() {
 fn test_vm_rust_closure() {
     let mut vm = RootVm::new();
     let top = vm.top();
-    let closure = RClosure::from_rust(&mut vm, |val: f32| {
-        format!("this is a test: {}", val)
-    });
+    let closure = RClosure::from_rust(&mut vm, |val: f32| format!("this is a test: {}", val));
     vm.set_global(c"test", closure).unwrap();
     assert_eq!(top, vm.top());
     let s: &str = vm.run_code(c"return test(42.42)").unwrap();
@@ -94,16 +92,21 @@ fn test_vm_context() {
     let ctx = ContextMut::new(&vm);
     {
         let mut namespace = Namespace::new(&vm, "context").unwrap();
-        namespace.add([
-            ("push", context_push(ctx)),
-            ("pop", context_pop(ctx)),
-            ("set_value", context_set_value(ctx))
-        ]).unwrap();
+        namespace
+            .add([
+                ("push", context_push(ctx)),
+                ("pop", context_pop(ctx)),
+                ("set_value", context_set_value(ctx)),
+            ])
+            .unwrap();
     }
     assert_eq!(top, vm.top());
     let res = vm.run_code::<()>(c"context.set_value(42)");
     assert!(res.is_err());
-    assert_eq!(res.unwrap_err().into_runtime().unwrap().msg(), "[string \"context.set_value(42)\"]:1: Context is not available in this function.");
+    assert_eq!(
+        res.unwrap_err().into_runtime().unwrap().msg(),
+        "[string \"context.set_value(42)\"]:1: Context is not available in this function."
+    );
     let mut obj = TestContext {
         value: 0,
         value3: vec![],
@@ -115,7 +118,10 @@ fn test_vm_context() {
     }
     let res = vm.run_code::<()>(c"context.set_value(84)");
     assert!(res.is_err());
-    assert_eq!(res.unwrap_err().into_runtime().unwrap().msg(), "[string \"context.set_value(84)\"]:1: Context is not available in this function.");
+    assert_eq!(
+        res.unwrap_err().into_runtime().unwrap().msg(),
+        "[string \"context.set_value(84)\"]:1: Context is not available in this function."
+    );
     assert_eq!(obj.value, 42);
     {
         let _obj = cell.bind(&mut obj);

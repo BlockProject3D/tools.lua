@@ -26,10 +26,10 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use crate::{decl_lib_func, decl_userdata};
 use crate::libs::Lib;
 use crate::vm::function::types::RFunction;
 use crate::vm::namespace::Namespace;
+use crate::{decl_lib_func, decl_userdata};
 
 struct Wrapper(bp3d_os::time::Instant);
 
@@ -53,7 +53,9 @@ impl Lib for Instant {
     const NAMESPACE: &'static str = "bp3d.os.instant";
 
     fn load(&self, namespace: &mut Namespace) -> crate::vm::Result<()> {
-        namespace.vm().register_userdata::<Wrapper>(crate::vm::userdata::case::Camel)?;
+        namespace
+            .vm()
+            .register_userdata::<Wrapper>(crate::vm::userdata::case::Camel)?;
         namespace.add([("now", RFunction::wrap(now))])
     }
 }

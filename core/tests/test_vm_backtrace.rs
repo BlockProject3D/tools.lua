@@ -26,11 +26,11 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use bp3d_util::simple_error;
 use bp3d_lua::decl_lib_func;
 use bp3d_lua::vm::function::types::RFunction;
-use bp3d_lua::vm::RootVm;
 use bp3d_lua::vm::value::function::LuaFunction;
+use bp3d_lua::vm::RootVm;
+use bp3d_util::simple_error;
 
 simple_error! {
     pub Error {
@@ -48,8 +48,10 @@ decl_lib_func! {
 fn test_vm_backtrace() {
     let vm = RootVm::new();
     let top = vm.top();
-    vm.set_global(c"error_func", RFunction::wrap(error_func)).unwrap();
-    vm.run_code::<()>(c"
+    vm.set_global(c"error_func", RFunction::wrap(error_func))
+        .unwrap();
+    vm.run_code::<()>(
+        c"
         local function raise()
             error_func()
         end
@@ -61,7 +63,9 @@ fn test_vm_backtrace() {
         function main()
             a()
         end
-    ").unwrap();
+    ",
+    )
+    .unwrap();
     let func: LuaFunction = vm.get_global(c"main").unwrap();
     let err = func.call::<()>(()).unwrap_err().into_runtime().unwrap();
     assert_eq!(err.msg(), "rust error: useless function called");

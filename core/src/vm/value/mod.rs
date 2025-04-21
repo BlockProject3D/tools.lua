@@ -26,10 +26,10 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-mod interface;
+pub mod any;
 mod core;
 pub mod function;
+mod interface;
 pub mod util;
-pub mod any;
 
 pub use interface::*;

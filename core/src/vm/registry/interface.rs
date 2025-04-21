@@ -33,16 +33,16 @@ pub trait RegistryValue: 'static {
     type Value<'a>;
 
     /// Reads the upvalue at the given location on the lua stack.
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `vm`: the [Vm] to read from.
     /// * `index`: the index of the value. This index is not guaranteed to be absolute.
-    /// 
-    /// returns: Self::Value 
-    /// 
+    ///
+    /// returns: Self::Value
+    ///
     /// # Safety
-    /// 
+    ///
     /// This function assumes the value at the top of the stack is of type `Self`. This function is
     /// UB otherwise.
     unsafe fn to_lua_value<'a>(vm: &'a Vm, index: i32) -> Self::Value<'a>;
@@ -53,9 +53,9 @@ pub trait Registry: Sized {
     type RegistryValue: RegistryValue;
 
     /// Register this value into the registry.
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `vm`: the [Vm] to attach this value to.
     ///
     /// returns: RegistryKey<Self::RegistryValue>
@@ -67,7 +67,11 @@ pub trait Registry: Sized {
     ///
     /// * `vm`: the [Vm] to attach this value to.
     /// * `old`: the old registry key to be replaced.
-    fn registry_swap(self, vm: &Vm, old: RegistryKey<Self::RegistryValue>) -> RegistryKey<Self::RegistryValue> {
+    fn registry_swap(
+        self,
+        vm: &Vm,
+        old: RegistryKey<Self::RegistryValue>,
+    ) -> RegistryKey<Self::RegistryValue> {
         old.delete(vm);
         self.registry_put(vm)
     }

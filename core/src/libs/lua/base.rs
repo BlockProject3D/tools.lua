@@ -35,7 +35,7 @@ const PATCH_LIST: &[&str] = &[
     "lib_init",
     "lj_disable_jit",
     "lua_ext",
-    "lua_load_no_bc"
+    "lua_load_no_bc",
 ];
 
 pub struct Base;
@@ -44,10 +44,7 @@ impl Lib for Base {
     const NAMESPACE: &'static str = "bp3d.lua";
 
     fn load(&self, namespace: &mut Namespace) -> crate::vm::Result<()> {
-        namespace.add([
-            ("name", "bp3d-lua"),
-            ("version", env!("CARGO_PKG_VERSION"))
-        ])?;
+        namespace.add([("name", "bp3d-lua"), ("version", env!("CARGO_PKG_VERSION"))])?;
         let mut patches = Table::with_capacity(namespace.vm(), PATCH_LIST.len(), 0);
         for (i, name) in PATCH_LIST.into_iter().enumerate() {
             // Lua indices starts at 1 not 0.

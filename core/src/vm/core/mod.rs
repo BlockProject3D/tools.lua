@@ -26,15 +26,15 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+pub mod destructor;
 mod interface;
+pub mod iter;
+pub mod load;
 pub mod util;
 mod vm;
-pub mod load;
-pub mod iter;
-pub mod destructor;
 
 #[cfg(feature = "interrupt")]
 pub mod interrupt;
 
-pub use vm::{Vm, RootVm};
 pub use interface::*;
+pub use vm::{RootVm, Vm};

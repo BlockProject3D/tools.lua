@@ -26,28 +26,43 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-mod parser;
 mod gen;
+mod parser;
 
+use crate::gen::{FromParam, IntoParam, LuaType};
+use crate::parser::Parser;
 use proc_macro::TokenStream;
 use syn::{parse_macro_input, DeriveInput};
-use crate::parser::Parser;
-use crate::gen::{FromParam, IntoParam, LuaType};
 
 #[proc_macro_derive(FromParam)]
 pub fn from_param(input: TokenStream) -> TokenStream {
-    let DeriveInput { ident, data, generics, .. } = parse_macro_input!(input);
+    let DeriveInput {
+        ident,
+        data,
+        generics,
+        ..
+    } = parse_macro_input!(input);
     FromParam::new(ident, generics).parse(data).into()
 }
 
 #[proc_macro_derive(IntoParam)]
 pub fn into_param(input: TokenStream) -> TokenStream {
-    let DeriveInput { ident, data, generics, .. } = parse_macro_input!(input);
+    let DeriveInput {
+        ident,
+        data,
+        generics,
+        ..
+    } = parse_macro_input!(input);
     IntoParam::new(ident, generics).parse(data).into()
 }
 
 #[proc_macro_derive(LuaType)]
 pub fn lua_type(input: TokenStream) -> TokenStream {
-    let DeriveInput { ident, data, generics, .. } = parse_macro_input!(input);
+    let DeriveInput {
+        ident,
+        data,
+        generics,
+        ..
+    } = parse_macro_input!(input);
     LuaType::new(ident, generics).parse(data).into()
 }

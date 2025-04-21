@@ -26,25 +26,31 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::fmt::{Debug, Display};
 use crate::ffi::ext::{lua_ext_tab_len, MSize};
-use crate::ffi::lua::{lua_createtable, lua_getfield, lua_gettable, lua_gettop, lua_objlen, lua_pushvalue, lua_rawgeti, lua_rawseti, lua_setfield, lua_setmetatable, lua_settable, lua_topointer};
+use crate::ffi::lua::{
+    lua_createtable, lua_getfield, lua_gettable, lua_gettop, lua_objlen, lua_pushvalue,
+    lua_rawgeti, lua_rawseti, lua_setfield, lua_setmetatable, lua_settable, lua_topointer,
+};
 use crate::util::AnyStr;
 use crate::vm::core::util::{pcall, push_error_handler};
 use crate::vm::table::iter::Iter;
-use crate::vm::value::{FromLua, IntoLua};
 use crate::vm::value::util::ensure_single_into_lua;
+use crate::vm::value::{FromLua, IntoLua};
 use crate::vm::Vm;
+use std::fmt::{Debug, Display};
 
 pub struct Table<'a> {
     vm: &'a Vm,
-    index: i32
+    index: i32,
 }
 
 impl Clone for Table<'_> {
     fn clone(&self) -> Self {
         unsafe { lua_pushvalue(self.vm.as_ptr(), self.index) };
-        Table { vm: self.vm, index: self.vm.top() }
+        Table {
+            vm: self.vm,
+            index: self.vm.top(),
+        }
     }
 }
 
@@ -56,11 +62,15 @@ impl PartialEq for Table<'_> {
     }
 }
 
-impl Eq for Table<'_> { }
+impl Eq for Table<'_> {}
 
 impl Display for Table<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "table@{:X}", unsafe { lua_topointer(self.vm.as_ptr(), self.index) } as usize)
+        write!(
+            f,
+            "table@{:X}",
+            unsafe { lua_topointer(self.vm.as_ptr(), self.index) } as usize
+        )
     }
 }
 
@@ -127,7 +137,11 @@ impl<'a> Table<'a> {
         self.len() == 0
     }
 
-    pub fn call_function<'b, T: IntoLua, R: FromLua<'b>>(&'b self, name: impl AnyStr, value: T) -> crate::vm::Result<R> {
+    pub fn call_function<'b, T: IntoLua, R: FromLua<'b>>(
+        &'b self,
+        name: impl AnyStr,
+        value: T,
+    ) -> crate::vm::Result<R> {
         let pos = unsafe { push_error_handler(self.vm.as_ptr()) };
         unsafe { lua_getfield(self.vm.as_ptr(), self.index, name.to_str()?.as_ptr()) };
         let num_values = value.into_lua(self.vm);
@@ -135,7 +149,11 @@ impl<'a> Table<'a> {
         R::from_lua(self.vm, -(R::num_values() as i32))
     }
 
-    pub fn call_method<'b, T: IntoLua, R: FromLua<'b>>(&'b self, name: impl AnyStr, value: T) -> crate::vm::Result<R> {
+    pub fn call_method<'b, T: IntoLua, R: FromLua<'b>>(
+        &'b self,
+        name: impl AnyStr,
+        value: T,
+    ) -> crate::vm::Result<R> {
         let pos = unsafe { push_error_handler(self.vm.as_ptr()) };
         unsafe { lua_getfield(self.vm.as_ptr(), self.index, name.to_str()?.as_ptr()) };
         unsafe { lua_pushvalue(self.vm.as_ptr(), self.index) };

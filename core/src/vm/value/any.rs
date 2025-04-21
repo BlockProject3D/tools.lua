@@ -26,18 +26,18 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::fmt::Display;
 use crate::ffi::lua::{lua_pushnil, lua_toboolean, lua_tonumber, lua_type, Type};
 use crate::util::SimpleDrop;
 use crate::vm::error::Error;
 use crate::vm::function::{FromParam, IntoParam};
-use crate::vm::value::{FromLua, IntoLua};
-use crate::vm::value::function::LuaFunction;
 use crate::vm::table::Table;
 use crate::vm::thread::Thread;
 use crate::vm::userdata::AnyUserData;
 use crate::vm::util::{lua_rust_error, LuaType};
+use crate::vm::value::function::LuaFunction;
+use crate::vm::value::{FromLua, IntoLua};
 use crate::vm::Vm;
+use std::fmt::Display;
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum AnyValue<'a> {
@@ -50,10 +50,10 @@ pub enum AnyValue<'a> {
     Function(LuaFunction<'a>),
     Table(Table<'a>),
     UserData(AnyUserData<'a>),
-    Thread(Thread<'a>)
+    Thread(Thread<'a>),
 }
 
-impl Eq for AnyValue<'_> { }
+impl Eq for AnyValue<'_> {}
 
 impl Display for AnyValue<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -67,7 +67,7 @@ impl Display for AnyValue<'_> {
             AnyValue::Function(v) => write!(f, "{}", v),
             AnyValue::Table(v) => write!(f, "{}", v),
             AnyValue::UserData(v) => write!(f, "{}", v),
-            AnyValue::Thread(v) => write!(f, "{}", v)
+            AnyValue::Thread(v) => write!(f, "{}", v),
         }
     }
 }
@@ -84,7 +84,7 @@ impl AnyValue<'_> {
             AnyValue::Function(_) => Type::Function,
             AnyValue::Table(_) => Type::Table,
             AnyValue::UserData(_) => Type::Userdata,
-            AnyValue::Thread(_) => Type::Thread
+            AnyValue::Thread(_) => Type::Thread,
         }
     }
 }
@@ -96,7 +96,7 @@ unsafe impl IntoParam for AnyValue<'_> {
             AnyValue::Nil => {
                 unsafe { lua_pushnil(vm.as_ptr()) };
                 1
-            },
+            }
             AnyValue::Number(v) => v.into_lua(vm),
             AnyValue::Boolean(v) => v.into_lua(vm),
             AnyValue::String(v) => v.into_lua(vm),
@@ -104,7 +104,7 @@ unsafe impl IntoParam for AnyValue<'_> {
             AnyValue::Function(v) => v.into_lua(vm),
             AnyValue::Table(v) => v.into_lua(vm),
             AnyValue::UserData(_) => 0,
-            AnyValue::Thread(_) => 0
+            AnyValue::Thread(_) => 0,
         }
     }
 }
@@ -133,12 +133,16 @@ impl<'a> FromLua<'a> for AnyValue<'a> {
                 let buffer: &[u8] = unsafe { FromLua::from_lua_unchecked(vm, index) };
                 match std::str::from_utf8(buffer) {
                     Ok(s) => Ok(AnyValue::String(s)),
-                    Err(_) => Ok(AnyValue::Buffer(buffer))
+                    Err(_) => Ok(AnyValue::Buffer(buffer)),
                 }
             }
             Type::Table => Ok(unsafe { AnyValue::Table(FromLua::from_lua_unchecked(vm, index)) }),
-            Type::Function => Ok(unsafe { AnyValue::Function(FromLua::from_lua_unchecked(vm, index)) }),
-            Type::Userdata => Ok(unsafe { AnyValue::UserData(FromLua::from_lua_unchecked(vm, index)) }),
+            Type::Function => {
+                Ok(unsafe { AnyValue::Function(FromLua::from_lua_unchecked(vm, index)) })
+            }
+            Type::Userdata => {
+                Ok(unsafe { AnyValue::UserData(FromLua::from_lua_unchecked(vm, index)) })
+            }
             Type::Thread => Ok(unsafe { AnyValue::Thread(FromLua::from_lua_unchecked(vm, index)) }),
         }
     }
@@ -146,14 +150,14 @@ impl<'a> FromLua<'a> for AnyValue<'a> {
 
 unsafe impl SimpleDrop for AnyValue<'_> {}
 
-impl LuaType for AnyValue<'_> { }
+impl LuaType for AnyValue<'_> {}
 
 impl<'a> FromParam<'a> for AnyValue<'a> {
     #[inline(always)]
     unsafe fn from_param(vm: &'a Vm, index: i32) -> Self {
         match FromLua::from_lua(vm, index) {
             Ok(v) => v,
-            Err(e) => lua_rust_error(vm.as_ptr(), e)
+            Err(e) => lua_rust_error(vm.as_ptr(), e),
         }
     }
 

@@ -26,20 +26,23 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use crate::ffi::lua::{
+    lua_error, lua_pushstring, lua_sethook, Debug, Hook, State, MASKCALL, MASKCOUNT, MASKLINE,
+    MASKRET,
+};
+use crate::vm::core::interrupt::Error;
+use crate::vm::RootVm;
+use bp3d_debug::{error, warning};
+use libc::{c_int, pthread_kill, pthread_self, pthread_t, SIGUSR1};
 use std::mem::MaybeUninit;
 use std::sync::{Mutex, Once};
 use std::thread::ThreadId;
 use std::time::Duration;
-use bp3d_debug::{error, warning};
-use libc::{c_int, pthread_kill, pthread_self, pthread_t, SIGUSR1};
-use crate::ffi::lua::{lua_error, lua_pushstring, lua_sethook, Debug, Hook, State, MASKCALL, MASKCOUNT, MASKLINE, MASKRET};
-use crate::vm::core::interrupt::Error;
-use crate::vm::RootVm;
 
 pub struct Signal {
     l: State,
     thread: ThreadId,
-    th: pthread_t
+    th: pthread_t,
 }
 
 struct SigState {
@@ -63,7 +66,12 @@ extern "C-unwind" fn lua_interrupt(l: State, _: Debug) {
         }
     }
     unsafe {
-        lua_sethook(l, std::mem::transmute::<*const (), Hook>(std::ptr::null()), 0, 0);
+        lua_sethook(
+            l,
+            std::mem::transmute::<*const (), Hook>(std::ptr::null()),
+            0,
+            0,
+        );
         lua_pushstring(l, c"interrupted".as_ptr());
         lua_error(l);
     }
@@ -80,7 +88,14 @@ extern "C" fn signal_handler(_: c_int) {
                     return;
                 }
                 // Run the hook 1 instruction later.
-                unsafe { lua_sethook(v.l, lua_interrupt, MASKCOUNT | MASKCALL | MASKLINE | MASKRET, 1) };
+                unsafe {
+                    lua_sethook(
+                        v.l,
+                        lua_interrupt,
+                        MASKCOUNT | MASKCALL | MASKLINE | MASKRET,
+                        1,
+                    )
+                };
                 v.return_chan.send(Ok(())).unwrap();
             }
         }
@@ -103,18 +118,16 @@ impl Signal {
             let ret = unsafe { libc::sigaction(SIGUSR1, &sig as _, std::ptr::null_mut()) };
             assert_eq!(ret, 0);
         });
-        Self {
-            l,
-            thread,
-            th
-        }
+        Self { l, thread, th }
     }
 
     pub fn send(&self, duration: Duration) -> Result<(), Error> {
         let (send, recv) = std::sync::mpsc::channel();
         let (send2, recv2) = std::sync::mpsc::channel();
         {
-            let mut lock = SIG_STATE.try_lock().map_err(|_| Error::AlreadyInterrupting)?;
+            let mut lock = SIG_STATE
+                .try_lock()
+                .map_err(|_| Error::AlreadyInterrupting)?;
             *lock = Some(SigState {
                 l: self.l,
                 thread: self.thread,

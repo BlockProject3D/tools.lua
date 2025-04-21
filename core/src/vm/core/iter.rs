@@ -26,14 +26,14 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::marker::PhantomData;
 use crate::vm::value::FromLua;
 use crate::vm::Vm;
+use std::marker::PhantomData;
 
 pub struct Iter<'a, T> {
     vm: &'a Vm,
     index: i32,
-    useless: PhantomData<T>
+    useless: PhantomData<T>,
 }
 
 impl<'a, T: FromLua<'a>> Iterator for Iter<'a, T> {
@@ -53,6 +53,6 @@ pub fn start<'a, T: FromLua<'a>>(vm: &'a Vm, start_index: i32) -> Iter<'a, T> {
     Iter {
         vm,
         index: start_index,
-        useless: PhantomData
+        useless: PhantomData,
     }
 }

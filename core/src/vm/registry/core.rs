@@ -26,12 +26,12 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::ffi::c_int;
-use std::marker::PhantomData;
 use crate::ffi::laux::{luaL_ref, luaL_unref};
 use crate::ffi::lua::{lua_rawgeti, lua_rawseti, REGISTRYINDEX};
 use crate::vm::registry::RegistryValue;
 use crate::vm::Vm;
+use std::ffi::c_int;
+use std::marker::PhantomData;
 
 //TODO: Check if key can be a NonZeroI32
 
@@ -59,9 +59,9 @@ impl RawRegistryKey {
     /// * `vm`: the [Vm] to attach the produced lua value to.
     ///
     /// returns: <T as RegistryValue>::Value
-    /// 
+    ///
     /// # Safety
-    /// 
+    ///
     /// This is UB to call if the key is invalid or already freed.
     #[inline(always)]
     pub unsafe fn push(&self, vm: &Vm) {
@@ -75,7 +75,7 @@ impl RawRegistryKey {
     /// * `vm`: the [Vm] to unregister from.
     ///
     /// returns: ()
-    /// 
+    ///
     /// # Safety
     ///
     /// This is UB to call if the registry key is invalid or was already freed.
@@ -109,7 +109,7 @@ impl RawRegistryKey {
     /// returns: RegistryKey<T>
     ///
     /// # Safety
-    /// 
+    ///
     /// This is UB to call if the stack is empty.
     #[inline(always)]
     pub unsafe fn from_top(vm: &Vm) -> RawRegistryKey {
@@ -120,7 +120,7 @@ impl RawRegistryKey {
 
 pub struct RegistryKey<T> {
     raw: RawRegistryKey,
-    useless: PhantomData<*const T>
+    useless: PhantomData<*const T>,
 }
 
 impl<T: RegistryValue> RegistryKey<T> {
@@ -176,7 +176,7 @@ impl<T: RegistryValue> RegistryKey<T> {
     pub unsafe fn from_top(vm: &Vm) -> RegistryKey<T> {
         RegistryKey {
             raw: RawRegistryKey::from_top(vm),
-            useless: PhantomData
+            useless: PhantomData,
         }
     }
 }

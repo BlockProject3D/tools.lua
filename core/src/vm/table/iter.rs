@@ -36,14 +36,20 @@ pub struct Iter<'a> {
     index: i32,
     has_ended: bool,
     has_started: bool,
-    last_top: i32
+    last_top: i32,
 }
 
 impl<'a> Iter<'a> {
     pub(super) fn from_raw(vm: &'a Vm, index: i32) -> Self {
         // Push a nil value on the stack to allow the iterator to work.
         unsafe { lua_pushnil(vm.as_ptr()) };
-        Self { vm, index, has_ended: false, has_started: false, last_top: vm.top() }
+        Self {
+            vm,
+            index,
+            has_ended: false,
+            has_started: false,
+            last_top: vm.top(),
+        }
     }
 }
 
@@ -54,7 +60,11 @@ impl<'a> Iterator for Iter<'a> {
         if self.has_started {
             // This ensures the iterator remains safe.
             if self.vm.top() != self.last_top {
-                panic!("Attempt to iterate on moved values (expected Vm top: {}, got: {})", self.last_top, self.vm.top());
+                panic!(
+                    "Attempt to iterate on moved values (expected Vm top: {}, got: {})",
+                    self.last_top,
+                    self.vm.top()
+                );
             }
             // Pop the last value on the stack which corresponds to the last value from lua_next.
             // Only if the iterator was started.

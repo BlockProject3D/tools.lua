@@ -26,16 +26,16 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use crate::parser::enums::EnumVariant;
+use crate::parser::structs::StructField;
+use crate::parser::Parser;
 use proc_macro2::{Ident, TokenStream};
 use quote::quote;
 use syn::{Generics, Index};
-use crate::parser::enums::EnumVariant;
-use crate::parser::Parser;
-use crate::parser::structs::StructField;
 
 pub struct IntoParam {
     name: Ident,
-    generics: Generics
+    generics: Generics,
 }
 
 impl IntoParam {
@@ -72,7 +72,7 @@ impl Parser for IntoParam {
                 quote! {
                     Self::#name(v) => <#ty as bp3d_lua::vm::function::IntoParam>::into_param(v, vm),
                 }
-            },
+            }
             EnumVariant::MultiField(_) => panic!("Multi-field enum variants are not supported"),
             EnumVariant::None(name) => {
                 let str = name.to_string();

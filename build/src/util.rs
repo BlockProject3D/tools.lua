@@ -30,7 +30,7 @@ use std::io::{Error, ErrorKind};
 use std::process::Command;
 
 pub struct CommandRunner {
-    msg: &'static str
+    msg: &'static str,
 }
 
 impl CommandRunner {

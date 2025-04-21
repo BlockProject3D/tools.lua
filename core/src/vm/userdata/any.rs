@@ -26,23 +26,26 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::fmt::{Debug, Display};
 use crate::ffi::laux::luaL_testudata;
 use crate::ffi::lua::{lua_pushvalue, lua_topointer, lua_touserdata, lua_type, Type};
 use crate::vm::error::{Error, TypeError};
 use crate::vm::userdata::{UserData, UserDataImmutable};
 use crate::vm::value::FromLua;
 use crate::vm::Vm;
+use std::fmt::{Debug, Display};
 
 pub struct AnyUserData<'a> {
     vm: &'a Vm,
-    index: i32
+    index: i32,
 }
 
 impl Clone for AnyUserData<'_> {
     fn clone(&self) -> Self {
         unsafe { lua_pushvalue(self.vm.as_ptr(), self.index) };
-        AnyUserData { vm: self.vm, index: self.vm.top() }
+        AnyUserData {
+            vm: self.vm,
+            index: self.vm.top(),
+        }
     }
 }
 
@@ -54,11 +57,15 @@ impl PartialEq for AnyUserData<'_> {
     }
 }
 
-impl Eq for AnyUserData<'_> { }
+impl Eq for AnyUserData<'_> {}
 
 impl Display for AnyUserData<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "userdata@{:X}", unsafe { lua_touserdata(self.vm.as_ptr(), self.index) } as usize)
+        write!(
+            f,
+            "userdata@{:X}",
+            unsafe { lua_touserdata(self.vm.as_ptr(), self.index) } as usize
+        )
     }
 }
 
@@ -102,7 +109,9 @@ impl<'a> AnyUserData<'a> {
     /// created. That is no other references to this underlying userdata value must exist in Rust
     /// code otherwise using this function is UB.
     pub unsafe fn get_mut<T: UserData>(&mut self) -> crate::vm::Result<&mut T> {
-        let this_ptr = unsafe { luaL_testudata(self.vm.as_ptr(), self.index, T::CLASS_NAME.as_ptr()) } as *mut T;
+        let this_ptr =
+            unsafe { luaL_testudata(self.vm.as_ptr(), self.index, T::CLASS_NAME.as_ptr()) }
+                as *mut T;
         if this_ptr.is_null() {
             return Err(Error::Type(TypeError {
                 expected: Type::Userdata,

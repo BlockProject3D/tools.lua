@@ -26,15 +26,15 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use crate::ffi::lua::Type;
+use bp3d_util::simple_error;
 use std::fmt::{Display, Formatter};
 use std::str::Utf8Error;
-use bp3d_util::simple_error;
-use crate::ffi::lua::Type;
 
 #[derive(Debug, Copy, Clone)]
 pub struct TypeError {
     pub expected: Type,
-    pub actual: Type
+    pub actual: Type,
 }
 
 impl Display for TypeError {
@@ -46,7 +46,7 @@ impl Display for TypeError {
 #[derive(Debug, Clone)]
 pub struct RuntimeError {
     traceback: String,
-    index: usize
+    index: usize,
 }
 
 impl RuntimeError {
@@ -54,7 +54,7 @@ impl RuntimeError {
         let id = traceback.find('\n').unwrap();
         Self {
             traceback,
-            index: id
+            index: id,
         }
     }
 
@@ -98,7 +98,7 @@ impl Error {
     pub fn into_runtime(self) -> Option<RuntimeError> {
         match self {
             Error::Runtime(e) => Some(e),
-            _ => None
+            _ => None,
         }
     }
 }

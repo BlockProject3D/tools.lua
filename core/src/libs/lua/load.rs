@@ -26,15 +26,15 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::path::{Path, PathBuf};
-use bp3d_util::simple_error;
-use crate::{decl_closure, decl_lib_func};
 use crate::libs::interface::Lib;
 use crate::vm::core::load::{Code, Script};
 use crate::vm::function::types::RFunction;
 use crate::vm::namespace::Namespace;
 use crate::vm::value::any::{AnyParam, UncheckedAnyReturn};
 use crate::vm::value::function::LuaFunction;
+use crate::{decl_closure, decl_lib_func};
+use bp3d_util::simple_error;
+use std::path::{Path, PathBuf};
 
 decl_lib_func! {
     fn run_string(vm: &Vm, s: &str, chunkname: Option<&str>) -> crate::vm::Result<UncheckedAnyReturn> {
@@ -120,12 +120,12 @@ impl Lib for Load<'_> {
     fn load(&self, namespace: &mut Namespace) -> crate::vm::Result<()> {
         namespace.add([
             ("runString", RFunction::wrap(run_string)),
-            ("loadString", RFunction::wrap(load_string))
+            ("loadString", RFunction::wrap(load_string)),
         ])?;
         if let Some(chroot) = self.0 {
             namespace.add([
                 ("loadFile", load_file(chroot)),
-                ("runFile", run_file(chroot))
+                ("runFile", run_file(chroot)),
             ])?;
         }
         Ok(())

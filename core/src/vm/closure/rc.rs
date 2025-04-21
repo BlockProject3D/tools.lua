@@ -26,10 +26,10 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::ops::Deref;
 use crate::util::SimpleDrop;
 use crate::vm::closure::{FromUpvalue, IntoUpvalue, Upvalue};
 use crate::vm::Vm;
+use std::ops::Deref;
 
 #[repr(transparent)]
 pub struct Rc<T>(*const T);
@@ -37,7 +37,7 @@ pub struct Rc<T>(*const T);
 #[repr(transparent)]
 pub struct Ref<'a, T>(&'a T);
 
-unsafe impl<T> SimpleDrop for Ref<'_, T> { }
+unsafe impl<T> SimpleDrop for Ref<'_, T> {}
 
 impl<'a, T> Deref for Ref<'a, T> {
     type Target = T;

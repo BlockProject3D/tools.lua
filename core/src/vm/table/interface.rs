@@ -32,10 +32,10 @@ use crate::util::SimpleDrop;
 use crate::vm::function::{FromParam, IntoParam};
 use crate::vm::registry::core::RegistryKey;
 use crate::vm::registry::Registry;
-use crate::vm::util::LuaType;
-use crate::vm::value::FromLua;
 use crate::vm::table::Table;
+use crate::vm::util::LuaType;
 use crate::vm::value::util::{ensure_type_equals, ensure_value_top};
+use crate::vm::value::FromLua;
 use crate::vm::Vm;
 
 unsafe impl<'a> SimpleDrop for Table<'a> {}
@@ -48,7 +48,9 @@ impl<'a> FromParam<'a> for Table<'a> {
     }
 
     fn try_from_param(vm: &'a Vm, index: i32) -> Option<Self> {
-        if unsafe { lua_type(vm.as_ptr(), index) } != Type::Table { return None; }
+        if unsafe { lua_type(vm.as_ptr(), index) } != Type::Table {
+            return None;
+        }
         Some(unsafe { Table::from_raw(vm, index) })
     }
 }
@@ -88,7 +90,11 @@ impl Registry for Table<'_> {
     }
 
     #[inline(always)]
-    fn registry_swap(self, vm: &Vm, old: RegistryKey<Self::RegistryValue>) -> RegistryKey<Self::RegistryValue> {
+    fn registry_swap(
+        self,
+        vm: &Vm,
+        old: RegistryKey<Self::RegistryValue>,
+    ) -> RegistryKey<Self::RegistryValue> {
         // If the table is not at the top of the stack, move it to the top.
         ensure_value_top(vm, self.index());
         unsafe { old.as_raw().replace(vm) };

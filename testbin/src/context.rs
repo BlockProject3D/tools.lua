@@ -26,14 +26,14 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::time::Duration;
-use mlua::{Lua, UserDataMethods};
 use bp3d_lua::decl_closure;
 use bp3d_lua::vm::closure::context::{CellMut, ContextMut};
 use bp3d_lua::vm::RootVm;
+use mlua::{Lua, UserDataMethods};
+use std::time::Duration;
 
 struct TestContext {
-    value3: Vec<u64>
+    value3: Vec<u64>,
 }
 
 decl_closure! {
@@ -57,13 +57,10 @@ pub fn test_context_mlua() -> Duration {
             this.value3.push(val);
             Ok(())
         });
-        reg.add_method_mut("pop", |_, this, _: ()| {
-            Ok(this.value3.pop())
-        });
-    }).unwrap();
-    let mut ctx = TestContext {
-        value3: Vec::new()
-    };
+        reg.add_method_mut("pop", |_, this, _: ()| Ok(this.value3.pop()));
+    })
+    .unwrap();
+    let mut ctx = TestContext { value3: Vec::new() };
     let time = bp3d_os::time::Instant::now();
     for _ in 0..20000 {
         lua.scope(|l| {
@@ -74,7 +71,8 @@ pub fn test_context_mlua() -> Duration {
             lua.load("ctx:push(2)").eval::<()>().unwrap();
             lua.load("ctx:push(3)").eval::<()>().unwrap();
             Ok(())
-        }).unwrap();
+        })
+        .unwrap();
         lua.scope(|l| {
             let ud = l.create_any_userdata_ref_mut(&mut ctx).unwrap();
             lua.globals().set("ctx", ud).unwrap();
@@ -84,7 +82,8 @@ pub fn test_context_mlua() -> Duration {
             lua.load("assert(ctx:pop() == nil)").eval::<()>().unwrap();
             lua.load("assert(ctx:pop() == nil)").eval::<()>().unwrap();
             Ok(())
-        }).unwrap();
+        })
+        .unwrap();
     }
     let time = time.elapsed();
     time
@@ -95,9 +94,7 @@ pub fn test_context_vm() -> Duration {
     let ctx = ContextMut::new(&vm);
     vm.set_global(c"context_push", context_push(ctx)).unwrap();
     vm.set_global(c"context_pop", context_pop(ctx)).unwrap();
-    let mut obj = TestContext {
-        value3: vec![],
-    };
+    let mut obj = TestContext { value3: vec![] };
     let mut ctx = CellMut::new(ctx);
     let time = bp3d_os::time::Instant::now();
     for _ in 0..20000 {

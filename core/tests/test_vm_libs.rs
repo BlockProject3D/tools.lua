@@ -26,9 +26,9 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use bp3d_lua::libs::Lib;
 use bp3d_lua::libs::lua::Lua;
 use bp3d_lua::libs::util::Util;
+use bp3d_lua::libs::Lib;
 use bp3d_lua::vm::RootVm;
 
 #[test]
@@ -36,7 +36,8 @@ fn test_vm_lib_lua() {
     let mut vm = RootVm::new();
     let top = vm.top();
     Lua::new().build().register(&mut vm).unwrap();
-    vm.run_code::<()>(c"
+    vm.run_code::<()>(
+        c"
         assert(bp3d.lua.name == 'bp3d-lua')
         assert(bp3d.lua.version == '1.0.0-rc.1.0.0')
         assert(#bp3d.lua.patches == 5)
@@ -47,10 +48,17 @@ fn test_vm_lib_lua() {
         assert(func == nil)
         assert(err == \"syntax error: [string \\\"ret a + 2\\\"]:1: '=' expected near 'a'\")
         assert(bp3d.lua.runString('return 1 + 1') == 2)
-    ").unwrap();
-    let err = vm.run_code::<()>(c"bp3d.lua.require \"not.existing.file\"").unwrap_err().into_runtime().unwrap();
+    ",
+    )
+    .unwrap();
+    let err = vm
+        .run_code::<()>(c"bp3d.lua.require \"not.existing.file\"")
+        .unwrap_err()
+        .into_runtime()
+        .unwrap();
     assert_eq!(err.msg(), "rust error: unknown source name not");
-    vm.run_code::<()>(c"
+    vm.run_code::<()>(
+        c"
         local function test()
             bp3d.lua.require \"not.existing.file\"
         end
@@ -58,7 +66,9 @@ fn test_vm_lib_lua() {
         assert(not flag)
         print(err)
         assert(err ~= '')
-    ").unwrap();
+    ",
+    )
+    .unwrap();
     assert_eq!(vm.top(), top);
 }
 
@@ -67,7 +77,8 @@ fn test_vm_lib_util() {
     let mut vm = RootVm::new();
     let top = vm.top();
     Util.register(&mut vm).unwrap();
-    vm.run_code::<()>(c"
+    vm.run_code::<()>(
+        c"
         local src = {
             a = 1,
             b = 2
@@ -97,8 +108,11 @@ fn test_vm_lib_util() {
         assert(bp3d.util.table.contains(tbl, 'a: 1'))
         assert(bp3d.util.table.contains(tbl, 'b: 2'))
         assert(bp3d.util.table.contains(tbl, 'c: 3'))
-    ").unwrap();
-    vm.run_code::<()>(c"
+    ",
+    )
+    .unwrap();
+    vm.run_code::<()>(
+        c"
         local utf8 = bp3d.util.utf8
         assert(utf8.fromString('abc') ~= nil)
         assert(utf8.count('abc') == 3)
@@ -113,18 +127,27 @@ fn test_vm_lib_util() {
         assert(utf8.charAt('abc', 2) == 0x63)
         local s = '我是'
         assert(utf8.sub(s, 1) == '是')
-    ").unwrap();
-    vm.run_code::<()>(c"
+    ",
+    )
+    .unwrap();
+    vm.run_code::<()>(
+        c"
         local tbl = { value = 42 }
         local protected = bp3d.util.table.protect(tbl)
         assert(protected.value == 42)
-    ").unwrap();
-    vm.run_code::<()>(c"
+    ",
+    )
+    .unwrap();
+    vm.run_code::<()>(
+        c"
         local tbl = { value = 42 }
         local protected = bp3d.util.table.protect(tbl)
         protected.value = 84
-    ").unwrap_err();
-    vm.run_code::<()>(c"
+    ",
+    )
+    .unwrap_err();
+    vm.run_code::<()>(
+        c"
         local src = { value = 42, adding = { a = 1 } }
         local dst = { value = 42, adding = { } }
         bp3d.util.table.update(dst, src)
@@ -134,8 +157,11 @@ fn test_vm_lib_util() {
         bp3d.util.table.update(dst2, src)
         assert(dst2.value == 42)
         assert(dst2.adding.a == 1)
-    ").unwrap();
-    vm.run_code::<()>(c"
+    ",
+    )
+    .unwrap();
+    vm.run_code::<()>(
+        c"
         local src = { value = 42, adding = { a = 1 } }
         local dst = bp3d.util.table.copy(src)
         assert(dst.value == 42)
@@ -146,15 +172,20 @@ fn test_vm_lib_util() {
         assert(src.b == nil)
         assert(dst.adding.b == 2)
         assert(src.adding.b == nil)
-    ").unwrap();
-    vm.run_code::<()>(c"
+    ",
+    )
+    .unwrap();
+    vm.run_code::<()>(
+        c"
         local list = { 1, 2, 3, 4 }
         local list2 = { 5, 6, 7, 8 }
         bp3d.util.table.concat(list, list2)
         assert(#list == 8)
         local str = bp3d.util.table.tostring(list)
         assert(str == '1: 1\\n2: 2\\n3: 3\\n4: 4\\n5: 5\\n6: 6\\n7: 7\\n8: 8')
-    ").unwrap();
+    ",
+    )
+    .unwrap();
     assert_eq!(vm.top(), top);
 }
 
@@ -162,12 +193,16 @@ fn test_vm_lib_util() {
 fn test_vm_lib_os_time() {
     let mut vm = RootVm::new();
     bp3d_lua::libs::os::Time.register(&mut vm).unwrap();
-    vm.run_code::<()>(c"
+    vm.run_code::<()>(
+        c"
         time = bp3d.os.time.nowLocal()
         time2 = bp3d.os.time.nowUtc()
-    ").unwrap();
+    ",
+    )
+    .unwrap();
     std::thread::sleep(std::time::Duration::from_millis(500));
-    vm.run_code::<()>(c"
+    vm.run_code::<()>(
+        c"
         local function testDateTime(a, b)
             local ymd = a:getDate()
             local ymd2 = b:getDate()
@@ -185,38 +220,56 @@ fn test_vm_lib_os_time() {
             testDateTime(now, time)
         end
         testDateTime(now2, time2)
-    ").unwrap();
+    ",
+    )
+    .unwrap();
 }
 
 #[test]
 fn test_vm_lib_os_instant() {
     let mut vm = RootVm::new();
     bp3d_lua::libs::os::Instant.register(&mut vm).unwrap();
-    vm.run_code::<()>(c"
+    vm.run_code::<()>(
+        c"
         instant = bp3d.os.instant.now()
-    ").unwrap();
+    ",
+    )
+    .unwrap();
     std::thread::sleep(std::time::Duration::from_millis(500));
-    vm.run_code::<()>(c"
+    vm.run_code::<()>(
+        c"
         local diff = instant:elapsed()
         assert((diff - 0.5) < 0.1)
-    ").unwrap();
+    ",
+    )
+    .unwrap();
 }
 
 #[test]
 fn test_vm_lib_os() {
     let mut vm = RootVm::new();
     bp3d_lua::libs::os::Compat.register(&mut vm).unwrap();
-    vm.run_code::<()>(c"
+    vm.run_code::<()>(
+        c"
         clock = os.clock()
-    ").unwrap();
+    ",
+    )
+    .unwrap();
     std::thread::sleep(std::time::Duration::from_millis(500));
-    vm.run_code::<()>(c"
+    vm.run_code::<()>(
+        c"
         local now = os.clock()
         assert((clock - now) < 0.1)
-    ").unwrap();
-    let s = vm.run_code::<&str>(c"
+    ",
+    )
+    .unwrap();
+    let s = vm
+        .run_code::<&str>(
+            c"
         return os.date('!%H:%M:%S')
-    ").unwrap();
+    ",
+        )
+        .unwrap();
     assert!(s.contains(":"));
     assert!(!s.contains("["));
     assert!(!s.contains("]"));

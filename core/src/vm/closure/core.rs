@@ -26,13 +26,13 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::ffi::OsStr;
-use std::path::Path;
 use crate::ffi::lua::{lua_pushlightuserdata, lua_topointer, GLOBALSINDEX};
 use crate::vm::closure::{FromUpvalue, IntoUpvalue, Upvalue};
 use crate::vm::function::IntoParam;
-use crate::vm::Vm;
 use crate::vm::value::FromLua;
+use crate::vm::Vm;
+use std::ffi::OsStr;
+use std::path::Path;
 
 macro_rules! impl_from_upvalue_using_from_lua_unchecked {
     ($($t: ty),*) => {
@@ -142,7 +142,9 @@ impl Upvalue for &OsStr {
 impl<'a> FromUpvalue<'a> for &'a Path {
     #[inline(always)]
     unsafe fn from_upvalue(vm: &'a Vm, index: i32) -> Self {
-        Path::new(OsStr::from_encoded_bytes_unchecked(FromUpvalue::from_upvalue(vm, index)))
+        Path::new(OsStr::from_encoded_bytes_unchecked(
+            FromUpvalue::from_upvalue(vm, index),
+        ))
     }
 }
 

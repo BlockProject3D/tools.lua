@@ -37,7 +37,7 @@ pub struct StructField {
 }
 
 pub struct StructParser {
-    cur_index: usize
+    cur_index: usize,
 }
 
 impl StructParser {
@@ -48,15 +48,12 @@ impl StructParser {
     pub fn parse(&mut self, field: Field) -> StructField {
         let index = Ident::new(&format!("value_{}", self.cur_index), Span::call_site());
         self.cur_index += 1;
-        let unique_name = field
-            .ident
-            .clone()
-            .unwrap_or(index);
+        let unique_name = field.ident.clone().unwrap_or(index);
         StructField {
             unique_name,
             ty: field.ty,
             index: self.cur_index - 1,
-            unique_name_is_index: field.ident.is_none()
+            unique_name_is_index: field.ident.is_none(),
         }
     }
 }

@@ -26,14 +26,17 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::ffi::{c_int, CStr};
-use bp3d_util::format::FixedBufStr;
 use crate::ffi::laux::{luaL_callmeta, luaL_traceback};
-use crate::ffi::lua::{lua_gettop, lua_isstring, lua_pcall, lua_pushcclosure, lua_pushlstring, lua_remove, lua_tolstring, lua_type, State, ThreadStatus, Type};
+use crate::ffi::lua::IDSIZE;
+use crate::ffi::lua::{
+    lua_gettop, lua_isstring, lua_pcall, lua_pushcclosure, lua_pushlstring, lua_remove,
+    lua_tolstring, lua_type, State, ThreadStatus, Type,
+};
 use crate::vm::error::{Error, RuntimeError};
 use crate::vm::value::FromLua;
 use crate::vm::Vm;
-use crate::ffi::lua::IDSIZE;
+use bp3d_util::format::FixedBufStr;
+use std::ffi::{c_int, CStr};
 
 const TRACEBACK_NONE: &[u8] = b"<unknown error>\n<no traceback>";
 extern "C-unwind" fn error_handler(l: State) -> c_int {
@@ -41,9 +44,10 @@ extern "C-unwind" fn error_handler(l: State) -> c_int {
         let ty = lua_type(l, 1);
         if ty != Type::String {
             // Non-string error object? Try metamethod.
-            if (ty == Type::Nil || ty == Type::None) ||
-                luaL_callmeta(l, 1, c"__tostring".as_ptr()) != 1 ||
-                lua_isstring(l, -1) != 1 {
+            if (ty == Type::Nil || ty == Type::None)
+                || luaL_callmeta(l, 1, c"__tostring".as_ptr()) != 1
+                || lua_isstring(l, -1) != 1
+            {
                 // Object does not turn into a string remove it alongside the return value of
                 // __tostring.
                 lua_remove(l, 1);
@@ -102,7 +106,12 @@ pub unsafe fn push_error_handler(l: State) -> c_int {
 /// This function shall not be used without [push_error_handler]. This is also UB if `nargs` does
 /// not match the count of arguments push on top of the stack. If the error handler is not the first
 /// item on the stack, before function and function arguments, this is UB.
-pub unsafe fn pcall(vm: &Vm, nargs: c_int, nreturns: c_int, handler_pos: c_int) -> crate::vm::Result<()> {
+pub unsafe fn pcall(
+    vm: &Vm,
+    nargs: c_int,
+    nreturns: c_int,
+    handler_pos: c_int,
+) -> crate::vm::Result<()> {
     let l = vm.as_ptr();
     unsafe {
         // Call the function created by load_code.
@@ -122,7 +131,7 @@ pub unsafe fn pcall(vm: &Vm, nargs: c_int, nreturns: c_int, handler_pos: c_int) 
             }
             ThreadStatus::ErrMem => Err(Error::Memory),
             ThreadStatus::ErrErr => Err(Error::Error),
-            _ => Err(Error::Unknown)
+            _ => Err(Error::Unknown),
         }
     }
 }
@@ -158,17 +167,19 @@ pub unsafe fn handle_syntax_error(vm: &Vm, res: ThreadStatus) -> crate::vm::Resu
             Err(Error::Loader(str.into()))
         }
         ThreadStatus::ErrMem => Err(Error::Memory),
-        _ => Err(Error::Unknown)
+        _ => Err(Error::Unknown),
     }
 }
 
 pub struct ChunkNameBuilder {
-    inner: FixedBufStr<59>
+    inner: FixedBufStr<59>,
 }
 
 impl ChunkNameBuilder {
     pub fn new() -> Self {
-        Self { inner: FixedBufStr::new() }
+        Self {
+            inner: FixedBufStr::new(),
+        }
     }
 
     pub fn build(self) -> ChunkName {
@@ -188,7 +199,7 @@ impl std::fmt::Write for ChunkNameBuilder {
 }
 
 pub struct ChunkName {
-    inner: FixedBufStr<60>
+    inner: FixedBufStr<60>,
 }
 
 impl ChunkName {

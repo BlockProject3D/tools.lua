@@ -26,9 +26,9 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::path::{Path, PathBuf};
-use bp3d_lua_build::{BuildInfo, BuildInfoBase, Patch};
 use bp3d_lua_build::build::Lib;
+use bp3d_lua_build::{BuildInfo, BuildInfoBase, Patch};
+use std::path::{Path, PathBuf};
 
 #[cfg(feature = "dynamic")]
 const DYNAMIC: bool = true;
@@ -36,27 +36,32 @@ const DYNAMIC: bool = true;
 const DYNAMIC: bool = false;
 
 const PATCH_LIST: &[&str] = &[
-    "lib_init", // Disable unsafe/un-sandboxed libs.
-    "lj_disable_jit", // Disable global JIT state changes from Lua code.
-    "disable_lua_load", // Disable loadstring, dostring, etc from base lib.
-    "lua_ext", // Ext library such as lua_ext_tab_len, etc.
-    "lua_load_no_bc", // Treat all inputs as strings (no bytecode allowed).
-    "windows_set_lib_names" // Allow setting LJLIBNAME and LJDLLNAME from environment variables.
+    "lib_init",              // Disable unsafe/un-sandboxed libs.
+    "lj_disable_jit",        // Disable global JIT state changes from Lua code.
+    "disable_lua_load",      // Disable loadstring, dostring, etc from base lib.
+    "lua_ext",               // Ext library such as lua_ext_tab_len, etc.
+    "lua_load_no_bc",        // Treat all inputs as strings (no bytecode allowed).
+    "windows_set_lib_names", // Allow setting LJLIBNAME and LJDLLNAME from environment variables.
 ];
 
 fn apply_patches(out_path: &Path) -> std::io::Result<Vec<String>> {
-    Patch::new(&Path::new("..").join("patch"), &Path::new("..").join("LuaJIT"))?
-        .apply_all(PATCH_LIST.iter().map(|v| *v), out_path)
+    Patch::new(
+        &Path::new("..").join("patch"),
+        &Path::new("..").join("LuaJIT"),
+    )?
+    .apply_all(PATCH_LIST.iter().map(|v| *v), out_path)
 }
 
 fn run_build(build_dir: &Path) -> std::io::Result<Lib> {
-    let manifest = std::env::var_os("CARGO_MANIFEST_PATH").map(PathBuf::from).expect("Failed to read manifest path");
+    let manifest = std::env::var_os("CARGO_MANIFEST_PATH")
+        .map(PathBuf::from)
+        .expect("Failed to read manifest path");
     let target_name = std::env::var("TARGET").expect("Failed to read build target");
     let base = BuildInfoBase {
         dynamic: DYNAMIC,
         target_name: &target_name,
         build_dir,
-        manifest: &manifest
+        manifest: &manifest,
     };
     BuildInfo::new(base)?.build()
 }

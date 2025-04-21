@@ -26,22 +26,25 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::cell::OnceCell;
-use std::ffi::CStr;
-use std::marker::PhantomData;
-use bp3d_debug::{debug, warning};
 use crate::ffi::laux::{luaL_checkudata, luaL_newmetatable};
-use crate::ffi::lua::{lua_pushcclosure, lua_pushnil, lua_pushvalue, lua_setfield, lua_setmetatable, lua_settop, CFunction, State};
-use crate::vm::userdata::{AddGcMethod, NameConvert, Error, LuaDrop, UserData};
+use crate::ffi::lua::{
+    lua_pushcclosure, lua_pushnil, lua_pushvalue, lua_setfield, lua_setmetatable, lua_settop,
+    CFunction, State,
+};
+use crate::vm::userdata::{AddGcMethod, Error, LuaDrop, NameConvert, UserData};
 use crate::vm::util::{LuaType, TypeName};
 use crate::vm::value::IntoLua;
 use crate::vm::Vm;
+use bp3d_debug::{debug, warning};
+use std::cell::OnceCell;
+use std::ffi::CStr;
+use std::marker::PhantomData;
 
 pub struct Function {
     is_mutable: bool,
     args: Vec<TypeName>,
     name: &'static CStr,
-    func: CFunction
+    func: CFunction,
 }
 
 impl Function {
@@ -50,7 +53,7 @@ impl Function {
             is_mutable: false,
             args: Vec::new(),
             name,
-            func
+            func,
         }
     }
 
@@ -101,7 +104,7 @@ pub struct Registry<'a, T: UserData, C: NameConvert> {
     vm: &'a Vm,
     useless: PhantomData<T>,
     has_gc: OnceCell<()>,
-    case: C
+    case: C,
 }
 
 impl<'a, T: UserData, C: NameConvert> Registry<'a, T, C> {
@@ -127,8 +130,14 @@ impl<'a, T: UserData, C: NameConvert> Registry<'a, T, C> {
             unsafe { lua_settop(vm.as_ptr(), -2) };
             return Err(Error::AlreadyRegistered(T::CLASS_NAME));
         }
-        let reg = Registry { vm, useless: PhantomData, has_gc: OnceCell::new(), case };
-        reg.add_field(c"__metatable", T::CLASS_NAME.to_str().unwrap_unchecked()).unwrap_unchecked();
+        let reg = Registry {
+            vm,
+            useless: PhantomData,
+            has_gc: OnceCell::new(),
+            case,
+        };
+        reg.add_field(c"__metatable", T::CLASS_NAME.to_str().unwrap_unchecked())
+            .unwrap_unchecked();
         Ok(reg)
     }
 
@@ -138,7 +147,9 @@ impl<'a, T: UserData, C: NameConvert> Registry<'a, T, C> {
             unsafe { lua_settop(self.vm.as_ptr(), -(num as i32) - 1) };
             return Err(Error::MultiValueField);
         }
-        unsafe { lua_setfield(self.vm.as_ptr(), -2, self.case.name_convert(name).as_ptr()); }
+        unsafe {
+            lua_setfield(self.vm.as_ptr(), -2, self.case.name_convert(name).as_ptr());
+        }
         Ok(())
     }
 

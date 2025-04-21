@@ -29,20 +29,18 @@
 mod context;
 mod context_opt;
 
-use std::time::Duration;
-use mlua::Lua;
 use bp3d_lua::decl_lib_func;
-use bp3d_lua::vm::RootVm;
 use bp3d_lua::vm::function::types::RFunction;
+use bp3d_lua::vm::RootVm;
+use mlua::Lua;
+use std::time::Duration;
 
 struct ValueWithDrop;
 impl ValueWithDrop {
-    pub fn print(&self) {
-    }
+    pub fn print(&self) {}
 }
 impl Drop for ValueWithDrop {
-    fn drop(&mut self) {
-    }
+    fn drop(&mut self) {}
 }
 
 decl_lib_func! {
@@ -55,13 +53,18 @@ decl_lib_func! {
 
 fn test_vm_destructor() -> Duration {
     let mut vm = RootVm::new();
-    vm.set_global(c"test_c_function", RFunction::wrap(test_c_function)).unwrap();
+    vm.set_global(c"test_c_function", RFunction::wrap(test_c_function))
+        .unwrap();
     let time = bp3d_os::time::Instant::now();
     for _ in 0..20000 {
         let res = vm.run_code::<&str>(c"return test_c_function('this is a test\\xFF', 0.42)");
         assert!(res.is_err());
-        assert!(vm.run_code::<&str>(c"return test_c_function('this is a test', 0.42)").is_ok());
-        let s = vm.run_code::<&str>(c"return test_c_function('this is a test', 0.42)").unwrap();
+        assert!(vm
+            .run_code::<&str>(c"return test_c_function('this is a test', 0.42)")
+            .is_ok());
+        let s = vm
+            .run_code::<&str>(c"return test_c_function('this is a test', 0.42)")
+            .unwrap();
         assert_eq!(s, "Hello this is a test (0.42)");
         vm.clear();
     }
@@ -71,18 +74,28 @@ fn test_vm_destructor() -> Duration {
 
 fn test_vm_mlua() -> Duration {
     let lua = Lua::new();
-    let f = lua.create_function(|_, (name, value): (String, f64)| {
-        let drop = ValueWithDrop;
-        drop.print();
-        Ok(format!("Hello {} ({})", name, value))
-    }).unwrap();
+    let f = lua
+        .create_function(|_, (name, value): (String, f64)| {
+            let drop = ValueWithDrop;
+            drop.print();
+            Ok(format!("Hello {} ({})", name, value))
+        })
+        .unwrap();
     lua.globals().set("test_c_function", f).unwrap();
     let time = bp3d_os::time::Instant::now();
     for _ in 0..20000 {
-        let res: mlua::Result<String> = lua.load("return test_c_function('this is a test\\xFF', 0.42)").call(());
+        let res: mlua::Result<String> = lua
+            .load("return test_c_function('this is a test\\xFF', 0.42)")
+            .call(());
         assert!(res.is_err());
-        assert!(lua.load("return test_c_function('this is a test', 0.42)").call::<String>(()).is_ok());
-        let s: String = lua.load("return test_c_function('this is a test', 0.42)").call(()).unwrap();
+        assert!(lua
+            .load("return test_c_function('this is a test', 0.42)")
+            .call::<String>(())
+            .is_ok());
+        let s: String = lua
+            .load("return test_c_function('this is a test', 0.42)")
+            .call(())
+            .unwrap();
         assert_eq!(s, "Hello this is a test (0.42)");
     }
     let time = time.elapsed();
@@ -127,5 +140,8 @@ fn main() {
     println!("average tools.lua (context_opt): {:?}", ctx_lua_opt);
     println!("average mlua (context_opt): {:?}", ctx_mlua_opt);
     assert!(ctx_lua_opt < ctx_mlua_opt);
-    println!("average diff (context_opt): {:?}", ctx_mlua_opt - ctx_lua_opt);
+    println!(
+        "average diff (context_opt): {:?}",
+        ctx_mlua_opt - ctx_lua_opt
+    );
 }

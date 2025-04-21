@@ -26,16 +26,16 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::ffi::c_void;
 use crate::ffi::lua::{lua_pushcclosure, CFunction, State};
 use crate::vm::closure::{FromUpvalue, IntoUpvalue};
+use crate::vm::function::{FromParam, IntoParam};
 use crate::vm::value::IntoLua;
 use crate::vm::Vm;
-use crate::vm::function::{FromParam, IntoParam};
+use std::ffi::c_void;
 
 pub struct RClosure<T> {
     func: CFunction,
-    upvalue: T
+    upvalue: T,
 }
 
 impl<T> RClosure<T> {
@@ -62,10 +62,16 @@ unsafe impl<T: IntoUpvalue> IntoLua for RClosure<T> {
 
 impl RClosure<*const c_void> {
     pub fn from_rust<T, R, F: Fn(T) -> R + 'static>(vm: &Vm, fun: F) -> Self
-        where for<'a> T: FromParam<'a>, R: IntoParam {
+    where
+        for<'a> T: FromParam<'a>,
+        R: IntoParam,
+    {
         let ptr = crate::vm::core::destructor::Pool::attach(vm, Box::new(fun));
         extern "C-unwind" fn _cfunc<T, R, F: Fn(T) -> R>(l: State) -> i32
-            where for<'a> T: FromParam<'a>, R: IntoParam {
+        where
+            for<'a> T: FromParam<'a>,
+            R: IntoParam,
+        {
             let vm = unsafe { Vm::from_raw(l) };
             let upvalue: *const F = unsafe { FromUpvalue::from_upvalue(&vm, 1) };
             let args: T = unsafe { FromParam::from_param(&vm, 1) };

@@ -29,8 +29,8 @@
 use bp3d_lua::decl_lib_func;
 use bp3d_lua::vm::function::types::RFunction;
 use bp3d_lua::vm::RootVm;
-use bp3d_lua_codegen::{FromParam, IntoParam};
 use bp3d_lua_codegen::LuaType;
+use bp3d_lua_codegen::{FromParam, IntoParam};
 
 #[derive(FromParam, LuaType, IntoParam)]
 struct Test1<'a>(&'a str, i32);
@@ -38,13 +38,13 @@ struct Test1<'a>(&'a str, i32);
 #[derive(FromParam, LuaType, IntoParam)]
 struct Test2<'a> {
     name: &'a str,
-    value: i32
+    value: i32,
 }
 
 #[derive(FromParam, LuaType, IntoParam)]
 struct TestStatic {
     value1: f32,
-    value2: i32
+    value2: i32,
 }
 
 decl_lib_func! {
@@ -73,30 +73,44 @@ fn basic() {
     vm.set_global(c"test", RFunction::wrap(test)).unwrap();
     vm.set_global(c"test2", RFunction::wrap(test2)).unwrap();
     vm.set_global(c"test3", RFunction::wrap(test3)).unwrap();
-    let out = vm.run_code::<&str>(c"
+    let out = vm
+        .run_code::<&str>(
+            c"
         local test1 = { 'value', 42 }
         local test2 = { name = 'of', value = 64 }
         local st = { value1 = 42.42, value2 = 32 }
         return test(test1, test2, st)
-    ").unwrap();
+    ",
+        )
+        .unwrap();
     assert_eq!(out, "value of: 42, 64, (v1: 42.42, v2: 32)");
-    vm.set_global(c"test", Test2 {
-        name: "whatever",
-        value: 42,
-    }).unwrap();
+    vm.set_global(
+        c"test",
+        Test2 {
+            name: "whatever",
+            value: 42,
+        },
+    )
+    .unwrap();
     let out = vm.run_code::<&str>(c"return test.name").unwrap();
     assert_eq!(out, "whatever");
     let out = vm.run_code::<i32>(c"return test.value").unwrap();
     assert_eq!(out, 42);
-    vm.run_code::<()>(c"
+    vm.run_code::<()>(
+        c"
         local t2 = test2('test')
         assert(t2.name == 'test')
         assert(t2.value == 42)
-    ").unwrap();
-    vm.run_code::<()>(c"
+    ",
+    )
+    .unwrap();
+    vm.run_code::<()>(
+        c"
         local t2 = test3('test42', 'test2')
         assert(t2.name == 'test42')
         assert(t2.value == 42)
-    ").unwrap();
+    ",
+    )
+    .unwrap();
     assert_eq!(top + 3, vm.top())
 }

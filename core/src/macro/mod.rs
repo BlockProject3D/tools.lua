@@ -26,10 +26,10 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-mod lib_func;
-mod userdata_func;
-mod userdata;
 mod closure;
+mod lib_func;
+mod userdata;
+mod userdata_func;
 
 #[macro_export]
 macro_rules! c_stringify {
@@ -41,7 +41,7 @@ macro_rules! c_stringify {
 #[macro_export]
 macro_rules! decl_from_param {
     (
-        $vm: ident, $start_index: literal, 
+        $vm: ident, $start_index: literal,
     ) => {
     };
 

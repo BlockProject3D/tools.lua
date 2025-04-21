@@ -26,20 +26,22 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::process::Command;
-use crate::build::Build;
 use crate::BuildInfo;
+use crate::build::Build;
 use crate::build::interface::Lib;
 use crate::util::CommandRunner;
+use std::process::Command;
 
 pub struct Linux;
 
 impl Build for Linux {
     fn build(info: &BuildInfo, runner: &CommandRunner) -> std::io::Result<()> {
         let soname = format!("TARGET_SONAME=libbp3d-luajit-{}.so", info.version());
-        runner.run(Command::new("make")
-                       .arg(soname)
-                       .current_dir(info.build_dir()))
+        runner.run(
+            Command::new("make")
+                .arg(soname)
+                .current_dir(info.build_dir()),
+        )
     }
 
     fn post_build(info: &BuildInfo, _: &CommandRunner) -> std::io::Result<()> {
@@ -58,13 +60,13 @@ impl Build for Linux {
             Lib {
                 name,
                 path: info.build_dir().into(),
-                dynamic: true
+                dynamic: true,
             }
         } else {
             Lib {
                 name: "luajit".into(),
                 path: info.build_dir().join("src"),
-                dynamic: false
+                dynamic: false,
             }
         }
     }

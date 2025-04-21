@@ -38,7 +38,9 @@ pub trait AnyStr {
 
 impl AnyStr for &str {
     fn to_str(&self) -> crate::vm::Result<Cow<CStr>> {
-        Ok(Cow::Owned(CString::new(&**self).map_err(|_| crate::vm::error::Error::Null)?))
+        Ok(Cow::Owned(
+            CString::new(&**self).map_err(|_| crate::vm::error::Error::Null)?,
+        ))
     }
 }
 
@@ -59,5 +61,5 @@ unsafe impl<T: SimpleDrop> SimpleDrop for Option<T> {}
 unsafe impl<T: SimpleDrop, R: SimpleDrop> SimpleDrop for Result<T, R> {}
 unsafe impl<T> SimpleDrop for &T {}
 unsafe impl SimpleDrop for &[u8] {}
-unsafe impl SimpleDrop for &OsStr { }
-unsafe impl SimpleDrop for &Path { }
+unsafe impl SimpleDrop for &OsStr {}
+unsafe impl SimpleDrop for &Path {}

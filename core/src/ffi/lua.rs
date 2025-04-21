@@ -50,7 +50,7 @@ pub enum ThreadStatus {
     ErrRun = 2,
     ErrSyntax = 3,
     ErrMem = 4,
-    ErrErr = 5
+    ErrErr = 5,
 }
 
 #[repr(transparent)]
@@ -75,12 +75,11 @@ pub enum Type {
     Table = 5,
     Function = 6,
     Userdata = 7,
-    Thread = 8
+    Thread = 8,
 }
 
 pub type Number = c_double;
 pub type Integer = isize;
-
 
 //--------------------
 // State manipulation
@@ -155,11 +154,11 @@ extern "C" {
 // Get functions (Lua -> stack)
 //-------------------------------
 extern "C" {
-    pub fn lua_gettable(l: State,  idx: c_int);
-    pub fn lua_getfield(l: State,  idx: c_int, k: *const c_char);
-    pub fn lua_rawget(l: State,  idx: c_int);
-    pub fn lua_rawgeti(l: State,  idx: c_int, n: c_int);
-    pub fn lua_createtable(l: State,  narr: c_int, nrec: c_int);
+    pub fn lua_gettable(l: State, idx: c_int);
+    pub fn lua_getfield(l: State, idx: c_int, k: *const c_char);
+    pub fn lua_rawget(l: State, idx: c_int);
+    pub fn lua_rawgeti(l: State, idx: c_int, n: c_int);
+    pub fn lua_createtable(l: State, narr: c_int, nrec: c_int);
     pub fn lua_newuserdata(l: State, sz: usize) -> *mut c_void;
     pub fn lua_getmetatable(l: State, objindex: c_int) -> c_int;
     pub fn lua_getfenv(l: State, idx: c_int);
@@ -184,7 +183,12 @@ extern "C" {
     pub fn lua_call(l: State, nargs: c_int, nresults: c_int);
     pub fn lua_pcall(l: State, nargs: c_int, nresults: c_int, errfunc: c_int) -> ThreadStatus;
     pub fn lua_cpcall(l: State, func: CFunction, ud: *mut c_void) -> c_int;
-    pub fn lua_load(l: State, reader: Reader, dt: *mut c_void, chunkname: *const c_char) -> ThreadStatus;
+    pub fn lua_load(
+        l: State,
+        reader: Reader,
+        dt: *mut c_void,
+        chunkname: *const c_char,
+    ) -> ThreadStatus;
 
     pub fn lua_dump(l: State, writer: Writer, data: *mut c_void) -> c_int;
 }

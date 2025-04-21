@@ -26,15 +26,15 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::time::Duration;
-use mlua::{Function, Lua, UserDataMethods};
 use bp3d_lua::decl_closure;
 use bp3d_lua::vm::closure::context::{CellMut, ContextMut};
-use bp3d_lua::vm::RootVm;
 use bp3d_lua::vm::value::function::LuaFunction;
+use bp3d_lua::vm::RootVm;
+use mlua::{Function, Lua, UserDataMethods};
+use std::time::Duration;
 
 struct TestContext {
-    value3: Vec<u64>
+    value3: Vec<u64>,
 }
 
 decl_closure! {
@@ -58,11 +58,11 @@ pub fn test_context_mlua() -> Duration {
             this.value3.push(val);
             Ok(())
         });
-        reg.add_method_mut("pop", |_, this, _: ()| {
-            Ok(this.value3.pop())
-        });
-    }).unwrap();
-    lua.load("
+        reg.add_method_mut("pop", |_, this, _: ()| Ok(this.value3.pop()));
+    })
+    .unwrap();
+    lua.load(
+        "
         function part1(ctx)
             assert(ctx:pop() == nil)
             ctx:push(1)
@@ -76,24 +76,27 @@ pub fn test_context_mlua() -> Duration {
             assert(ctx:pop() == nil)
             assert(ctx:pop() == nil)
         end
-    ").eval::<()>().unwrap();
+    ",
+    )
+    .eval::<()>()
+    .unwrap();
     let part1: Function = lua.globals().get("part1").unwrap();
     let part2: Function = lua.globals().get("part2").unwrap();
-    let mut ctx = TestContext {
-        value3: Vec::new()
-    };
+    let mut ctx = TestContext { value3: Vec::new() };
     let time = bp3d_os::time::Instant::now();
     for _ in 0..20000 {
         lua.scope(|l| {
             let ud = l.create_any_userdata_ref_mut(&mut ctx).unwrap();
             part1.call::<()>(ud).unwrap();
             Ok(())
-        }).unwrap();
+        })
+        .unwrap();
         lua.scope(|l| {
             let ud = l.create_any_userdata_ref_mut(&mut ctx).unwrap();
             part2.call::<()>(ud).unwrap();
             Ok(())
-        }).unwrap();
+        })
+        .unwrap();
     }
     let time = time.elapsed();
     time
@@ -104,7 +107,8 @@ pub fn test_context_vm() -> Duration {
     let ctx = ContextMut::new(&vm);
     vm.set_global(c"context_push", context_push(ctx)).unwrap();
     vm.set_global(c"context_pop", context_pop(ctx)).unwrap();
-    vm.run_code::<()>(c"
+    vm.run_code::<()>(
+        c"
         function part1()
             assert(context_pop() == nil)
             context_push(1)
@@ -118,12 +122,12 @@ pub fn test_context_vm() -> Duration {
             assert(context_pop() == nil)
             assert(context_pop() == nil)
         end
-    ").unwrap();
+    ",
+    )
+    .unwrap();
     let part1: LuaFunction = vm.get_global("part1").unwrap();
     let part2: LuaFunction = vm.get_global("part2").unwrap();
-    let mut obj = TestContext {
-        value3: vec![],
-    };
+    let mut obj = TestContext { value3: vec![] };
     let mut ctx = CellMut::new(ctx);
     let time = bp3d_os::time::Instant::now();
     for _ in 0..20000 {

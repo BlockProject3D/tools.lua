@@ -28,22 +28,24 @@
 
 #![cfg(feature = "interrupt")]
 
-use std::time::Duration;
 use bp3d_lua::libs::Lib;
 use bp3d_lua::vm::core::interrupt;
+use std::time::Duration;
 
 #[test]
 fn test_vm_interrupt() {
     let (signal, handle) = interrupt::spawn_interruptible(|vm| {
         bp3d_lua::libs::os::Compat.register(vm).unwrap();
         // Run the malicious code.
-        vm.run_code::<()>(c"
+        vm.run_code::<()>(
+            c"
             local tbl = {}
             while (true) do
                 local time = os.date('!%x %H:%M:%S')
                 table.insert(tbl, time)
             end
-        ")
+        ",
+        )
     });
     // Give the chance to the thread to run and pump a bit of RAM.
     std::thread::sleep(Duration::from_millis(500));

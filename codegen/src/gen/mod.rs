@@ -27,9 +27,9 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 mod from_param;
-mod lua_type;
 mod into_param;
+mod lua_type;
 
-pub use lua_type::LuaType;
 pub use from_param::FromParam;
 pub use into_param::IntoParam;
+pub use lua_type::LuaType;

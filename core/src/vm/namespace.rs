@@ -34,11 +34,15 @@ use crate::vm::Vm;
 
 pub struct Namespace<'a> {
     vm: &'a Vm,
-    table: Table<'a>
+    table: Table<'a>,
 }
 
 impl<'a> Namespace<'a> {
-    fn from_table<'b>(vm: &'a Vm, table: Table<'a>, names: impl Iterator<Item=&'b str>) -> crate::vm::Result<Self> {
+    fn from_table<'b>(
+        vm: &'a Vm,
+        table: Table<'a>,
+        names: impl Iterator<Item = &'b str>,
+    ) -> crate::vm::Result<Self> {
         let mut key = table.registry_put(vm);
         let key = vm.scope(|vm| {
             for name in names {
@@ -74,7 +78,10 @@ impl<'a> Namespace<'a> {
         Self::from_table(vm, table, names)
     }
 
-    pub fn add<'b, T: IntoLua>(&mut self, items: impl IntoIterator<Item=(&'b str, T)>) -> crate::vm::Result<()> {
+    pub fn add<'b, T: IntoLua>(
+        &mut self,
+        items: impl IntoIterator<Item = (&'b str, T)>,
+    ) -> crate::vm::Result<()> {
         for (name, item) in items {
             self.table.set_field(name, item)?;
         }

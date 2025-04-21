@@ -27,8 +27,8 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::util::SimpleDrop;
-use crate::vm::Vm;
 use crate::vm::util::LuaType;
+use crate::vm::Vm;
 
 /// This trait represents a function return value.
 ///

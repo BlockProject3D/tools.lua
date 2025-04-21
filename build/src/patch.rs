@@ -26,49 +26,65 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use crate::util::CommandRunner;
+use bp3d_os::fs::CopyOptions;
 use std::ffi::OsStr;
 use std::path::{Path, PathBuf};
 use std::process::Command;
-use bp3d_os::fs::CopyOptions;
-use crate::util::CommandRunner;
 
 pub struct Patch {
     src_path: PathBuf,
     patch_dir: PathBuf,
-    patch_list: Vec<String>
+    patch_list: Vec<String>,
 }
 
 impl Patch {
     pub fn new(patch_dir: &Path, luajit_src: &Path) -> std::io::Result<Patch> {
         let patch_dir = bp3d_os::fs::get_absolute_path(patch_dir)?;
         let src_path = bp3d_os::fs::get_absolute_path(luajit_src)?;
-        CommandRunner::new("failed to revert").run(Command::new("git")
-            .args(&["checkout", "."]).current_dir(&src_path))?;
+        CommandRunner::new("failed to revert").run(
+            Command::new("git")
+                .args(&["checkout", "."])
+                .current_dir(&src_path),
+        )?;
         Ok(Patch {
             patch_dir,
             src_path,
-            patch_list: Vec::new()
+            patch_list: Vec::new(),
         })
     }
 
     pub fn apply(&mut self, name: &str) -> std::io::Result<()> {
-        CommandRunner::new("failed to patch").run(Command::new("git")
-            .args(&[OsStr::new("apply"), self.patch_dir.join(format!("{}.patch", name)).as_os_str()])
-            .current_dir(&self.src_path))?;
+        CommandRunner::new("failed to patch").run(
+            Command::new("git")
+                .args(&[
+                    OsStr::new("apply"),
+                    self.patch_dir.join(format!("{}.patch", name)).as_os_str(),
+                ])
+                .current_dir(&self.src_path),
+        )?;
         self.patch_list.push(name.into());
         Ok(())
     }
 
-    pub fn get_patch_list(&self) -> impl Iterator<Item=&str> {
+    pub fn get_patch_list(&self) -> impl Iterator<Item = &str> {
         self.patch_list.iter().map(|v| &**v)
     }
 
-    pub fn apply_all<'a>(mut self, patches: impl IntoIterator<Item=&'a str>, out_path: &Path) -> std::io::Result<Vec<String>> {
+    pub fn apply_all<'a>(
+        mut self,
+        patches: impl IntoIterator<Item = &'a str>,
+        out_path: &Path,
+    ) -> std::io::Result<Vec<String>> {
         for patch in patches {
             self.apply(patch)?;
         }
         if !out_path.is_dir() {
-            bp3d_os::fs::copy(&self.src_path, out_path, CopyOptions::new().exclude(OsStr::new(".git")))?;
+            bp3d_os::fs::copy(
+                &self.src_path,
+                out_path,
+                CopyOptions::new().exclude(OsStr::new(".git")),
+            )?;
         }
         Ok(self.get_patch_list().map(String::from).collect())
     }
@@ -76,7 +92,12 @@ impl Patch {
 
 impl Drop for Patch {
     fn drop(&mut self) {
-        CommandRunner::new("failed to revert").run(Command::new("git")
-            .args(&["checkout", "."]).current_dir(&self.src_path)).unwrap();
+        CommandRunner::new("failed to revert")
+            .run(
+                Command::new("git")
+                    .args(&["checkout", "."])
+                    .current_dir(&self.src_path),
+            )
+            .unwrap();
     }
 }

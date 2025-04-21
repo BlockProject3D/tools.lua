@@ -34,7 +34,7 @@ pub enum Target {
     MacAarch64,
     Linux,
     Windows,
-    Unsupported
+    Unsupported,
 }
 
 static TARGET_MAP: phf::Map<&'static str, Target> = phf_map! {

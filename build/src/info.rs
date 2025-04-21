@@ -26,16 +26,16 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use crate::Target;
+use crate::build::{Build, Lib, Linux, MacOS, Windows};
 use std::io::{Error, ErrorKind};
 use std::path::{Path, PathBuf};
-use crate::build::{Build, Lib, Linux, MacOS, Windows};
-use crate::Target;
 
 pub struct BuildInfoBase<'a> {
     pub dynamic: bool,
     pub target_name: &'a str,
     pub build_dir: &'a Path,
-    pub manifest: &'a Path
+    pub manifest: &'a Path,
 }
 
 pub struct BuildInfo<'a> {
@@ -50,10 +50,18 @@ impl<'a> BuildInfo<'a> {
     pub fn new(base: BuildInfoBase<'a>) -> std::io::Result<Self> {
         let manifest = std::fs::read_to_string(&base.manifest)?;
         let target_dir = base.build_dir.join("../../../..");
-        let start = manifest.find(VERSION).ok_or(Error::new(ErrorKind::Other, "failed to find crate version"))?;
+        let start = manifest
+            .find(VERSION)
+            .ok_or(Error::new(ErrorKind::Other, "failed to find crate version"))?;
         let version = &manifest[start + VERSION.len()..];
-        let end = version.find("\"").ok_or(Error::new(ErrorKind::Other, "failed to find crate version"))?;
-        Ok(Self { base, target_dir, crate_version: String::from(&version[..end]) })
+        let end = version
+            .find("\"")
+            .ok_or(Error::new(ErrorKind::Other, "failed to find crate version"))?;
+        Ok(Self {
+            base,
+            target_dir,
+            crate_version: String::from(&version[..end]),
+        })
     }
 
     pub fn build_dir(&self) -> &Path {
@@ -85,7 +93,7 @@ impl<'a> BuildInfo<'a> {
             Target::MacAmd64 | Target::MacAarch64 => MacOS::run(&self),
             Target::Linux => Linux::run(&self),
             Target::Windows => Windows::run(&self),
-            Target::Unsupported => Err(Error::new(ErrorKind::Other, "unsupported target"))
+            Target::Unsupported => Err(Error::new(ErrorKind::Other, "unsupported target")),
         }
     }
 }

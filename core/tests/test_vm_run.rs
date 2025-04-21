@@ -26,12 +26,12 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::fmt::Write;
 use bp3d_lua::ffi::lua::{State, ThreadStatus};
 use bp3d_lua::vm::core::load::{load_custom, Code, Script};
-use bp3d_lua::vm::core::Load;
 use bp3d_lua::vm::core::util::ChunkNameBuilder;
+use bp3d_lua::vm::core::Load;
 use bp3d_lua::vm::{RootVm, Vm};
+use std::fmt::Write;
 
 struct BrokenReader;
 
@@ -62,15 +62,36 @@ fn run_assert_err(vm: &Vm, obj: impl Load, err_msg: &str) {
 fn test_vm_run() {
     let vm = RootVm::new();
     let top = vm.top();
-    run_assert_err(&vm, Code::new("test", b"return 1 + b"), "test:1: attempt to perform arithmetic on global 'b' (a nil value)");
-    run_assert_err(&vm, c"return 1 + b", "[string \"return 1 + b\"]:1: attempt to perform arithmetic on global 'b' (a nil value)");
+    run_assert_err(
+        &vm,
+        Code::new("test", b"return 1 + b"),
+        "test:1: attempt to perform arithmetic on global 'b' (a nil value)",
+    );
+    run_assert_err(
+        &vm,
+        c"return 1 + b",
+        "[string \"return 1 + b\"]:1: attempt to perform arithmetic on global 'b' (a nil value)",
+    );
     run_assert_err(&vm, Code::new("this is an amazingly long text which should get truncated我", b"return 1 + b"), "this is an amazingly long text which should get truncated:1: attempt to perform arithmetic on global 'b' (a nil value)");
     let err = vm.run::<()>(BrokenReader).unwrap_err();
-    assert_eq!(err.to_string(), "loader error: rust error: error in error handler");
-    run_assert_err(&vm, Script::from_path("./tests/lua/basic.lua").unwrap(), "basic.lua:2: nope");
-    let err = vm.run::<()>(Script::from_path("./tests/lua/broken.lua").unwrap()).unwrap_err();
-    assert_eq!(err.to_string(), "syntax error: broken.lua:2: '(' expected near 'end'");
-    vm.run::<()>(Script::from_path("./tests/lua/class.lua").unwrap()).unwrap();
+    assert_eq!(
+        err.to_string(),
+        "loader error: rust error: error in error handler"
+    );
+    run_assert_err(
+        &vm,
+        Script::from_path("./tests/lua/basic.lua").unwrap(),
+        "basic.lua:2: nope",
+    );
+    let err = vm
+        .run::<()>(Script::from_path("./tests/lua/broken.lua").unwrap())
+        .unwrap_err();
+    assert_eq!(
+        err.to_string(),
+        "syntax error: broken.lua:2: '(' expected near 'end'"
+    );
+    vm.run::<()>(Script::from_path("./tests/lua/class.lua").unwrap())
+        .unwrap();
     let func = vm.load_code(c"return 1 + b").unwrap();
     func.call::<()>(()).unwrap_err();
     assert_eq!(vm.top(), top + 1);

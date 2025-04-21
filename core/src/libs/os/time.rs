@@ -26,18 +26,18 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use crate::libs::Lib;
+use crate::vm::function::types::RFunction;
+use crate::vm::function::IntoParam;
+use crate::vm::namespace::Namespace;
+use crate::vm::table::Table;
+use crate::vm::Vm;
+use crate::{decl_lib_func, decl_userdata};
 use bp3d_os::time::{LocalOffsetDateTime, MonthExt};
 use bp3d_util::simple_error;
 use time::error::{ComponentRange, Format, InvalidFormatDescription};
 use time::format_description::parse;
 use time::{Date, Duration, Month, OffsetDateTime, PrimitiveDateTime, UtcOffset};
-use crate::{decl_lib_func, decl_userdata};
-use crate::libs::Lib;
-use crate::vm::function::IntoParam;
-use crate::vm::function::types::RFunction;
-use crate::vm::namespace::Namespace;
-use crate::vm::table::Table;
-use crate::vm::Vm;
 
 simple_error! {
     FormatError {
@@ -170,12 +170,14 @@ impl Lib for Time {
     const NAMESPACE: &'static str = "bp3d.os.time";
 
     fn load(&self, namespace: &mut Namespace) -> crate::vm::Result<()> {
-        namespace.vm().register_userdata::<Wrapper>(crate::vm::userdata::case::Camel)?;
+        namespace
+            .vm()
+            .register_userdata::<Wrapper>(crate::vm::userdata::case::Camel)?;
         namespace.add([
             ("nowUtc", RFunction::wrap(now_utc)),
             ("nowLocal", RFunction::wrap(now_local)),
             ("fromUnixTimestamp", RFunction::wrap(from_unix_timestamp)),
-            ("new", RFunction::wrap(new))
+            ("new", RFunction::wrap(new)),
         ])
     }
 }

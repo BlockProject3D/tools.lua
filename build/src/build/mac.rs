@@ -26,33 +26,40 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::io::{Error, ErrorKind};
-use std::process::Command;
-use crate::{BuildInfo, Target};
 use crate::build::Build;
 use crate::build::interface::Lib;
 use crate::util::CommandRunner;
+use crate::{BuildInfo, Target};
+use std::io::{Error, ErrorKind};
+use std::process::Command;
 
 pub struct MacOS;
 
 impl Build for MacOS {
     fn build(info: &BuildInfo, runner: &CommandRunner) -> std::io::Result<()> {
         match info.target() {
-            Target::MacAarch64 => runner.run(Command::new("make")
-                .env("MACOSX_DEPLOYMENT_TARGET", "11.0")
-                .current_dir(info.build_dir())),
-            Target::MacAmd64 => runner.run(Command::new("make")
-                .env("MACOSX_DEPLOYMENT_TARGET", "10.11")
-                .current_dir(info.build_dir())),
-            _ => Err(Error::new(ErrorKind::Other, "unsupported target"))
+            Target::MacAarch64 => runner.run(
+                Command::new("make")
+                    .env("MACOSX_DEPLOYMENT_TARGET", "11.0")
+                    .current_dir(info.build_dir()),
+            ),
+            Target::MacAmd64 => runner.run(
+                Command::new("make")
+                    .env("MACOSX_DEPLOYMENT_TARGET", "10.11")
+                    .current_dir(info.build_dir()),
+            ),
+            _ => Err(Error::new(ErrorKind::Other, "unsupported target")),
         }
     }
 
     fn post_build(info: &BuildInfo, runner: &CommandRunner) -> std::io::Result<()> {
         let filename = format!("libbp3d-luajit-{}.dylib", info.version());
         let path_to_so = info.build_dir().join("src");
-        runner.run(Command::new("install_name_tool").args(["-id", &filename, "libluajit.so"])
-            .current_dir(&path_to_so))?;
+        runner.run(
+            Command::new("install_name_tool")
+                .args(["-id", &filename, "libluajit.so"])
+                .current_dir(&path_to_so),
+        )?;
         let path_to_dylib = info.build_dir().join(&filename);
         std::fs::copy(path_to_so.join("libluajit.so"), path_to_dylib)?;
         let path_to_dylib2 = info.target_dir().join(filename);
@@ -72,7 +79,7 @@ impl Build for MacOS {
             Lib {
                 name: "luajit".into(),
                 path: info.build_dir().join("src"),
-                dynamic: false
+                dynamic: false,
             }
         }
     }

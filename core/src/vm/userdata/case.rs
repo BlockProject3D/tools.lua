@@ -26,11 +26,11 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::borrow::Cow;
-use std::ffi::{CStr, CString};
+use crate::vm::userdata::NameConvert;
 use bp3d_util::string::BufTools;
 use itertools::Itertools;
-use crate::vm::userdata::NameConvert;
+use std::borrow::Cow;
+use std::ffi::{CStr, CString};
 
 fn to_string_lossy(bytes: Cow<[u8]>) -> Cow<str> {
     match bytes {
@@ -56,9 +56,16 @@ impl NameConvert for Camel {
             // Return the same unconverted string if we failed.
             Err(_) => return Cow::Borrowed(name),
         };
-        let s: String = s.split("_")
+        let s: String = s
+            .split("_")
             .enumerate()
-            .map(|(i, v)| if i != 0 { v.as_bytes().capitalise_ascii() } else { v.as_bytes().into() })
+            .map(|(i, v)| {
+                if i != 0 {
+                    v.as_bytes().capitalise_ascii()
+                } else {
+                    v.as_bytes().into()
+                }
+            })
             .map(to_string_lossy)
             .join("")
             .into();
@@ -75,7 +82,8 @@ impl NameConvert for Pascal {
             // Return the same unconverted string if we failed.
             Err(_) => return Cow::Borrowed(name),
         };
-        let s: String = s.split("_")
+        let s: String = s
+            .split("_")
             .map(|v| v.as_bytes().capitalise_ascii())
             .map(to_string_lossy)
             .join("")

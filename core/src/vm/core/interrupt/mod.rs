@@ -43,8 +43,8 @@ pub use windows::Signal;
 unsafe impl Send for Signal {}
 unsafe impl Sync for Signal {}
 
-use std::thread::JoinHandle;
 use bp3d_util::simple_error;
+use std::thread::JoinHandle;
 
 simple_error! {
     pub Error {
@@ -55,7 +55,9 @@ simple_error! {
     }
 }
 
-pub fn spawn_interruptible<R: Send + 'static>(f: impl FnOnce(&mut crate::vm::RootVm) -> R + Send + 'static) -> (Signal, JoinHandle<R>) {
+pub fn spawn_interruptible<R: Send + 'static>(
+    f: impl FnOnce(&mut crate::vm::RootVm) -> R + Send + 'static,
+) -> (Signal, JoinHandle<R>) {
     let (send, recv) = std::sync::mpsc::channel();
     let handle = std::thread::spawn(move || {
         let mut vm = crate::vm::RootVm::new();

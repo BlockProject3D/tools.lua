@@ -26,15 +26,15 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::cell::RefCell;
-use std::collections::HashMap;
-use bp3d_util::simple_error;
 use crate::decl_closure;
 use crate::libs::interface::Lib;
 use crate::vm::closure::rc::Rc;
+use crate::vm::namespace::Namespace;
 use crate::vm::value::any::{AnyParam, UncheckedAnyReturn};
 use crate::vm::Vm;
-use crate::vm::namespace::Namespace;
+use bp3d_util::simple_error;
+use std::cell::RefCell;
+use std::collections::HashMap;
 
 simple_error! {
     pub Error {
@@ -65,7 +65,9 @@ impl Provider {
         let id = path.find('.').ok_or(Error::InvalidSyntax)?;
         let source = &path[..id];
         let guard = self.0.borrow();
-        let src = guard.get(source).ok_or_else(|| Error::UnknownSource(source.into()))?;
+        let src = guard
+            .get(source)
+            .ok_or_else(|| Error::UnknownSource(source.into()))?;
         let ret = src.run(vm, path)?;
         Ok(ret)
     }

@@ -26,13 +26,13 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+mod interface;
 mod linux;
 mod mac;
 mod windows;
-mod interface;
 
 pub use interface::*;
 
-pub use windows::Windows;
 pub use linux::Linux;
 pub use mac::MacOS;
+pub use windows::Windows;

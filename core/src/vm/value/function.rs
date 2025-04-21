@@ -26,7 +26,6 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::fmt::{Debug, Display};
 use crate::ffi::laux::luaL_checktype;
 use crate::ffi::lua::{lua_pushvalue, lua_topointer, Type};
 use crate::util::SimpleDrop;
@@ -35,19 +34,23 @@ use crate::vm::function::{FromParam, IntoParam};
 use crate::vm::registry::core::RegistryKey;
 use crate::vm::registry::Registry;
 use crate::vm::util::LuaType;
-use crate::vm::value::{FromLua, IntoLua};
 use crate::vm::value::util::{ensure_type_equals, ensure_value_top};
+use crate::vm::value::{FromLua, IntoLua};
 use crate::vm::Vm;
+use std::fmt::{Debug, Display};
 
 pub struct LuaFunction<'a> {
     vm: &'a Vm,
-    index: i32
+    index: i32,
 }
 
 impl Clone for LuaFunction<'_> {
     fn clone(&self) -> Self {
         unsafe { lua_pushvalue(self.vm.as_ptr(), self.index) };
-        LuaFunction { vm: self.vm, index: self.vm.top() }
+        LuaFunction {
+            vm: self.vm,
+            index: self.vm.top(),
+        }
     }
 }
 
@@ -59,11 +62,15 @@ impl PartialEq for LuaFunction<'_> {
     }
 }
 
-impl Eq for LuaFunction<'_> { }
+impl Eq for LuaFunction<'_> {}
 
 impl Display for LuaFunction<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "function@{:X}", unsafe { lua_topointer(self.vm.as_ptr(), self.index) } as usize)
+        write!(
+            f,
+            "function@{:X}",
+            unsafe { lua_topointer(self.vm.as_ptr(), self.index) } as usize
+        )
     }
 }
 
@@ -73,9 +80,9 @@ impl Debug for LuaFunction<'_> {
     }
 }
 
-unsafe impl SimpleDrop for LuaFunction<'_> { }
+unsafe impl SimpleDrop for LuaFunction<'_> {}
 
-impl LuaType for LuaFunction<'_> { }
+impl LuaType for LuaFunction<'_> {}
 
 impl<'a> FromParam<'a> for LuaFunction<'a> {
     unsafe fn from_param(vm: &'a Vm, index: i32) -> Self {
@@ -98,7 +105,9 @@ unsafe impl IntoParam for LuaFunction<'_> {
 impl<'a> LuaFunction<'a> {
     pub fn call<'b, R: FromLua<'b>>(&'b self, value: impl IntoLua) -> crate::vm::Result<R> {
         let pos = unsafe { push_error_handler(self.vm.as_ptr()) };
-        unsafe { lua_pushvalue(self.vm.as_ptr(), self.index); }
+        unsafe {
+            lua_pushvalue(self.vm.as_ptr(), self.index);
+        }
         let num_values = value.into_lua(self.vm);
         unsafe { pcall(self.vm, num_values as _, R::num_values() as _, pos)? };
         R::from_lua(self.vm, -(R::num_values() as i32))
@@ -110,13 +119,16 @@ impl<'a> FromLua<'a> for LuaFunction<'a> {
     unsafe fn from_lua_unchecked(vm: &'a Vm, index: i32) -> LuaFunction<'a> {
         LuaFunction {
             vm,
-            index: vm.get_absolute_index(index)
+            index: vm.get_absolute_index(index),
         }
     }
 
     fn from_lua(vm: &'a Vm, index: i32) -> crate::vm::Result<Self> {
         ensure_type_equals(vm, index, Type::Function)?;
-        Ok(LuaFunction { vm, index: vm.get_absolute_index(index) })
+        Ok(LuaFunction {
+            vm,
+            index: vm.get_absolute_index(index),
+        })
     }
 }
 
@@ -131,7 +143,11 @@ impl Registry for LuaFunction<'_> {
     }
 
     #[inline(always)]
-    fn registry_swap(self, vm: &Vm, old: RegistryKey<Self::RegistryValue>) -> RegistryKey<Self::RegistryValue> {
+    fn registry_swap(
+        self,
+        vm: &Vm,
+        old: RegistryKey<Self::RegistryValue>,
+    ) -> RegistryKey<Self::RegistryValue> {
         // If the function is not at the top of the stack, move it to the top.
         ensure_value_top(vm, self.index);
         unsafe { old.as_raw().replace(vm) };

@@ -26,18 +26,18 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-pub mod core;
-pub mod function;
-pub mod value;
-pub mod error;
-pub mod util;
-pub mod userdata;
 pub mod closure;
+pub mod core;
+pub mod error;
+pub mod function;
+pub mod namespace;
 pub mod registry;
 pub mod table;
 pub mod thread;
-pub mod namespace;
+pub mod userdata;
+pub mod util;
+pub mod value;
 
-pub use core::{Vm, RootVm};
+pub use core::{RootVm, Vm};
 
 pub type Result<T> = std::result::Result<T, error::Error>;

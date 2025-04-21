@@ -30,7 +30,7 @@
 //TODO: Use features to disable RootVm related stuff, such as destructors, interruption, etc.
 
 pub mod ffi;
-pub mod vm;
+pub mod libs;
 mod r#macro;
 pub mod util;
-pub mod libs;
+pub mod vm;

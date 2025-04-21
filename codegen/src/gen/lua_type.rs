@@ -26,12 +26,12 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use crate::parser::enums::EnumVariant;
+use crate::parser::structs::StructField;
+use crate::parser::Parser;
 use proc_macro2::{Ident, TokenStream};
 use quote::quote;
 use syn::Generics;
-use crate::parser::enums::EnumVariant;
-use crate::parser::Parser;
-use crate::parser::structs::StructField;
 
 pub struct LuaType {
     name: Ident,
@@ -64,7 +64,7 @@ impl Parser for LuaType {
                     tokens.push(self.parse_field(v));
                 }
             }
-            EnumVariant::None(_) => ()
+            EnumVariant::None(_) => (),
         }
         tokens
     }

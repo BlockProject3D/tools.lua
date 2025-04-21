@@ -27,8 +27,8 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use bp3d_lua::decl_lib_func;
-use bp3d_lua::vm::RootVm;
 use bp3d_lua::vm::function::types::RFunction;
+use bp3d_lua::vm::RootVm;
 
 struct ValueWithDrop;
 impl ValueWithDrop {
@@ -53,16 +53,26 @@ decl_lib_func! {
 #[test]
 fn test_vm_destructor() {
     let mut vm = RootVm::new();
-    vm.set_global(c"test_c_function", RFunction::wrap(test_c_function)).unwrap();
+    vm.set_global(c"test_c_function", RFunction::wrap(test_c_function))
+        .unwrap();
     let time = std::time::Instant::now();
     let res = vm.run_code::<&str>(c"return test_c_function('this is a test\\xFF', 0.42)");
     assert!(res.is_err());
     let err = res.unwrap_err().into_runtime().unwrap();
-    assert_eq!(err.msg(), "rust error: invalid utf-8 sequence of 1 bytes from index 14");
-    assert!(vm.run_code::<&str>(c"return test_c_function('this is a test', 0.42)").is_ok());
-    let s = vm.run_code::<&str>(c"return test_c_function('this is a test', 0.42)").unwrap();
+    assert_eq!(
+        err.msg(),
+        "rust error: invalid utf-8 sequence of 1 bytes from index 14"
+    );
+    assert!(vm
+        .run_code::<&str>(c"return test_c_function('this is a test', 0.42)")
+        .is_ok());
+    let s = vm
+        .run_code::<&str>(c"return test_c_function('this is a test', 0.42)")
+        .unwrap();
     assert_eq!(s, "Hello this is a test (0.42)");
-    assert!(vm.run_code::<bool>(c"return test_c_function('this is a test', 0.42)").is_err());
+    assert!(vm
+        .run_code::<bool>(c"return test_c_function('this is a test', 0.42)")
+        .is_err());
     vm.clear();
     let time = time.elapsed();
     println!("time: {:?}", time);

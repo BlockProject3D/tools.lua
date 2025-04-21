@@ -27,9 +27,9 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 mod compat;
-mod time;
 mod instant;
+mod time;
 
 pub use compat::Compat;
-pub use time::Time;
 pub use instant::Instant;
+pub use time::Time;

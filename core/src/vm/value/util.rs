@@ -35,12 +35,13 @@ use crate::vm::Vm;
 #[inline(always)]
 pub fn ensure_type_equals(vm: &Vm, index: i32, expected: Type) -> crate::vm::Result<()> {
     let ty = unsafe { crate::ffi::lua::lua_type(vm.as_ptr(), index) };
-    if ty == expected { //FIXME: likely branch
+    if ty == expected {
+        //FIXME: likely branch
         Ok(())
     } else {
         Err(Error::Type(TypeError {
             expected,
-            actual: ty
+            actual: ty,
         }))
     }
 }
@@ -71,7 +72,7 @@ pub fn ensure_single_into_lua(vm: &Vm, value: impl IntoLua) -> crate::vm::Result
     let nums = value.into_lua(vm);
     if nums != 1 {
         // Clear the stack.
-        unsafe { lua_settop(vm.as_ptr(), -(nums as i32)-1) };
+        unsafe { lua_settop(vm.as_ptr(), -(nums as i32) - 1) };
         return Err(Error::MultiValue);
     }
     Ok(())

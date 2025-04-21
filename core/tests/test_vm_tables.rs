@@ -26,8 +26,8 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use bp3d_lua::vm::RootVm;
 use bp3d_lua::vm::table::Table;
+use bp3d_lua::vm::RootVm;
 
 #[test]
 fn tables() {
@@ -44,7 +44,8 @@ fn tables() {
         tbl.set_field(c"sub", new_table)?;
         assert_eq!(tbl.len(), 3);
         vm.set_global(c"myTable", tbl)
-    }).unwrap();
+    })
+    .unwrap();
     let new_top = vm.top();
     assert_eq!(top, new_top);
     let v = vm.run_code::<f64>(c"return myTable.c");
@@ -74,6 +75,7 @@ fn tables() {
         }
         assert_eq!(v, "My great string");
         Ok(())
-    }).unwrap();
+    })
+    .unwrap();
     assert_eq!(vm.top(), new_top);
 }

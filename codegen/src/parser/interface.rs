@@ -26,10 +26,10 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use proc_macro2::TokenStream;
-use syn::Data;
 use crate::parser::enums::{EnumParser, EnumVariant};
 use crate::parser::structs::{StructField, StructParser};
+use proc_macro2::TokenStream;
+use syn::Data;
 
 pub trait Parser: Sized {
     type ParsedField;
@@ -59,7 +59,7 @@ pub trait Parser: Sized {
                 }
                 self.gen_enum(parsed)
             }
-            _ => panic!("Unsupported type")
+            _ => panic!("Unsupported type"),
         }
     }
 }

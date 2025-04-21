@@ -26,6 +26,6 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-pub mod lua;
-pub mod laux;
 pub mod ext;
+pub mod laux;
+pub mod lua;

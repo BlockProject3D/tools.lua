@@ -26,10 +26,10 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use crate::vm::userdata::{core::Registry, Error};
+use crate::vm::Vm;
 use std::borrow::Cow;
 use std::ffi::CStr;
-use crate::vm::userdata::{Error, core::Registry};
-use crate::vm::Vm;
 
 pub trait UserData: Sized {
     const CLASS_NAME: &'static CStr;

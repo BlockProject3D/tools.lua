@@ -26,9 +26,9 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use crate::parser::structs::{StructField, StructParser};
 use proc_macro2::Ident;
 use syn::{Fields, Variant};
-use crate::parser::structs::{StructField, StructParser};
 
 pub struct EnumVariantSingle {
     pub unique_name: Ident,
@@ -43,7 +43,7 @@ pub struct EnumVariantMulti {
 pub enum EnumVariant {
     SingleField(EnumVariantSingle),
     MultiField(EnumVariantMulti),
-    None(Ident)
+    None(Ident),
 }
 
 pub struct EnumParser;
@@ -57,7 +57,7 @@ impl EnumParser {
                 let fields = v.named.into_iter().map(|v| parser.parse(v));
                 EnumVariant::MultiField(EnumVariantMulti {
                     unique_name,
-                    fields: fields.collect()
+                    fields: fields.collect(),
                 })
             }
             Fields::Unnamed(v) => {
@@ -65,17 +65,17 @@ impl EnumParser {
                 if v.unnamed.len() == 1 {
                     EnumVariant::SingleField(EnumVariantSingle {
                         unique_name,
-                        field: parser.parse(v.unnamed.into_iter().next().unwrap())
+                        field: parser.parse(v.unnamed.into_iter().next().unwrap()),
                     })
                 } else {
                     let fields = v.unnamed.into_iter().map(|v| parser.parse(v));
                     EnumVariant::MultiField(EnumVariantMulti {
                         unique_name,
-                        fields: fields.collect()
+                        fields: fields.collect(),
                     })
                 }
             }
-            Fields::Unit => EnumVariant::None(unique_name)
+            Fields::Unit => EnumVariant::None(unique_name),
         }
     }
 }

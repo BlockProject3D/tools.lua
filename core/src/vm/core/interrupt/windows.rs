@@ -26,14 +26,17 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::time::Duration;
-use std::sync::Mutex;
+use crate::ffi::lua::{
+    lua_error, lua_pushstring, lua_sethook, Debug, Hook, State, MASKCALL, MASKCOUNT, MASKLINE,
+    MASKRET,
+};
 use crate::vm::RootVm;
 use bp3d_debug::{error, warning};
+use std::sync::Mutex;
+use std::time::Duration;
 use windows_sys::Win32::Foundation::HANDLE;
-use windows_sys::Win32::System::Threading::{ GetCurrentThread, SuspendThread, ResumeThread };
 use windows_sys::Win32::System::Diagnostics::Debug::{GetThreadContext, CONTEXT};
-use crate::ffi::lua::{lua_error, lua_pushstring, lua_sethook, Debug, Hook, State, MASKCALL, MASKCOUNT, MASKLINE, MASKRET};
+use windows_sys::Win32::System::Threading::{GetCurrentThread, ResumeThread, SuspendThread};
 
 use super::Error;
 
@@ -49,7 +52,12 @@ extern "C-unwind" fn lua_interrupt(l: State, _: Debug) {
         }
     }
     unsafe {
-        lua_sethook(l, std::mem::transmute::<*const (), Hook>(std::ptr::null()), 0, 0);
+        lua_sethook(
+            l,
+            std::mem::transmute::<*const (), Hook>(std::ptr::null()),
+            0,
+            0,
+        );
         lua_pushstring(l, c"interrupted".as_ptr());
         lua_error(l);
     }
@@ -57,42 +65,52 @@ extern "C-unwind" fn lua_interrupt(l: State, _: Debug) {
 
 pub struct Signal {
     l: State,
-    th: HANDLE
+    th: HANDLE,
 }
 
 impl Signal {
     pub fn create(vm: &mut RootVm) -> Self {
         let th = unsafe { GetCurrentThread() };
         let l = vm.as_ptr();
-        Self {
-            l,
-            th
-        }
+        Self { l, th }
     }
 
     pub fn send(&self, duration: Duration) -> Result<(), Error> {
         let (send2, recv2) = std::sync::mpsc::channel();
         {
-            let mut lock = SIG_STATE.try_lock().map_err(|_| Error::AlreadyInterrupting)?;
+            let mut lock = SIG_STATE
+                .try_lock()
+                .map_err(|_| Error::AlreadyInterrupting)?;
             *lock = Some(send2);
         }
         if self.th == unsafe { GetCurrentThread() } {
             // If somehow the system thread that ineterrupts the Vm is the same as the one which started the Vm, then directly set the hook.
             unsafe {
-                lua_sethook(self.l, lua_interrupt, MASKCOUNT | MASKCALL | MASKLINE | MASKRET, 1);
+                lua_sethook(
+                    self.l,
+                    lua_interrupt,
+                    MASKCOUNT | MASKCALL | MASKLINE | MASKRET,
+                    1,
+                );
             }
         } else {
             unsafe {
                 let mut ctx: CONTEXT = std::mem::zeroed();
                 // Requests to suspend the thread.
-                if SuspendThread(self.th) == u32::MAX { //(DWORD) -1
+                if SuspendThread(self.th) == u32::MAX {
+                    //(DWORD) -1
                     return Err(Error::Unknown);
                 }
                 // This call forces synchronization with the thread to be suspended.
                 if GetThreadContext(self.th, &mut ctx as _) == 0 {
                     return Err(Error::Unknown);
                 }
-                lua_sethook(self.l, lua_interrupt, MASKCOUNT | MASKCALL | MASKLINE | MASKRET, 1);
+                lua_sethook(
+                    self.l,
+                    lua_interrupt,
+                    MASKCOUNT | MASKCALL | MASKLINE | MASKRET,
+                    1,
+                );
                 // Resume the thread.
                 let _ = ResumeThread(self.th);
             }

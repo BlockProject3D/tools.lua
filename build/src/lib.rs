@@ -26,12 +26,12 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+pub mod build;
+mod info;
 mod patch;
 mod target;
 mod util;
-mod info;
-pub mod build;
 
+pub use crate::info::{BuildInfo, BuildInfoBase};
 pub use crate::patch::Patch;
 pub use crate::target::Target;
-pub use crate::info::{BuildInfo, BuildInfoBase};

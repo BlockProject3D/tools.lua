@@ -54,7 +54,11 @@ impl RegistryValue for LuaFunction {
 }
 
 impl RegistryKey<LuaFunction> {
-    pub fn call<'a, T: IntoLua, R: FromLua<'a>>(&self, vm: &'a Vm, value: T) -> crate::vm::Result<R> {
+    pub fn call<'a, T: IntoLua, R: FromLua<'a>>(
+        &self,
+        vm: &'a Vm,
+        value: T,
+    ) -> crate::vm::Result<R> {
         let pos = unsafe { push_error_handler(vm.as_ptr()) };
         unsafe { self.as_raw().push(vm) };
         let num_values = value.into_lua(vm);

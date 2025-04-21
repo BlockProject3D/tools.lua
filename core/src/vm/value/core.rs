@@ -27,13 +27,16 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::ffi::laux::luaL_testudata;
-use crate::ffi::lua::{lua_tolstring, lua_type, lua_tointeger, lua_tonumber, Type, lua_toboolean, lua_touserdata, lua_settop};
-use crate::vm::function::IntoParam;
-use crate::vm::Vm;
+use crate::ffi::lua::{
+    lua_settop, lua_toboolean, lua_tointeger, lua_tolstring, lua_tonumber, lua_touserdata,
+    lua_type, Type,
+};
 use crate::vm::error::{Error, TypeError};
+use crate::vm::function::IntoParam;
 use crate::vm::userdata::UserDataImmutable;
-use crate::vm::value::{FromLua, IntoLua};
 use crate::vm::value::util::ensure_type_equals;
+use crate::vm::value::{FromLua, IntoLua};
+use crate::vm::Vm;
 
 impl<'a> FromLua<'a> for &'a str {
     unsafe fn from_lua_unchecked(vm: &'a Vm, index: i32) -> Self {
@@ -53,11 +56,11 @@ impl<'a> FromLua<'a> for &'a str {
                     let s = lua_tolstring(l, index, &mut len as _);
                     let slice = std::slice::from_raw_parts(s as _, len);
                     std::str::from_utf8(slice).map_err(Error::InvalidUtf8)
-                },
+                }
                 _ => Err(Error::Type(TypeError {
                     expected: Type::String,
-                    actual: ty
-                }))
+                    actual: ty,
+                })),
             }
         }
     }
@@ -81,11 +84,11 @@ impl<'a> FromLua<'a> for &'a [u8] {
                     let s = lua_tolstring(l, index, &mut len as _);
                     let slice = std::slice::from_raw_parts(s as *const u8, len);
                     Ok(slice)
-                },
+                }
                 _ => Err(Error::Type(TypeError {
                     expected: Type::String,
-                    actual: ty
-                }))
+                    actual: ty,
+                })),
             }
         }
     }
@@ -156,7 +159,8 @@ impl<'a, T: UserDataImmutable> FromLua<'a> for &'a T {
     }
 
     fn from_lua(vm: &'a Vm, index: i32) -> crate::vm::Result<Self> {
-        let this_ptr = unsafe { luaL_testudata(vm.as_ptr(), index, T::CLASS_NAME.as_ptr()) } as *const T;
+        let this_ptr =
+            unsafe { luaL_testudata(vm.as_ptr(), index, T::CLASS_NAME.as_ptr()) } as *const T;
         if this_ptr.is_null() {
             return Err(Error::Type(TypeError {
                 expected: Type::Userdata,

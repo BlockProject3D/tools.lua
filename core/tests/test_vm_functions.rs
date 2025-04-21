@@ -26,16 +26,18 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::ffi::CStr;
-use bp3d_lua::vm::RootVm;
-use bp3d_lua::vm::value::function::LuaFunction;
 use bp3d_lua::vm::table::Table;
+use bp3d_lua::vm::value::function::LuaFunction;
+use bp3d_lua::vm::RootVm;
+use std::ffi::CStr;
 
 #[test]
 fn test_vm_function_1_arg() {
     let mut vm = RootVm::new();
     let top = vm.top();
-    let f: LuaFunction = vm.run_code(c"return function(value) return 'this is a test ' .. value end").unwrap();
+    let f: LuaFunction = vm
+        .run_code(c"return function(value) return 'this is a test ' .. value end")
+        .unwrap();
     let str: &str = f.call(42.42).unwrap();
     assert_eq!(str, "this is a test 42.42");
     let str: &str = f.call(42).unwrap();

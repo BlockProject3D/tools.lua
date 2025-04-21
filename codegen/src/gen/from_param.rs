@@ -26,30 +26,35 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use crate::parser::enums::EnumVariant;
+use crate::parser::structs::StructField;
+use crate::parser::Parser;
 use proc_macro2::{Ident, TokenStream};
 use quote::{quote, ToTokens};
 use syn::Generics;
-use crate::parser::enums::EnumVariant;
-use crate::parser::Parser;
-use crate::parser::structs::StructField;
 
 pub struct FromParam {
     name: Ident,
     generics: Generics,
     is_index_based: bool,
-    is_simple_enum: bool
+    is_simple_enum: bool,
 }
 
 impl FromParam {
     pub fn new(name: Ident, generics: Generics) -> Self {
-        Self { name, generics, is_index_based: false, is_simple_enum: true }
+        Self {
+            name,
+            generics,
+            is_index_based: false,
+            is_simple_enum: true,
+        }
     }
 }
 
 pub struct Field {
     name: Ident,
     from_param: TokenStream,
-    try_from_param: TokenStream
+    try_from_param: TokenStream,
 }
 
 impl Parser for FromParam {
@@ -77,7 +82,7 @@ impl Parser for FromParam {
                 unsafe { #reader };
                 top += 1;
                 let #name: #ty = bp3d_lua::vm::function::FromParam::try_from_param(vm, top)?;
-            }
+            },
         }
     }
 
@@ -101,7 +106,7 @@ impl Parser for FromParam {
                             Some(v) => return Some(#name::#variant(v)),
                             None => ()
                         };
-                    }
+                    },
                 }
             }
             EnumVariant::MultiField(_) => panic!("Multi-field enum variants are not supported"),
@@ -121,7 +126,7 @@ impl Parser for FromParam {
                             true => return Some(#name::#variant),
                             false => ()
                         };
-                    }
+                    },
                 }
             }
         }
@@ -130,7 +135,11 @@ impl Parser for FromParam {
     fn gen_struct(self, parsed: Vec<Self::ParsedField>) -> TokenStream {
         let name = self.name;
         let generics = self.generics;
-        let lifetime = generics.lifetimes().next().map(|v| v.into_token_stream()).unwrap_or(quote! { '_ });
+        let lifetime = generics
+            .lifetimes()
+            .next()
+            .map(|v| v.into_token_stream())
+            .unwrap_or(quote! { '_ });
         let from_params = parsed.iter().map(|field| &field.from_param);
         let try_from_params = parsed.iter().map(|field| &field.try_from_param);
         let values = parsed.iter().map(|field| &field.name);
@@ -177,7 +186,11 @@ impl Parser for FromParam {
     fn gen_enum(self, parsed: Vec<Self::ParsedVariant>) -> TokenStream {
         let name = self.name;
         let generics = self.generics;
-        let lifetime = generics.lifetimes().next().map(|v| v.into_token_stream()).unwrap_or(quote! { '_ });
+        let lifetime = generics
+            .lifetimes()
+            .next()
+            .map(|v| v.into_token_stream())
+            .unwrap_or(quote! { '_ });
         let from_params = parsed.iter().map(|field| &field.from_param);
         let try_from_params = parsed.iter().map(|field| &field.try_from_param);
         quote! {

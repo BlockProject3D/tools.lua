@@ -26,12 +26,12 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::io::{Error, ErrorKind};
-use std::process::Command;
-use crate::build::Build;
 use crate::BuildInfo;
+use crate::build::Build;
 use crate::build::interface::Lib;
 use crate::util::CommandRunner;
+use std::io::{Error, ErrorKind};
+use std::process::Command;
 
 pub struct Windows;
 
@@ -55,8 +55,9 @@ impl Build for Windows {
     }
 
     fn post_build(info: &BuildInfo, _: &CommandRunner) -> std::io::Result<()> {
-        if !info.dynamic() { //Nothing to be done in non-dynamic builds.
-            return Ok(())
+        if !info.dynamic() {
+            //Nothing to be done in non-dynamic builds.
+            return Ok(());
         }
         let dllname = format!("libbp3d-luajit-{}.dll", info.version());
         let path_to_dll = info.build_dir().join("src").join(&dllname);
@@ -72,7 +73,7 @@ impl Build for Windows {
         Lib {
             name: libname,
             path: info.build_dir().join("src"),
-            dynamic: info.dynamic()
+            dynamic: info.dynamic(),
         }
     }
 }

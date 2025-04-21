@@ -26,10 +26,13 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::rc::Rc;
-use bp3d_debug::debug;
-use crate::ffi::lua::{lua_gettable, lua_pushlightuserdata, lua_pushstring, lua_settable, lua_settop, lua_touserdata, REGISTRYINDEX};
+use crate::ffi::lua::{
+    lua_gettable, lua_pushlightuserdata, lua_pushstring, lua_settable, lua_settop, lua_touserdata,
+    REGISTRYINDEX,
+};
 use crate::vm::Vm;
+use bp3d_debug::debug;
+use std::rc::Rc;
 
 /// This trait represents a value which can be attached to a [Pool](Pool).
 pub trait Raw {
@@ -72,7 +75,7 @@ impl<T> Raw for Rc<T> {
 
 #[derive(Default)]
 pub struct Pool {
-    leaked: Vec<Box<dyn FnOnce()>>
+    leaked: Vec<Box<dyn FnOnce()>>,
 }
 
 impl Pool {
@@ -117,12 +120,18 @@ impl Pool {
         unsafe { Self::_from_vm(vm) }
     }
 
-    pub fn attach<R: Raw>(vm: &Vm, raw: R) -> R::Ptr where R::Ptr: 'static {
+    pub fn attach<R: Raw>(vm: &Vm, raw: R) -> R::Ptr
+    where
+        R::Ptr: 'static,
+    {
         let ptr = unsafe { Self::_from_vm(vm) };
         ptr.attach_mut(raw)
     }
 
-    pub fn attach_mut<R: Raw>(&mut self, raw: R) -> R::Ptr where R::Ptr: 'static {
+    pub fn attach_mut<R: Raw>(&mut self, raw: R) -> R::Ptr
+    where
+        R::Ptr: 'static,
+    {
         let ptr = R::into_raw(raw);
         self.leaked.push(Box::new(move || {
             unsafe { R::delete(ptr) };
@@ -133,7 +142,10 @@ impl Pool {
 
 impl Drop for Pool {
     fn drop(&mut self) {
-        debug!({num=self.leaked.len() as u32}, "Deleting leaked pointers...");
+        debug!(
+            { num = self.leaked.len() as u32 },
+            "Deleting leaked pointers..."
+        );
         let v = std::mem::replace(&mut self.leaked, Vec::new());
         for f in v {
             f()

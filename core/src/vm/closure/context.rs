@@ -28,17 +28,17 @@
 
 //! Second version of the context tool.
 
-use std::marker::PhantomData;
-use std::ops::{Deref, DerefMut};
 use crate::ffi::laux::luaL_error;
 use crate::ffi::lua::lua_newuserdata;
 use crate::util::SimpleDrop;
 use crate::vm::closure::{FromUpvalue, IntoUpvalue, Upvalue};
 use crate::vm::registry::core::RawRegistryKey;
 use crate::vm::Vm;
+use std::marker::PhantomData;
+use std::ops::{Deref, DerefMut};
 
 pub struct Cell<T> {
-    ptr: *mut *const T
+    ptr: *mut *const T,
 }
 
 impl<T> Cell<T> {
@@ -50,13 +50,13 @@ impl<T> Cell<T> {
         unsafe { *self.ptr = obj as _ };
         Guard {
             useless: PhantomData,
-            ud: self.ptr
+            ud: self.ptr,
         }
     }
 }
 
 pub struct CellMut<T> {
-    ptr: *mut *const T
+    ptr: *mut *const T,
 }
 
 impl<T> CellMut<T> {
@@ -68,21 +68,21 @@ impl<T> CellMut<T> {
         unsafe { *self.ptr = obj as _ };
         Guard {
             useless: PhantomData,
-            ud: self.ptr
+            ud: self.ptr,
         }
     }
 }
 
 pub struct Context<T> {
     key: RawRegistryKey,
-    ptr: *mut *const T
+    ptr: *mut *const T,
 }
 
 impl<T> Clone for Context<T> {
     fn clone(&self) -> Self {
         Self {
             key: self.key,
-            ptr: self.ptr
+            ptr: self.ptr,
         }
     }
 }
@@ -97,7 +97,7 @@ impl<T> Clone for ContextMut<T> {
     }
 }
 
-impl<T> Copy for ContextMut<T> { }
+impl<T> Copy for ContextMut<T> {}
 
 impl<T: 'static> Context<T> {
     pub fn new(vm: &Vm) -> Self {
@@ -107,7 +107,7 @@ impl<T: 'static> Context<T> {
         };
         Self {
             key,
-            ptr: ptr as *mut *const T
+            ptr: ptr as *mut *const T,
         }
     }
 }
@@ -121,13 +121,15 @@ impl<T: 'static> ContextMut<T> {
 #[repr(transparent)]
 pub struct Guard<'a, T> {
     ud: *mut *const T,
-    useless: PhantomData<&'a T>
+    useless: PhantomData<&'a T>,
 }
 
 impl<'a, T> Drop for Guard<'a, T> {
     #[inline(always)]
     fn drop(&mut self) {
-        unsafe { *self.ud = std::ptr::null(); }
+        unsafe {
+            *self.ud = std::ptr::null();
+        }
     }
 }
 
@@ -162,14 +164,17 @@ impl<'a, T: 'static> DerefMut for Mut<'a, T> {
     }
 }
 
-unsafe impl<'a, T: 'static> SimpleDrop for Ref<'a, T> { }
-unsafe impl<'a, T: 'static> SimpleDrop for Mut<'a, T> { }
+unsafe impl<'a, T: 'static> SimpleDrop for Ref<'a, T> {}
+unsafe impl<'a, T: 'static> SimpleDrop for Mut<'a, T> {}
 
 impl<'a, T: 'static> FromUpvalue<'a> for Ref<'a, T> {
     unsafe fn from_upvalue(vm: &'a Vm, index: i32) -> Self {
         let ptr: *mut *const T = FromUpvalue::from_upvalue(vm, index);
         if (*ptr).is_null() {
-            luaL_error(vm.as_ptr(), c"Context is not available in this function.".as_ptr());
+            luaL_error(
+                vm.as_ptr(),
+                c"Context is not available in this function.".as_ptr(),
+            );
             // luaL_error raises a lua exception and unwinds, so this cannot be reached.
             std::hint::unreachable_unchecked();
         }
@@ -181,7 +186,10 @@ impl<'a, T: 'static> FromUpvalue<'a> for Mut<'a, T> {
     unsafe fn from_upvalue(vm: &'a Vm, index: i32) -> Self {
         let ptr: *mut *mut T = FromUpvalue::from_upvalue(vm, index);
         if (*ptr).is_null() {
-            luaL_error(vm.as_ptr(), c"Context is not available in this function.".as_ptr());
+            luaL_error(
+                vm.as_ptr(),
+                c"Context is not available in this function.".as_ptr(),
+            );
             // luaL_error raises a lua exception and unwinds, so this cannot be reached.
             std::hint::unreachable_unchecked();
         }

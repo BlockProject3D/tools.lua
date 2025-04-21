@@ -26,13 +26,13 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::borrow::Cow;
-use bp3d_util::string::StrTools;
 use crate::decl_lib_func;
 use crate::libs::Lib;
 use crate::vm::function::types::RFunction;
 use crate::vm::namespace::Namespace;
 use crate::vm::table::Table;
+use bp3d_util::string::StrTools;
+use std::borrow::Cow;
 
 decl_lib_func! {
     fn contains(src: &str, needle: &str) -> bool {
@@ -133,7 +133,7 @@ impl Lib for Utf8 {
             ("decapitalise", RFunction::wrap(decapitalise)),
             ("upper", RFunction::wrap(upper)),
             ("lower", RFunction::wrap(lower)),
-            ("sub", RFunction::wrap(sub))
+            ("sub", RFunction::wrap(sub)),
         ])
     }
 }

@@ -26,11 +26,11 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-mod load;
-pub mod require;
-mod options;
-mod call;
 mod base;
+mod call;
+mod load;
+mod options;
+pub mod require;
 
 pub use base::Base;
 pub use call::Call;

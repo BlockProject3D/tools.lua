@@ -26,34 +26,32 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use bp3d_util::simple_error;
-use crate::vm::table::Table as LuaTable;
 use crate::decl_lib_func;
 use crate::libs::Lib;
 use crate::vm::function::types::RFunction;
 use crate::vm::namespace::Namespace;
+use crate::vm::table::Table as LuaTable;
 use crate::vm::value::any::AnyValue;
 use crate::vm::Vm;
+use bp3d_util::simple_error;
 
 fn update_rec(vm: &Vm, mut dst: LuaTable, mut src: LuaTable) -> crate::vm::Result<()> {
     for res in src.iter() {
         let (k, v) = res?;
         match v {
-            AnyValue::Table(v) => {
-                vm.scope(|_| {
-                    let dst1: Option<LuaTable> = dst.get(k.clone())?;
-                    match dst1 {
-                        None => {
-                            let tbl = LuaTable::new(vm);
-                            update_rec(vm, tbl.clone(), v)?;
-                            dst.set(k, tbl)?;
-                        },
-                        Some(v1) => update_rec(vm, v1, v)?
+            AnyValue::Table(v) => vm.scope(|_| {
+                let dst1: Option<LuaTable> = dst.get(k.clone())?;
+                match dst1 {
+                    None => {
+                        let tbl = LuaTable::new(vm);
+                        update_rec(vm, tbl.clone(), v)?;
+                        dst.set(k, tbl)?;
                     }
-                    Ok(())
-                })?
-            }
-            _ => dst.set(k, v)?
+                    Some(v1) => update_rec(vm, v1, v)?,
+                }
+                Ok(())
+            })?,
+            _ => dst.set(k, v)?,
         }
     }
     Ok(())
@@ -102,8 +100,8 @@ fn to_string_rec(prefix: String, mut table: LuaTable) -> crate::vm::Result<Vec<S
             AnyValue::Table(v) => {
                 lines.push(format!("{}:", k));
                 lines.extend(to_string_rec(prefix.clone() + "    ", v)?);
-            },
-            v => lines.push(format!("{}: {}", k, v))
+            }
+            v => lines.push(format!("{}: {}", k, v)),
         }
     }
     Ok(lines)
@@ -178,7 +176,7 @@ impl Lib for Table {
             ("containsKey", RFunction::wrap(contains_key)),
             ("protect", RFunction::wrap(protect)),
             ("copy", RFunction::wrap(copy)),
-            ("concat", RFunction::wrap(concat))
+            ("concat", RFunction::wrap(concat)),
         ])
     }
 }

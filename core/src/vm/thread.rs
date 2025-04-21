@@ -26,34 +26,34 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::fmt::{Debug, Display};
-use std::marker::PhantomData;
 use crate::ffi::laux::luaL_checktype;
 use crate::ffi::lua::{lua_remove, lua_resume, lua_status, lua_tothread, ThreadStatus, Type};
 use crate::util::SimpleDrop;
+use crate::vm::core::LoadString;
 use crate::vm::error::{Error, RuntimeError};
 use crate::vm::function::FromParam;
 use crate::vm::util::LuaType;
-use crate::vm::core::LoadString;
-use crate::vm::value::{FromLua, IntoLua};
 use crate::vm::value::util::ensure_type_equals;
+use crate::vm::value::{FromLua, IntoLua};
 use crate::vm::Vm;
+use std::fmt::{Debug, Display};
+use std::marker::PhantomData;
 
 pub enum State {
     Yielded,
-    Finished
+    Finished,
 }
 
 pub struct Thread<'a> {
     vm: Vm,
-    useless: PhantomData<&'a ()>
+    useless: PhantomData<&'a ()>,
 }
 
 impl Clone for Thread<'_> {
     fn clone(&self) -> Self {
         Self {
             vm: unsafe { Vm::from_raw(self.vm.as_ptr()) },
-            useless: PhantomData
+            useless: PhantomData,
         }
     }
 }
@@ -64,11 +64,13 @@ impl PartialEq for Thread<'_> {
     }
 }
 
-impl Eq for Thread<'_> { }
+impl Eq for Thread<'_> {}
 
 impl Display for Thread<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "thread@{:X}", unsafe { std::mem::transmute::<_, usize>(self.vm.as_ptr()) })
+        write!(f, "thread@{:X}", unsafe {
+            std::mem::transmute::<_, usize>(self.vm.as_ptr())
+        })
     }
 }
 
@@ -100,11 +102,13 @@ impl<'a> Thread<'a> {
                 // trace produced by luaL_traceback and remove it from the stack.
                 let error_message: &str = FromLua::from_lua(&self.vm, -1)?;
                 unsafe { lua_remove(self.vm.as_ptr(), -1) };
-                Err(Error::Runtime(RuntimeError::new(String::from(error_message) + "\n<traceback not available>")))
+                Err(Error::Runtime(RuntimeError::new(
+                    String::from(error_message) + "\n<traceback not available>",
+                )))
             }
             ThreadStatus::ErrMem => Err(Error::Memory),
             ThreadStatus::ErrErr => Err(Error::Error),
-            _ => std::unreachable!()
+            _ => std::unreachable!(),
         }
     }
 }
@@ -114,7 +118,7 @@ impl<'a> FromLua<'a> for Thread<'a> {
     unsafe fn from_lua_unchecked(vm: &'a Vm, index: i32) -> Self {
         Thread {
             vm: Vm::from_raw(lua_tothread(vm.as_ptr(), index)),
-            useless: PhantomData
+            useless: PhantomData,
         }
     }
 
@@ -122,21 +126,21 @@ impl<'a> FromLua<'a> for Thread<'a> {
         ensure_type_equals(vm, index, Type::Thread)?;
         Ok(Thread {
             vm: unsafe { Vm::from_raw(lua_tothread(vm.as_ptr(), index)) },
-            useless: PhantomData
+            useless: PhantomData,
         })
     }
 }
 
-unsafe impl SimpleDrop for Thread<'_> { }
+unsafe impl SimpleDrop for Thread<'_> {}
 
-impl LuaType for Thread<'_> { }
+impl LuaType for Thread<'_> {}
 
 impl<'a> FromParam<'a> for Thread<'a> {
     unsafe fn from_param(vm: &'a Vm, index: i32) -> Self {
         luaL_checktype(vm.as_ptr(), index, Type::Thread);
         Thread {
             vm: unsafe { Vm::from_raw(lua_tothread(vm.as_ptr(), index)) },
-            useless: PhantomData
+            useless: PhantomData,
         }
     }
 

@@ -26,12 +26,12 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-mod table;
 mod string;
+mod table;
 mod utf8;
 
-pub use table::Table;
 pub use string::String;
+pub use table::Table;
 pub use utf8::Utf8;
 
 // Workaround for language defect #22259.

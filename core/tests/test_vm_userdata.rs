@@ -26,12 +26,12 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::sync::Mutex;
-use bp3d_lua::{decl_lib_func, decl_userdata, decl_userdata_mut};
 use bp3d_lua::ffi::lua::Number;
-use bp3d_lua::vm::{RootVm, Vm};
 use bp3d_lua::vm::function::types::RFunction;
 use bp3d_lua::vm::userdata::LuaDrop;
+use bp3d_lua::vm::{RootVm, Vm};
+use bp3d_lua::{decl_lib_func, decl_userdata, decl_userdata_mut};
+use std::sync::Mutex;
 
 static MUTEX: Mutex<()> = Mutex::new(());
 
@@ -145,17 +145,24 @@ fn test_vm_userdata_forgot_reg() {
 fn test_vm_userdata_error_handling() {
     let vm = RootVm::new();
     let top = vm.top();
-    vm.register_userdata::<MyInt>(bp3d_lua::vm::userdata::case::Snake).unwrap();
+    vm.register_userdata::<MyInt>(bp3d_lua::vm::userdata::case::Snake)
+        .unwrap();
     assert_eq!(top, vm.top());
     let res = vm.register_userdata::<BrokenObject>(bp3d_lua::vm::userdata::case::Snake);
     assert!(res.is_err());
     let msg = res.unwrap_err().to_string();
-    assert_eq!(msg, "userdata: violation of the unique type rule for mutable method \"replace\"");
+    assert_eq!(
+        msg,
+        "userdata: violation of the unique type rule for mutable method \"replace\""
+    );
     assert_eq!(top, vm.top());
     let res = vm.register_userdata::<BrokenObject2>(bp3d_lua::vm::userdata::case::Snake);
     assert!(res.is_err());
     let msg = res.unwrap_err().to_string();
-    assert_eq!(msg, "userdata: too strict alignment required (16 bytes), max is 8 bytes");
+    assert_eq!(
+        msg,
+        "userdata: too strict alignment required (16 bytes), max is 8 bytes"
+    );
     assert_eq!(top, vm.top());
     let res = vm.register_userdata::<BrokenObject3>(bp3d_lua::vm::userdata::case::Snake);
     assert!(res.is_err());
@@ -165,7 +172,10 @@ fn test_vm_userdata_error_handling() {
     let res = vm.register_userdata::<MyInt>(bp3d_lua::vm::userdata::case::Snake);
     assert!(res.is_err());
     let msg = res.unwrap_err().to_string();
-    assert_eq!(msg, "userdata: class name \"MyInt\" has already been registered");
+    assert_eq!(
+        msg,
+        "userdata: class name \"MyInt\" has already been registered"
+    );
     assert_eq!(top, vm.top());
     let res = vm.register_userdata::<BrokenObject4>(bp3d_lua::vm::userdata::case::Snake);
     assert!(res.is_err());
@@ -180,7 +190,8 @@ fn test_vm_userdata_base(vm: &Vm) {
         LUA_DROP_COUNTER = 0;
     }
     let top = vm.top();
-    vm.register_userdata::<MyInt>(bp3d_lua::vm::userdata::case::Snake).unwrap();
+    vm.register_userdata::<MyInt>(bp3d_lua::vm::userdata::case::Snake)
+        .unwrap();
     assert_eq!(top, vm.top());
     vm.set_global(c"MyInt", RFunction::wrap(my_int)).unwrap();
     assert_eq!(top, vm.top());
@@ -192,9 +203,18 @@ fn test_vm_userdata_base(vm: &Vm) {
     assert_eq!(vm.run_code::<bool>(c"return a < b").unwrap(), true);
     assert_eq!(vm.run_code::<bool>(c"return b > a").unwrap(), true);
     assert_eq!(vm.run_code::<&MyInt>(c"return a + b").unwrap().0, 579);
-    assert_eq!(vm.run_code::<&str>(c"return (a + b):tostring()").unwrap(), "579");
-    assert_eq!(vm.run_code::<Number>(c"return (a + b):tonumber()").unwrap(), 579.0);
-    assert_eq!(vm.run_code::<Number>(c"return a.tonumber(b)").unwrap(), 456.0);
+    assert_eq!(
+        vm.run_code::<&str>(c"return (a + b):tostring()").unwrap(),
+        "579"
+    );
+    assert_eq!(
+        vm.run_code::<Number>(c"return (a + b):tonumber()").unwrap(),
+        579.0
+    );
+    assert_eq!(
+        vm.run_code::<Number>(c"return a.tonumber(b)").unwrap(),
+        456.0
+    );
     assert_eq!(top + 8, vm.top());
 }
 
@@ -217,7 +237,8 @@ fn test_vm_userdata_security1() {
     {
         let vm = RootVm::new();
         test_vm_userdata_base(&vm);
-        vm.run_code::<()>(c"getmetatable(a).__gc = function() print(\"Lua has hacked Rust\") end").unwrap_err();
+        vm.run_code::<()>(c"getmetatable(a).__gc = function() print(\"Lua has hacked Rust\") end")
+            .unwrap_err();
     }
     assert_eq!(unsafe { DROP_COUNTER }, 6);
     assert_eq!(unsafe { LUA_DROP_COUNTER }, 6);
@@ -229,7 +250,8 @@ fn test_vm_userdata_security2() {
     {
         let vm = RootVm::new();
         test_vm_userdata_base(&vm);
-        vm.run_code::<()>(c"a.__gc = function() print(\"Lua has hacked Rust\") end").unwrap_err();
+        vm.run_code::<()>(c"a.__gc = function() print(\"Lua has hacked Rust\") end")
+            .unwrap_err();
     }
     assert_eq!(unsafe { DROP_COUNTER }, 6);
     assert_eq!(unsafe { LUA_DROP_COUNTER }, 6);
@@ -253,12 +275,15 @@ fn test_vm_userdata_security4() {
     {
         let vm = RootVm::new();
         test_vm_userdata_base(&vm);
-        vm.run_code::<()>(c"
+        vm.run_code::<()>(
+            c"
             local func = a.tonumber
             local tbl = {}
             tbl.tonumber = func
             tbl:tonumber()
-        ").unwrap_err();
+        ",
+        )
+        .unwrap_err();
     }
     assert_eq!(unsafe { DROP_COUNTER }, 6);
     assert_eq!(unsafe { LUA_DROP_COUNTER }, 6);
@@ -270,9 +295,12 @@ fn test_vm_userdata_security5() {
     {
         let vm = RootVm::new();
         test_vm_userdata_base(&vm);
-        vm.run_code::<()>(c"
+        vm.run_code::<()>(
+            c"
             rawset(a, '__gc', nil)
-        ").unwrap_err();
+        ",
+        )
+        .unwrap_err();
     }
     assert_eq!(unsafe { DROP_COUNTER }, 6);
     assert_eq!(unsafe { LUA_DROP_COUNTER }, 6);

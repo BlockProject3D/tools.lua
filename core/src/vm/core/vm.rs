@@ -26,35 +26,39 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::cell::Cell;
-use std::ops::{Deref, DerefMut};
-use bp3d_debug::debug;
 use crate::ffi::laux::{luaL_newstate, luaL_openlibs};
-use crate::ffi::lua::{lua_close, lua_getfield, lua_gettop, lua_pushnil, lua_remove, lua_setfield, lua_settop, State, ThreadStatus, GLOBALSINDEX, REGISTRYINDEX};
+use crate::ffi::lua::{
+    lua_close, lua_getfield, lua_gettop, lua_pushnil, lua_remove, lua_setfield, lua_settop, State,
+    ThreadStatus, GLOBALSINDEX, REGISTRYINDEX,
+};
 use crate::util::AnyStr;
-use crate::vm::core::{Load, LoadString};
 use crate::vm::core::destructor::Pool;
 use crate::vm::core::util::{handle_syntax_error, pcall, push_error_handler};
+use crate::vm::core::{Load, LoadString};
 use crate::vm::error::Error;
 use crate::vm::userdata::core::Registry;
 use crate::vm::userdata::{NameConvert, UserData};
-use crate::vm::value::{FromLua, IntoLua};
 use crate::vm::value::function::LuaFunction;
+use crate::vm::value::{FromLua, IntoLua};
+use bp3d_debug::debug;
+use std::cell::Cell;
+use std::ops::{Deref, DerefMut};
 
 #[repr(transparent)]
 pub struct Vm {
-    l: State
+    l: State,
 }
 
 impl Vm {
     #[inline(always)]
     pub unsafe fn from_raw(l: State) -> Self {
-        Self {
-            l
-        }
+        Self { l }
     }
 
-    pub fn scope<R: 'static, F: FnOnce(&Vm) -> crate::vm::Result<R>>(&self, f: F) -> crate::vm::Result<R> {
+    pub fn scope<R: 'static, F: FnOnce(&Vm) -> crate::vm::Result<R>>(
+        &self,
+        f: F,
+    ) -> crate::vm::Result<R> {
         let top = self.top();
         let r = f(self)?;
         unsafe { lua_settop(self.l, top) };
@@ -95,7 +99,9 @@ impl Vm {
     /// Clears the lua stack.
     #[inline(always)]
     pub fn clear(&mut self) {
-        unsafe { lua_settop(self.l, 0); }
+        unsafe {
+            lua_settop(self.l, 0);
+        }
     }
 
     #[inline(always)]
@@ -105,12 +111,16 @@ impl Vm {
 
     pub fn set_global(&self, name: impl AnyStr, value: impl IntoLua) -> crate::vm::Result<()> {
         value.into_lua(self);
-        unsafe { lua_setfield(self.as_ptr(), GLOBALSINDEX, name.to_str()?.as_ptr()); }
+        unsafe {
+            lua_setfield(self.as_ptr(), GLOBALSINDEX, name.to_str()?.as_ptr());
+        }
         Ok(())
     }
 
     pub fn get_global<'a, R: FromLua<'a>>(&'a self, name: impl AnyStr) -> crate::vm::Result<R> {
-        unsafe { lua_getfield(self.as_ptr(), GLOBALSINDEX, name.to_str()?.as_ptr()); }
+        unsafe {
+            lua_getfield(self.as_ptr(), GLOBALSINDEX, name.to_str()?.as_ptr());
+        }
         R::from_lua(self, -1)
     }
 
@@ -171,7 +181,7 @@ thread_local! {
 }
 
 pub struct RootVm {
-    vm: Vm
+    vm: Vm,
 }
 
 impl RootVm {
@@ -183,7 +193,7 @@ impl RootVm {
         unsafe { luaL_openlibs(l) };
         HAS_VM.set(true);
         let mut vm = RootVm {
-            vm: unsafe { Vm::from_raw(l) }
+            vm: unsafe { Vm::from_raw(l) },
         };
         unsafe { Pool::new_in_vm(&mut vm) };
         vm

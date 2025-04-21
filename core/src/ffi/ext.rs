@@ -26,8 +26,8 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::ffi::c_int;
 use crate::ffi::lua::{Integer, Number, State};
+use std::ffi::c_int;
 
 pub type MSize = u32;
 
@@ -52,10 +52,10 @@ extern "C" {
 extern "C" {
     /// Sets the global mode of the JIT.
     pub fn lua_ext_setjitmode(l: State, mode: c_int) -> c_int;
-    
+
     /// Returns global flags of the JIT.
     pub fn lua_ext_getjitflags(l: State) -> u32;
-    
+
     /// Sets global JIT flags.
     pub fn lua_ext_setjitflags(l: State, flags: u32) -> c_int;
 }

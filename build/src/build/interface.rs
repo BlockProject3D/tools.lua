@@ -26,14 +26,14 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::path::PathBuf;
 use crate::BuildInfo;
 use crate::util::CommandRunner;
+use std::path::PathBuf;
 
 pub struct Lib {
     pub name: String,
     pub path: PathBuf,
-    pub dynamic: bool
+    pub dynamic: bool,
 }
 
 pub trait Build {

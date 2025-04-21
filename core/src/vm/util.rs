@@ -26,13 +26,13 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::error::Error;
 use crate::ffi::lua::{lua_error, lua_pushlstring, State};
+use std::error::Error;
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum TypeName {
     Some(&'static str),
-    None
+    None,
 }
 
 pub trait LuaType {
@@ -57,8 +57,8 @@ impl<T: LuaType> LuaType for Option<T> {
 /// * `l`: the lua State on which to raise the lua exception.
 /// * `error`: the Rust error to be converted.
 ///
-/// returns: ! 
-/// 
+/// returns: !
+///
 /// # Safety
 ///
 /// It is UB to call this function outside a lua [CFunction](crate::ffi::lua::CFunction).
