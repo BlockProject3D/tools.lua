@@ -96,7 +96,12 @@ impl Pool {
         };
     }
 
-    pub fn from_vm<'a>(vm: &'a mut Vm) -> &'a mut Self {
+    /// Extracts a destructor pool from the given [Vm].
+    ///
+    /// # Safety
+    ///
+    /// The returned reference must not be aliased.
+    unsafe fn _from_vm(vm: &Vm) -> &mut Self {
         let l = vm.as_ptr();
         unsafe {
             lua_pushstring(l, c"__destructor_pool__".as_ptr());
@@ -108,7 +113,16 @@ impl Pool {
         }
     }
 
-    pub fn attach<R: Raw>(&mut self, raw: R) -> R::Ptr where R::Ptr: 'static {
+    pub fn from_vm(vm: &mut Vm) -> &mut Self {
+        unsafe { Self::_from_vm(vm) }
+    }
+
+    pub fn attach<R: Raw>(vm: &Vm, raw: R) -> R::Ptr where R::Ptr: 'static {
+        let ptr = unsafe { Self::_from_vm(vm) };
+        ptr.attach_mut(raw)
+    }
+
+    pub fn attach_mut<R: Raw>(&mut self, raw: R) -> R::Ptr where R::Ptr: 'static {
         let ptr = R::into_raw(raw);
         self.leaked.push(Box::new(move || {
             unsafe { R::delete(ptr) };

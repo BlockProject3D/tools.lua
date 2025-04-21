@@ -34,7 +34,7 @@ pub trait Lib {
 
     fn load(&self, namespace: &mut Namespace) -> crate::vm::Result<()>;
 
-    fn register(&self, vm: &mut Vm) -> crate::vm::Result<()> {
+    fn register(&self, vm: &Vm) -> crate::vm::Result<()> {
         let mut namespace = Namespace::new(vm, Self::NAMESPACE)?;
         self.load(&mut namespace)?;
         Ok(())
@@ -53,7 +53,7 @@ macro_rules! impl_tuple_lib {
                 Ok(())
             }
 
-            fn register(&self, vm: &mut Vm) -> crate::vm::Result<()> {
+            fn register(&self, vm: &Vm) -> crate::vm::Result<()> {
                 $(
                     self.$id.register(vm)?;
                 )*

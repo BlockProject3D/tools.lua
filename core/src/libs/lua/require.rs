@@ -88,7 +88,7 @@ impl Lib for Require {
         std::unreachable!()
     }
 
-    fn register(&self, vm: &mut Vm) -> crate::vm::Result<()> {
+    fn register(&self, vm: &Vm) -> crate::vm::Result<()> {
         let rc = Rc::from_rust(vm, self.0.clone());
         let mut namespace = Namespace::new(vm, "bp3d.lua")?;
         namespace.add([("require", require(rc))])
