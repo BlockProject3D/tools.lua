@@ -32,7 +32,8 @@ use bp3d_debug::debug;
 use crate::ffi::laux::{luaL_newstate, luaL_openlibs};
 use crate::ffi::lua::{lua_close, lua_getfield, lua_gettop, lua_pushnil, lua_remove, lua_setfield, lua_settop, State, ThreadStatus, GLOBALSINDEX, REGISTRYINDEX};
 use crate::util::AnyStr;
-use crate::vm::core::{Load, LoadString, Raw};
+use crate::vm::core::{Load, LoadString};
+use crate::vm::core::destructor::Pool;
 use crate::vm::core::util::{handle_syntax_error, pcall, push_error_handler};
 use crate::vm::error::Error;
 use crate::vm::userdata::core::Registry;
@@ -170,8 +171,7 @@ thread_local! {
 }
 
 pub struct RootVm {
-    vm: Vm,
-    leaked: Vec<Box<dyn FnOnce()>>
+    vm: Vm
 }
 
 impl RootVm {
@@ -182,18 +182,11 @@ impl RootVm {
         let l = unsafe { luaL_newstate() };
         unsafe { luaL_openlibs(l) };
         HAS_VM.set(true);
-        RootVm {
-            vm: unsafe { Vm::from_raw(l) },
-            leaked: Vec::new()
-        }
-    }
-
-    pub fn attach<R: Raw>(&mut self, raw: R) -> R::Ptr where R::Ptr: 'static {
-        let ptr = R::into_raw(raw);
-        self.leaked.push(Box::new(move || {
-            unsafe { R::delete(ptr) };
-        }));
-        ptr
+        let mut vm = RootVm {
+            vm: unsafe { Vm::from_raw(l) }
+        };
+        unsafe { Pool::new_in_vm(&mut vm) };
+        vm
     }
 }
 
@@ -215,11 +208,8 @@ impl DerefMut for RootVm {
 
 impl Drop for RootVm {
     fn drop(&mut self) {
-        debug!("Deleting leaked pointers...");
-        let v = std::mem::replace(&mut self.leaked, Vec::new());
-        for f in v {
-            f()
-        }
+        debug!("Deleting destructor pool");
+        unsafe { std::ptr::drop_in_place(Pool::from_vm(self)) };
         unsafe {
             debug!("Closing Lua VM...");
             lua_close(self.vm.as_ptr());

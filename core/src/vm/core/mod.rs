@@ -31,6 +31,7 @@ pub mod util;
 mod vm;
 pub mod load;
 pub mod iter;
+pub mod destructor;
 
 #[cfg(feature = "interrupt")]
 pub mod interrupt;

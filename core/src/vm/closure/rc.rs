@@ -69,6 +69,6 @@ impl<T: 'static> IntoUpvalue for Rc<T> {
 impl<T: 'static> Rc<T> {
     #[inline(always)]
     pub fn from_rust(root: &mut RootVm, rc: std::rc::Rc<T>) -> Rc<T> {
-        Rc(root.attach(rc))
+        Rc(crate::vm::core::destructor::Pool::from_vm(root).attach(rc))
     }
 }
