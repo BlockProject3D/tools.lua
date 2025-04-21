@@ -22,6 +22,9 @@ bp3d-os = { version = "1.0.0-rc.4.2.1", features = ["fs", "time"] }
 time = { version = "0.3.37", features = ["formatting"] }
 itertools = { version = "0.14.0" }
 
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.59.0", features = ["Win32_System_Threading", "Win32_System_Kernel"], optional = true }
+
 [target.'cfg(unix)'.dependencies]
 libc = { version = "0.2.170", optional = true }
 
@@ -29,5 +32,5 @@ libc = { version = "0.2.170", optional = true }
 bp3d-lua-build = { version = "1.0.0-rc.1.0.0", path = "../build" }
 
 [features]
-interrupt = ["libc"]
+interrupt = ["libc", "windows-sys"]
 dynamic = []

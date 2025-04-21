@@ -31,14 +31,21 @@
 #[cfg(unix)]
 mod unix;
 
-use std::thread::JoinHandle;
+#[cfg(windows)]
+mod windows;
+
 #[cfg(unix)]
 pub use unix::Signal;
+
+#[cfg(windows)]
+pub use windows::Signal;
 
 unsafe impl Send for Signal {}
 unsafe impl Sync for Signal {}
 
+use std::thread::JoinHandle;
 use bp3d_util::simple_error;
+
 simple_error! {
     pub Error {
         AlreadyInterrupting => "attempt to interrupt a Vm while interrupting a different Vm",
