@@ -29,7 +29,7 @@
 use std::time::Duration;
 use mlua::{Function, Lua, UserDataMethods};
 use bp3d_lua::decl_closure;
-use bp3d_lua::vm::closure::context::ContextMut;
+use bp3d_lua::vm::closure::context::{CellMut, ContextMut};
 use bp3d_lua::vm::RootVm;
 use bp3d_lua::vm::value::function::LuaFunction;
 
@@ -124,14 +124,15 @@ pub fn test_context_vm() -> Duration {
     let mut obj = TestContext {
         value3: vec![],
     };
+    let mut ctx = CellMut::new(ctx);
     let time = bp3d_os::time::Instant::now();
     for _ in 0..20000 {
         {
-            let _obj = ctx.bind(&vm, &mut obj);
+            let _obj = ctx.bind(&mut obj);
             part1.call::<()>(()).unwrap();
         }
         {
-            let _obj = ctx.bind(&vm, &mut obj);
+            let _obj = ctx.bind(&mut obj);
             part2.call::<()>(()).unwrap();
         }
     }

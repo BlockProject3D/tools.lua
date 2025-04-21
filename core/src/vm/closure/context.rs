@@ -26,31 +26,63 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-//! A module to simplify declaring functions with associated to a context (rust object).
+//! Second version of the context tool.
 
-//TODO: Investigate if wrapping the raw pointer in a userdata instead of a lightuserdata is any
-// faster.
-
-use std::ffi::c_void;
 use std::marker::PhantomData;
 use std::ops::{Deref, DerefMut};
 use crate::ffi::laux::luaL_error;
-use crate::ffi::lua::{lua_pushlightuserdata, lua_settop, lua_topointer};
+use crate::ffi::lua::lua_newuserdata;
 use crate::util::SimpleDrop;
 use crate::vm::closure::{FromUpvalue, IntoUpvalue, Upvalue};
-use crate::vm::registry::core::{RawRegistryKey};
+use crate::vm::registry::core::RawRegistryKey;
 use crate::vm::Vm;
+
+pub struct Cell<T> {
+    ptr: *mut *const T
+}
+
+impl<T> Cell<T> {
+    pub fn new(ctx: Context<T>) -> Self {
+        Self { ptr: ctx.ptr }
+    }
+
+    pub fn bind<'a>(&mut self, obj: &'a T) -> Guard<'a, T> {
+        unsafe { *self.ptr = obj as _ };
+        Guard {
+            useless: PhantomData,
+            ud: self.ptr
+        }
+    }
+}
+
+pub struct CellMut<T> {
+    ptr: *mut *const T
+}
+
+impl<T> CellMut<T> {
+    pub fn new(ctx: ContextMut<T>) -> Self {
+        Self { ptr: ctx.0.ptr }
+    }
+
+    pub fn bind<'a>(&mut self, obj: &'a mut T) -> Guard<'a, T> {
+        unsafe { *self.ptr = obj as _ };
+        Guard {
+            useless: PhantomData,
+            ud: self.ptr
+        }
+    }
+}
 
 pub struct Context<T> {
     key: RawRegistryKey,
-    useless: PhantomData<*const T>
+    ptr: *mut *const T
 }
 
 impl<T> Clone for Context<T> {
     fn clone(&self) -> Self {
         Self {
             key: self.key,
-            useless: self.useless
+            ptr: self.ptr
         }
     }
 }
@@ -69,25 +101,13 @@ impl<T> Copy for ContextMut<T> { }
 
 impl<T: 'static> Context<T> {
     pub fn new(vm: &Vm) -> Self {
-        let key = unsafe {
-            lua_pushlightuserdata(vm.as_ptr(), std::ptr::null_mut());
-            RawRegistryKey::from_top(vm)
+        let (ptr, key) = unsafe {
+            let ptr = lua_newuserdata(vm.as_ptr(), 8);
+            (ptr, RawRegistryKey::from_top(vm))
         };
         Self {
             key,
-            useless: PhantomData
-        }
-    }
-
-    pub fn bind<'a, 'b>(&self, vm: &'a Vm, obj: &'b T) -> Guard<'a, &'b T> {
-        unsafe {
-            lua_pushlightuserdata(vm.as_ptr(), obj as *const T as *mut T as *mut c_void);
-            self.key.replace(vm);
-            Guard {
-                vm,
-                ptr: obj,
-                key: self.key
-            }
+            ptr: ptr as *mut *const T
         }
     }
 }
@@ -96,33 +116,18 @@ impl<T: 'static> ContextMut<T> {
     pub fn new(vm: &Vm) -> Self {
         Self(Context::new(vm))
     }
-
-    pub fn bind<'a, 'b>(&self, vm: &'a Vm, obj: &'b mut T) -> Guard<'a, &'b mut T> {
-        unsafe {
-            lua_pushlightuserdata(vm.as_ptr(), obj as *mut T as *mut c_void);
-            self.0.key.replace(vm);
-            Guard {
-                vm,
-                ptr: obj,
-                key: self.0.key
-            }
-        }
-    }
 }
 
+#[repr(transparent)]
 pub struct Guard<'a, T> {
-    vm: &'a Vm,
-    #[allow(dead_code)]
-    ptr: T,
-    key: RawRegistryKey
+    ud: *mut *const T,
+    useless: PhantomData<&'a T>
 }
 
 impl<'a, T> Drop for Guard<'a, T> {
+    #[inline(always)]
     fn drop(&mut self) {
-        unsafe {
-            lua_pushlightuserdata(self.vm.as_ptr(), std::ptr::null_mut());
-            self.key.replace(self.vm);
-        }
+        unsafe { *self.ud = std::ptr::null(); }
     }
 }
 
@@ -135,6 +140,7 @@ pub struct Mut<'a, T>(&'a mut T);
 impl<'a, T: 'static> Deref for Ref<'a, T> {
     type Target = T;
 
+    #[inline(always)]
     fn deref(&self) -> &Self::Target {
         self.0
     }
@@ -143,12 +149,14 @@ impl<'a, T: 'static> Deref for Ref<'a, T> {
 impl<'a, T: 'static> Deref for Mut<'a, T> {
     type Target = T;
 
+    #[inline(always)]
     fn deref(&self) -> &Self::Target {
         self.0
     }
 }
 
 impl<'a, T: 'static> DerefMut for Mut<'a, T> {
+    #[inline(always)]
     fn deref_mut(&mut self) -> &mut Self::Target {
         self.0
     }
@@ -159,45 +167,39 @@ unsafe impl<'a, T: 'static> SimpleDrop for Mut<'a, T> { }
 
 impl<'a, T: 'static> FromUpvalue<'a> for Ref<'a, T> {
     unsafe fn from_upvalue(vm: &'a Vm, index: i32) -> Self {
-        let key = RawRegistryKey::from_int(FromUpvalue::from_upvalue(vm, index));
-        key.push(vm);
-        let ptr = lua_topointer(vm.as_ptr(), -1) as *const T;
-        //Remove lightuserdata on the top of the stack.
-        lua_settop(vm.as_ptr(), -2);
-        if ptr.is_null() {
+        let ptr: *mut *const T = FromUpvalue::from_upvalue(vm, index);
+        if (*ptr).is_null() {
             luaL_error(vm.as_ptr(), c"Context is not available in this function.".as_ptr());
             // luaL_error raises a lua exception and unwinds, so this cannot be reached.
             std::hint::unreachable_unchecked();
         }
-        Ref(unsafe { &*ptr })
+        Ref(unsafe { &**ptr })
     }
 }
 
 impl<'a, T: 'static> FromUpvalue<'a> for Mut<'a, T> {
     unsafe fn from_upvalue(vm: &'a Vm, index: i32) -> Self {
-        let key = RawRegistryKey::from_int(FromUpvalue::from_upvalue(vm, index));
-        key.push(vm);
-        let ptr = lua_topointer(vm.as_ptr(), -1) as *mut T;
-        //Remove lightuserdata on the top of the stack.
-        lua_settop(vm.as_ptr(), -2);
-        if ptr.is_null() {
+        let ptr: *mut *mut T = FromUpvalue::from_upvalue(vm, index);
+        if (*ptr).is_null() {
             luaL_error(vm.as_ptr(), c"Context is not available in this function.".as_ptr());
             // luaL_error raises a lua exception and unwinds, so this cannot be reached.
             std::hint::unreachable_unchecked();
         }
-        Mut(unsafe { &mut *ptr })
+        Mut(unsafe { &mut **ptr })
     }
 }
 
 impl<T: 'static> IntoUpvalue for Context<T> {
     fn into_upvalue(self, vm: &Vm) -> u16 {
-        self.key.as_int().into_upvalue(vm)
+        unsafe { self.key.push(vm) };
+        1
     }
 }
 
 impl<T: 'static> IntoUpvalue for ContextMut<T> {
     fn into_upvalue(self, vm: &Vm) -> u16 {
-        self.0.key.as_int().into_upvalue(vm)
+        unsafe { self.0.key.push(vm) };
+        1
     }
 }
 

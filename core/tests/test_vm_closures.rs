@@ -27,7 +27,7 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use bp3d_lua::decl_closure;
-use bp3d_lua::vm::closure::context2::{CellMut, ContextMut};
+use bp3d_lua::vm::closure::context::{CellMut, ContextMut};
 use bp3d_lua::vm::closure::types::RClosure;
 use bp3d_lua::vm::namespace::Namespace;
 use bp3d_lua::vm::RootVm;

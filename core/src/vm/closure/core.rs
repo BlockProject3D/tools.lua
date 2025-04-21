@@ -79,18 +79,21 @@ impl_from_upvalue_using_from_lua_unchecked!(i64, u64);
 impl_from_upvalue_using_from_lua_unchecked!(i8, u8, i16, u16, i32, u32, f32, f64, bool);
 
 impl<T> FromUpvalue<'_> for *mut T {
+    #[inline(always)]
     unsafe fn from_upvalue(vm: &Vm, index: i32) -> Self {
         lua_topointer(vm.as_ptr(), GLOBALSINDEX - index) as _
     }
 }
 
 impl<T> FromUpvalue<'_> for *const T {
+    #[inline(always)]
     unsafe fn from_upvalue(vm: &'_ Vm, index: i32) -> Self {
         lua_topointer(vm.as_ptr(), GLOBALSINDEX - index) as _
     }
 }
 
 impl<T: IntoParam + Upvalue> IntoUpvalue for T {
+    #[inline(always)]
     fn into_upvalue(self, vm: &Vm) -> u16 {
         self.into_param(vm)
     }

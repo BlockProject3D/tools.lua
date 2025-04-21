@@ -29,7 +29,7 @@
 use std::time::Duration;
 use mlua::{Lua, UserDataMethods};
 use bp3d_lua::decl_closure;
-use bp3d_lua::vm::closure::context::ContextMut;
+use bp3d_lua::vm::closure::context::{CellMut, ContextMut};
 use bp3d_lua::vm::RootVm;
 
 struct TestContext {
@@ -98,17 +98,18 @@ pub fn test_context_vm() -> Duration {
     let mut obj = TestContext {
         value3: vec![],
     };
+    let mut ctx = CellMut::new(ctx);
     let time = bp3d_os::time::Instant::now();
     for _ in 0..20000 {
         {
-            let _obj = ctx.bind(&vm, &mut obj);
+            let _obj = ctx.bind(&mut obj);
             vm.run_code::<()>(c"assert(context_pop() == nil)").unwrap();
             vm.run_code::<()>(c"context_push(1)").unwrap();
             vm.run_code::<()>(c"context_push(2)").unwrap();
             vm.run_code::<()>(c"context_push(3)").unwrap();
         }
         {
-            let _obj = ctx.bind(&vm, &mut obj);
+            let _obj = ctx.bind(&mut obj);
             vm.run_code::<()>(c"assert(context_pop() == 3)").unwrap();
             vm.run_code::<()>(c"assert(context_pop() == 2)").unwrap();
             vm.run_code::<()>(c"assert(context_pop() == 1)").unwrap();
