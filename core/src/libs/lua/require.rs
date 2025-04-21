@@ -33,7 +33,7 @@ use crate::decl_closure;
 use crate::libs::interface::Lib;
 use crate::vm::closure::rc::Rc;
 use crate::vm::value::any::{AnyParam, UncheckedAnyReturn};
-use crate::vm::{RootVm, Vm};
+use crate::vm::Vm;
 use crate::vm::namespace::Namespace;
 
 simple_error! {
@@ -88,7 +88,7 @@ impl Lib for Require {
         std::unreachable!()
     }
 
-    fn register(&self, vm: &mut RootVm) -> crate::vm::Result<()> {
+    fn register(&self, vm: &mut Vm) -> crate::vm::Result<()> {
         let rc = Rc::from_rust(vm, self.0.clone());
         let mut namespace = Namespace::new(vm, "bp3d.lua")?;
         namespace.add([("require", require(rc))])

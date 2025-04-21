@@ -27,14 +27,14 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::vm::namespace::Namespace;
-use crate::vm::RootVm;
+use crate::vm::Vm;
 
 pub trait Lib {
     const NAMESPACE: &'static str;
 
     fn load(&self, namespace: &mut Namespace) -> crate::vm::Result<()>;
 
-    fn register(&self, vm: &mut RootVm) -> crate::vm::Result<()> {
+    fn register(&self, vm: &mut Vm) -> crate::vm::Result<()> {
         let mut namespace = Namespace::new(vm, Self::NAMESPACE)?;
         self.load(&mut namespace)?;
         Ok(())
@@ -53,7 +53,7 @@ macro_rules! impl_tuple_lib {
                 Ok(())
             }
 
-            fn register(&self, vm: &mut RootVm) -> crate::vm::Result<()> {
+            fn register(&self, vm: &mut Vm) -> crate::vm::Result<()> {
                 $(
                     self.$id.register(vm)?;
                 )*

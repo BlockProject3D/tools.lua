@@ -29,7 +29,7 @@
 use std::ops::Deref;
 use crate::util::SimpleDrop;
 use crate::vm::closure::{FromUpvalue, IntoUpvalue, Upvalue};
-use crate::vm::{RootVm, Vm};
+use crate::vm::Vm;
 
 #[repr(transparent)]
 pub struct Rc<T>(*const T);
@@ -68,7 +68,7 @@ impl<T: 'static> IntoUpvalue for Rc<T> {
 
 impl<T: 'static> Rc<T> {
     #[inline(always)]
-    pub fn from_rust(root: &mut RootVm, rc: std::rc::Rc<T>) -> Rc<T> {
+    pub fn from_rust(root: &mut Vm, rc: std::rc::Rc<T>) -> Rc<T> {
         Rc(crate::vm::core::destructor::Pool::from_vm(root).attach(rc))
     }
 }
