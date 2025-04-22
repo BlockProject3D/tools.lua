@@ -98,8 +98,7 @@ pub fn test_context_mlua() -> Duration {
         })
         .unwrap();
     }
-    let time = time.elapsed();
-    time
+    time.elapsed()
 }
 
 pub fn test_context_vm() -> Duration {
@@ -140,6 +139,5 @@ pub fn test_context_vm() -> Duration {
             part2.call::<()>(()).unwrap();
         }
     }
-    let time = time.elapsed();
-    time
+    time.elapsed()
 }

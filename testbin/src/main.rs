@@ -68,8 +68,7 @@ fn test_vm_destructor() -> Duration {
         assert_eq!(s, "Hello this is a test (0.42)");
         vm.clear();
     }
-    let time = time.elapsed();
-    time
+    time.elapsed()
 }
 
 fn test_vm_mlua() -> Duration {
@@ -98,8 +97,7 @@ fn test_vm_mlua() -> Duration {
             .unwrap();
         assert_eq!(s, "Hello this is a test (0.42)");
     }
-    let time = time.elapsed();
-    time
+    time.elapsed()
 }
 
 fn main() {
@@ -120,12 +118,12 @@ fn main() {
         ctx_mlua_opt += context_opt::test_context_mlua();
     }
 
-    lua = lua / RUNS;
-    mlua = mlua / RUNS;
-    ctx_lua = ctx_lua / RUNS;
-    ctx_mlua = ctx_mlua / RUNS;
-    ctx_lua_opt = ctx_lua_opt / RUNS;
-    ctx_mlua_opt = ctx_mlua_opt / RUNS;
+    lua /= RUNS;
+    mlua /= RUNS;
+    ctx_lua /= RUNS;
+    ctx_mlua /= RUNS;
+    ctx_lua_opt /= RUNS;
+    ctx_mlua_opt /= RUNS;
 
     println!("average tools.lua (basic): {:?}", lua);
     println!("average mlua (basic): {:?}", mlua);
