@@ -137,8 +137,7 @@ unsafe impl<T: IntoParam> IntoLua for T {
 
 impl FromLua<'_> for () {
     #[inline(always)]
-    unsafe fn from_lua_unchecked(_: &'_ Vm, _: i32) -> Self {
-    }
+    unsafe fn from_lua_unchecked(_: &'_ Vm, _: i32) -> Self {}
 
     #[inline(always)]
     fn from_lua(_vm: &Vm, _: i32) -> crate::vm::Result<()> {
