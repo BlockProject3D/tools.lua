@@ -27,8 +27,7 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::ffi::lua::{
-    lua_error, lua_pushstring, lua_sethook, Debug, State, MASKCALL, MASKCOUNT, MASKLINE,
-    MASKRET,
+    lua_error, lua_pushstring, lua_sethook, Debug, State, MASKCALL, MASKCOUNT, MASKLINE, MASKRET,
 };
 use crate::vm::core::interrupt::Error;
 use crate::vm::RootVm;
@@ -84,7 +83,12 @@ extern "C" fn signal_handler(_: c_int) {
                 }
                 // Run the hook 1 instruction later.
                 unsafe {
-                    lua_sethook(v.l, Some(lua_interrupt), MASKCOUNT | MASKCALL | MASKLINE | MASKRET, 1)
+                    lua_sethook(
+                        v.l,
+                        Some(lua_interrupt),
+                        MASKCOUNT | MASKCALL | MASKLINE | MASKRET,
+                        1,
+                    )
                 };
                 v.return_chan.send(Ok(())).unwrap();
             }
