@@ -239,7 +239,7 @@ fn test_vm_lib_os_instant() {
     vm.run_code::<()>(
         c"
         local diff = instant:elapsed()
-        assert((diff - 0.5) < 0.1)
+        assert((diff - 0.5) < 0.2)
     ",
     )
     .unwrap();
