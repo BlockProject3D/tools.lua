@@ -171,15 +171,14 @@ pub unsafe fn handle_syntax_error(vm: &Vm, res: ThreadStatus) -> crate::vm::Resu
     }
 }
 
+#[derive(Default)]
 pub struct ChunkNameBuilder {
     inner: FixedBufStr<59>,
 }
 
 impl ChunkNameBuilder {
     pub fn new() -> Self {
-        Self {
-            inner: FixedBufStr::new(),
-        }
+        Self::default()
     }
 
     pub fn build(self) -> ChunkName {

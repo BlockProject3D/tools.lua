@@ -33,6 +33,7 @@ use crate::libs::lua::require::{Provider, Require};
 use crate::libs::Lib;
 use std::path::Path;
 
+#[derive(Default)]
 pub struct Lua<'a> {
     pub(super) load_chroot_path: Option<&'a Path>,
     pub(super) provider: Option<std::rc::Rc<Provider>>,
@@ -40,10 +41,7 @@ pub struct Lua<'a> {
 
 impl<'a> Lua<'a> {
     pub fn new() -> Self {
-        Self {
-            load_chroot_path: None,
-            provider: None,
-        }
+        Self::default()
     }
 
     pub fn load_chroot_path(mut self, path: &'a Path) -> Self {

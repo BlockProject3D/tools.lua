@@ -75,7 +75,7 @@ fn parse_lua_path(chroot: &Path, path: &str) -> Result<PathBuf, Error> {
     let mut cur_path = Vec::new();
     for component in iter {
         if component == ".." {
-            if let None = cur_path.pop() {
+            if cur_path.pop().is_none() {
                 return Err(Error::EscapeChroot(path.into()));
             }
         } else if component != "." {

@@ -80,10 +80,7 @@ pub struct Context<T> {
 
 impl<T> Clone for Context<T> {
     fn clone(&self) -> Self {
-        Self {
-            key: self.key,
-            ptr: self.ptr,
-        }
+        *self
     }
 }
 
@@ -93,7 +90,7 @@ pub struct ContextMut<T>(Context<T>);
 
 impl<T> Clone for ContextMut<T> {
     fn clone(&self) -> Self {
-        Self(self.0)
+        *self
     }
 }
 
@@ -124,7 +121,7 @@ pub struct Guard<'a, T> {
     useless: PhantomData<&'a T>,
 }
 
-impl<'a, T> Drop for Guard<'a, T> {
+impl<T> Drop for Guard<'_, T> {
     #[inline(always)]
     fn drop(&mut self) {
         unsafe {
@@ -139,7 +136,7 @@ pub struct Ref<'a, T>(&'a T);
 #[repr(transparent)]
 pub struct Mut<'a, T>(&'a mut T);
 
-impl<'a, T: 'static> Deref for Ref<'a, T> {
+impl<T: 'static> Deref for Ref<'_, T> {
     type Target = T;
 
     #[inline(always)]
@@ -148,7 +145,7 @@ impl<'a, T: 'static> Deref for Ref<'a, T> {
     }
 }
 
-impl<'a, T: 'static> Deref for Mut<'a, T> {
+impl<T: 'static> Deref for Mut<'_, T> {
     type Target = T;
 
     #[inline(always)]
@@ -157,15 +154,15 @@ impl<'a, T: 'static> Deref for Mut<'a, T> {
     }
 }
 
-impl<'a, T: 'static> DerefMut for Mut<'a, T> {
+impl<T: 'static> DerefMut for Mut<'_, T> {
     #[inline(always)]
     fn deref_mut(&mut self) -> &mut Self::Target {
         self.0
     }
 }
 
-unsafe impl<'a, T: 'static> SimpleDrop for Ref<'a, T> {}
-unsafe impl<'a, T: 'static> SimpleDrop for Mut<'a, T> {}
+unsafe impl<T: 'static> SimpleDrop for Ref<'_, T> {}
+unsafe impl<T: 'static> SimpleDrop for Mut<'_, T> {}
 
 impl<'a, T: 'static> FromUpvalue<'a> for Ref<'a, T> {
     unsafe fn from_upvalue(vm: &'a Vm, index: i32) -> Self {

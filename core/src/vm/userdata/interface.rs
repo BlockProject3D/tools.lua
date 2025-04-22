@@ -31,12 +31,20 @@ use crate::vm::Vm;
 use std::borrow::Cow;
 use std::ffi::CStr;
 
+/// This trait represents all types of UserData. An UserData is a type with a maximum alignment of 8
+/// with its memory tied to the Lua GC.
 pub trait UserData: Sized {
     const CLASS_NAME: &'static CStr;
 
     fn register<C: NameConvert>(registry: &Registry<Self, C>) -> Result<(), Error>;
 }
 
+/// This trait represents an UserData which is never borrowed mutably (excluding interior mutability
+/// patterns).
+///
+/// # Safety
+///
+/// This is UB to implement on UserData types which may be borrowed mutably.
 pub unsafe trait UserDataImmutable: UserData {}
 
 pub trait LuaDrop {

@@ -67,6 +67,7 @@ impl PartialEq for Thread<'_> {
 impl Eq for Thread<'_> {}
 
 impl Display for Thread<'_> {
+    #[allow(clippy::missing_transmute_annotations)]
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "thread@{:X}", unsafe {
             std::mem::transmute::<_, usize>(self.vm.as_ptr())
@@ -80,7 +81,7 @@ impl Debug for Thread<'_> {
     }
 }
 
-impl<'a> Thread<'a> {
+impl Thread<'_> {
     #[inline(always)]
     pub fn run_code<'b, R: FromLua<'b>>(&'b self, code: impl LoadString) -> crate::vm::Result<R> {
         self.vm.run_code(code)

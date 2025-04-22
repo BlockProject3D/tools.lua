@@ -45,7 +45,7 @@ pub trait RegistryValue: 'static {
     ///
     /// This function assumes the value at the top of the stack is of type `Self`. This function is
     /// UB otherwise.
-    unsafe fn to_lua_value<'a>(vm: &'a Vm, index: i32) -> Self::Value<'a>;
+    unsafe fn to_lua_value(vm: &Vm, index: i32) -> Self::Value<'_>;
 }
 
 /// A trait to produce registry values safely.

@@ -39,7 +39,7 @@ impl RegistryValue for Table {
     type Value<'a> = crate::vm::table::Table<'a>;
 
     #[inline(always)]
-    unsafe fn to_lua_value<'a>(vm: &'a Vm, index: i32) -> Self::Value<'a> {
+    unsafe fn to_lua_value(vm: &Vm, index: i32) -> Self::Value<'_> {
         unsafe { crate::vm::table::Table::from_lua_unchecked(vm, index) }
     }
 }
@@ -48,7 +48,7 @@ impl RegistryValue for LuaFunction {
     type Value<'a> = crate::vm::value::function::LuaFunction<'a>;
 
     #[inline(always)]
-    unsafe fn to_lua_value<'a>(vm: &'a Vm, index: i32) -> Self::Value<'a> {
+    unsafe fn to_lua_value(vm: &Vm, index: i32) -> Self::Value<'_> {
         unsafe { crate::vm::value::function::LuaFunction::from_lua_unchecked(vm, index) }
     }
 }

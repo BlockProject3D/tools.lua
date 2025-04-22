@@ -182,14 +182,14 @@ impl<'a, T: UserData, C: NameConvert> Registry<'a, T, C> {
     }
 }
 
-impl<'a, T: UserData + LuaDrop, C: NameConvert> Registry<'a, T, C> {
+impl<T: UserData + LuaDrop, C: NameConvert> Registry<'_, T, C> {
     pub fn add_gc_method_with_lua_drop(&self) {
         extern "C-unwind" fn run_lua_drop<T: UserData + LuaDrop>(l: State) -> i32 {
             unsafe {
                 let udata = luaL_checkudata(l, 1, T::CLASS_NAME.as_ptr()) as *mut T;
                 lua_pushnil(l);
                 lua_setmetatable(l, 1);
-                (&*udata).lua_drop(&Vm::from_raw(l));
+                (*udata).lua_drop(&Vm::from_raw(l));
             }
             0
         }
@@ -198,7 +198,7 @@ impl<'a, T: UserData + LuaDrop, C: NameConvert> Registry<'a, T, C> {
                 let udata = luaL_checkudata(l, 1, T::CLASS_NAME.as_ptr()) as *mut T;
                 lua_pushnil(l);
                 lua_setmetatable(l, 1);
-                (&*udata).lua_drop(&Vm::from_raw(l));
+                (*udata).lua_drop(&Vm::from_raw(l));
                 std::ptr::drop_in_place(udata);
             }
             0
@@ -234,7 +234,7 @@ impl<T: UserData> AddGcMethod<T> for &AddGcMethodAuto<T> {
     }
 }
 
-impl<'a, T: UserData, C: NameConvert> Drop for Registry<'a, T, C> {
+impl<T: UserData, C: NameConvert> Drop for Registry<'_, T, C> {
     fn drop(&mut self) {
         if std::mem::needs_drop::<T>() && self.has_gc.get().is_none() {
             warning!("No __gc method registered on a drop userdata type!");

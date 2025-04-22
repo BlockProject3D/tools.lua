@@ -44,7 +44,7 @@ impl Patch {
         let src_path = bp3d_os::fs::get_absolute_path(luajit_src)?;
         CommandRunner::new("failed to revert").run(
             Command::new("git")
-                .args(&["checkout", "."])
+                .args(["checkout", "."])
                 .current_dir(&src_path),
         )?;
         Ok(Patch {
@@ -57,7 +57,7 @@ impl Patch {
     pub fn apply(&mut self, name: &str) -> std::io::Result<()> {
         CommandRunner::new("failed to patch").run(
             Command::new("git")
-                .args(&[
+                .args([
                     OsStr::new("apply"),
                     self.patch_dir.join(format!("{}.patch", name)).as_os_str(),
                 ])
@@ -95,7 +95,7 @@ impl Drop for Patch {
         CommandRunner::new("failed to revert")
             .run(
                 Command::new("git")
-                    .args(&["checkout", "."])
+                    .args(["checkout", "."])
                     .current_dir(&self.src_path),
             )
             .unwrap();

@@ -46,7 +46,7 @@ impl Lib for Base {
     fn load(&self, namespace: &mut Namespace) -> crate::vm::Result<()> {
         namespace.add([("name", "bp3d-lua"), ("version", env!("CARGO_PKG_VERSION"))])?;
         let mut patches = Table::with_capacity(namespace.vm(), PATCH_LIST.len(), 0);
-        for (i, name) in PATCH_LIST.into_iter().enumerate() {
+        for (i, name) in PATCH_LIST.iter().enumerate() {
             // Lua indices starts at 1 not 0.
             patches.seti((i + 1) as _, *name)?;
         }

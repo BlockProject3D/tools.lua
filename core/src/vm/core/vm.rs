@@ -177,11 +177,18 @@ impl Vm {
 }
 
 thread_local! {
-    static HAS_VM: Cell<bool> = Cell::new(false);
+    // WTF?! The compiler should be smart enough to do this on its own! Another compiler defect!
+    static HAS_VM: Cell<bool> = const { Cell::new(false) };
 }
 
 pub struct RootVm {
     vm: Vm,
+}
+
+impl Default for RootVm {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl RootVm {

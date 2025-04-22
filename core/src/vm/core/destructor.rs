@@ -88,7 +88,7 @@ impl Pool {
     /// # Safety
     ///
     /// This is only safe to be called on [RootVm](crate::vm::RootVm) construction.
-    pub unsafe fn new_in_vm<'a>(vm: &'a mut Vm) {
+    pub unsafe fn new_in_vm(vm: &mut Vm) {
         let l = vm.as_ptr();
         let b = Box::leak(Box::new(Pool::new()));
         unsafe {
@@ -146,7 +146,7 @@ impl Drop for Pool {
             { num = self.leaked.len() as u32 },
             "Deleting leaked pointers..."
         );
-        let v = std::mem::replace(&mut self.leaked, Vec::new());
+        let v = std::mem::take(&mut self.leaked);
         for f in v {
             f()
         }

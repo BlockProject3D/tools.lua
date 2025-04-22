@@ -39,7 +39,7 @@ pub struct Ref<'a, T>(&'a T);
 
 unsafe impl<T> SimpleDrop for Ref<'_, T> {}
 
-impl<'a, T> Deref for Ref<'a, T> {
+impl<T> Deref for Ref<'_, T> {
     type Target = T;
 
     fn deref(&self) -> &Self::Target {

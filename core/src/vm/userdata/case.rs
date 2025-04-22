@@ -35,7 +35,7 @@ use std::ffi::{CStr, CString};
 fn to_string_lossy(bytes: Cow<[u8]>) -> Cow<str> {
     match bytes {
         Cow::Borrowed(v) => String::from_utf8_lossy(v),
-        Cow::Owned(v) => String::from(&*String::from_utf8_lossy(&*v)).into(),
+        Cow::Owned(v) => String::from(&*String::from_utf8_lossy(&v)).into(),
     }
 }
 
@@ -67,8 +67,7 @@ impl NameConvert for Camel {
                 }
             })
             .map(to_string_lossy)
-            .join("")
-            .into();
+            .join("");
         CString::new(s).unwrap().into()
     }
 }
@@ -86,8 +85,7 @@ impl NameConvert for Pascal {
             .split("_")
             .map(|v| v.as_bytes().capitalise_ascii())
             .map(to_string_lossy)
-            .join("")
-            .into();
+            .join("");
         CString::new(s).unwrap().into()
     }
 }

@@ -109,7 +109,7 @@ pub unsafe fn load_custom<T: Custom>(
     ) -> *const c_char {
         let obj = ud as *mut T;
         unsafe {
-            let res = (&mut *obj).read_data();
+            let res = (*obj).read_data();
             match res {
                 Err(e) => {
                     lua_rust_error(l, e);

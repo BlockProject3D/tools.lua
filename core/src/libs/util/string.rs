@@ -36,7 +36,7 @@ use std::borrow::Cow;
 
 decl_lib_func! {
     fn contains(src: &[u8], needle: &[u8]) -> bool {
-        if needle.len() == 0 {
+        if needle.is_empty() {
             return true;
         }
         src.windows(needle.len()).any(|window| window == needle)

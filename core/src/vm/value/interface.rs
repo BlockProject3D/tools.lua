@@ -28,6 +28,9 @@
 
 use crate::vm::Vm;
 
+// WTF this is broken, if you do not indent then it becomes unreadable. I chose readability over
+// un-readability.
+#[allow(clippy::doc_overindented_list_items)]
 pub trait FromLua<'a>: Sized {
     /// Reads the value at the specified index in the given [Vm].
     ///

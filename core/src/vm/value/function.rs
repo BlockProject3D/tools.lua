@@ -102,7 +102,7 @@ unsafe impl IntoParam for LuaFunction<'_> {
     }
 }
 
-impl<'a> LuaFunction<'a> {
+impl LuaFunction<'_> {
     pub fn call<'b, R: FromLua<'b>>(&'b self, value: impl IntoLua) -> crate::vm::Result<R> {
         let pos = unsafe { push_error_handler(self.vm.as_ptr()) };
         unsafe {

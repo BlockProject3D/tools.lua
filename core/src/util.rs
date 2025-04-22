@@ -51,6 +51,11 @@ impl AnyStr for &CStr {
     }
 }
 
+/// Represents a type which can be trivially dropped (i.e. no Drop implementation).
+///
+/// # Safety
+///
+/// This is UB to implement this trait on types which are not trivially dropped.
 pub unsafe trait SimpleDrop {}
 
 unsafe impl<T> SimpleDrop for *mut T {}

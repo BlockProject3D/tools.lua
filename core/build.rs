@@ -49,7 +49,7 @@ fn apply_patches(out_path: &Path) -> std::io::Result<Vec<String>> {
         &Path::new("..").join("patch"),
         &Path::new("..").join("LuaJIT"),
     )?
-    .apply_all(PATCH_LIST.iter().map(|v| *v), out_path)
+    .apply_all(PATCH_LIST.iter().copied(), out_path)
 }
 
 fn run_build(build_dir: &Path) -> std::io::Result<Lib> {

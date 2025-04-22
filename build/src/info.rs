@@ -48,7 +48,7 @@ const VERSION: &str = "version = \"";
 
 impl<'a> BuildInfo<'a> {
     pub fn new(base: BuildInfoBase<'a>) -> std::io::Result<Self> {
-        let manifest = std::fs::read_to_string(&base.manifest)?;
+        let manifest = std::fs::read_to_string(base.manifest)?;
         let target_dir = base.build_dir.join("../../../..");
         let start = manifest
             .find(VERSION)
@@ -65,7 +65,7 @@ impl<'a> BuildInfo<'a> {
     }
 
     pub fn build_dir(&self) -> &Path {
-        &self.base.build_dir
+        self.base.build_dir
     }
 
     pub fn dynamic(&self) -> bool {
@@ -73,11 +73,11 @@ impl<'a> BuildInfo<'a> {
     }
 
     pub fn target(&self) -> Target {
-        Target::get(&self.base.target_name)
+        Target::get(self.base.target_name)
     }
 
     pub fn target_name(&self) -> &str {
-        &self.base.target_name
+        self.base.target_name
     }
 
     pub fn target_dir(&self) -> &Path {

@@ -38,7 +38,7 @@ use crate::vm::value::util::{ensure_type_equals, ensure_value_top};
 use crate::vm::value::FromLua;
 use crate::vm::Vm;
 
-unsafe impl<'a> SimpleDrop for Table<'a> {}
+unsafe impl SimpleDrop for Table<'_> {}
 
 impl<'a> FromParam<'a> for Table<'a> {
     #[inline(always)]
