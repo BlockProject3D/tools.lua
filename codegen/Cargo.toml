@@ -2,6 +2,7 @@
 name = "bp3d-lua-codegen"
 version = "0.1.0"
 edition = "2021" #Due to gen be a reserved keyword!
+publish = false
 
 [lib]
 proc-macro = true
