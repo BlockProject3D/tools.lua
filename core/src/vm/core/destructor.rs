@@ -125,7 +125,7 @@ impl Pool {
         R::Ptr: 'static,
     {
         let ptr = unsafe { Self::_from_vm(vm) };
-        unsafe { (&mut *ptr).attach_mut(raw) }
+        unsafe { (*ptr).attach_mut(raw) }
     }
 
     pub fn attach_mut<R: Raw>(&mut self, raw: R) -> R::Ptr
