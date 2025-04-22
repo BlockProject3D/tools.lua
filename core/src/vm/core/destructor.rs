@@ -104,7 +104,7 @@ impl Pool {
     /// # Safety
     ///
     /// The returned reference must not be aliased.
-    unsafe fn _from_vm(vm: &Vm) -> &mut Self {
+    unsafe fn _from_vm(vm: &Vm) -> *mut Self {
         let l = vm.as_ptr();
         unsafe {
             lua_pushstring(l, c"__destructor_pool__".as_ptr());
@@ -112,12 +112,12 @@ impl Pool {
             let ptr = lua_touserdata(l, -1) as *mut Pool;
             assert!(!ptr.is_null());
             lua_settop(l, -2); // Remove the pointer from the lua stack.
-            &mut *ptr
+            ptr
         }
     }
 
     pub fn from_vm(vm: &mut Vm) -> &mut Self {
-        unsafe { Self::_from_vm(vm) }
+        unsafe { &mut *Self::_from_vm(vm) }
     }
 
     pub fn attach<R: Raw>(vm: &Vm, raw: R) -> R::Ptr
@@ -125,7 +125,7 @@ impl Pool {
         R::Ptr: 'static,
     {
         let ptr = unsafe { Self::_from_vm(vm) };
-        ptr.attach_mut(raw)
+        unsafe { (&mut *ptr).attach_mut(raw) }
     }
 
     pub fn attach_mut<R: Raw>(&mut self, raw: R) -> R::Ptr
