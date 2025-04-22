@@ -27,7 +27,7 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::ffi::lua::{
-    lua_error, lua_pushstring, lua_sethook, Debug, Hook, State, MASKCALL, MASKCOUNT, MASKLINE,
+    lua_error, lua_pushstring, lua_sethook, Debug, State, MASKCALL, MASKCOUNT, MASKLINE,
     MASKRET,
 };
 use crate::vm::RootVm;
