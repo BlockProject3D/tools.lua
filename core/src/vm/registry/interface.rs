@@ -29,6 +29,8 @@
 use crate::vm::registry::core::RegistryKey;
 use crate::vm::Vm;
 
+//TODO: Try to find a better name.
+
 pub trait RegistryValue: 'static {
     type Value<'a>;
 

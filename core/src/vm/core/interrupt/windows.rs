@@ -52,12 +52,7 @@ extern "C-unwind" fn lua_interrupt(l: State, _: Debug) {
         }
     }
     unsafe {
-        lua_sethook(
-            l,
-            std::mem::transmute::<*const (), Hook>(std::ptr::null()),
-            0,
-            0,
-        );
+        lua_sethook(l, None, 0, 0);
         lua_pushstring(l, c"interrupted".as_ptr());
         lua_error(l);
     }
@@ -86,12 +81,7 @@ impl Signal {
         if self.th == unsafe { GetCurrentThread() } {
             // If somehow the system thread that ineterrupts the Vm is the same as the one which started the Vm, then directly set the hook.
             unsafe {
-                lua_sethook(
-                    self.l,
-                    lua_interrupt,
-                    MASKCOUNT | MASKCALL | MASKLINE | MASKRET,
-                    1,
-                );
+                lua_sethook(self.l, Some(lua_interrupt), MASKCOUNT | MASKCALL | MASKLINE | MASKRET, 1);
             }
         } else {
             unsafe {
@@ -105,12 +95,7 @@ impl Signal {
                 if GetThreadContext(self.th, &mut ctx as _) == 0 {
                     return Err(Error::Unknown);
                 }
-                lua_sethook(
-                    self.l,
-                    lua_interrupt,
-                    MASKCOUNT | MASKCALL | MASKLINE | MASKRET,
-                    1,
-                );
+                lua_sethook(self.l, Some(lua_interrupt), MASKCOUNT | MASKCALL | MASKLINE | MASKRET, 1);
                 // Resume the thread.
                 let _ = ResumeThread(self.th);
             }
