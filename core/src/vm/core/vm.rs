@@ -50,6 +50,17 @@ pub struct Vm {
 }
 
 impl Vm {
+    /// Constructs a [Vm] by wrapping an existing lua [State].
+    ///
+    /// # Arguments
+    ///
+    /// * `l`: the lua [State] to wrap.
+    ///
+    /// # Safety
+    ///
+    /// The given lua [State] must have been created from a [RootVm]. It is considered UB to wrap
+    /// a lua VM allocated outside bp3d-lua. It is also considered UB to wrap a VM which has been
+    /// allocated with a different set of patches.
     #[inline(always)]
     pub unsafe fn from_raw(l: State) -> Self {
         Self { l }
