@@ -240,5 +240,5 @@ extern "C" {
     pub fn lua_next(l: State, idx: c_int) -> c_int;
     pub fn lua_concat(l: State, n: c_int);
 
-    pub fn lua_sethook(l: State, hook: Hook, mask: c_int, count: c_int) -> c_int;
+    pub fn lua_sethook(l: State, hook: Option<Hook>, mask: c_int, count: c_int) -> c_int;
 }

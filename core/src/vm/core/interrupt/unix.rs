@@ -27,7 +27,7 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::ffi::lua::{
-    lua_error, lua_pushstring, lua_sethook, Debug, Hook, State, MASKCALL, MASKCOUNT, MASKLINE,
+    lua_error, lua_pushstring, lua_sethook, Debug, State, MASKCALL, MASKCOUNT, MASKLINE,
     MASKRET,
 };
 use crate::vm::core::interrupt::Error;
@@ -66,12 +66,7 @@ extern "C-unwind" fn lua_interrupt(l: State, _: Debug) {
         }
     }
     unsafe {
-        lua_sethook(
-            l,
-            std::mem::transmute::<*const (), Hook>(std::ptr::null()),
-            0,
-            0,
-        );
+        lua_sethook(l, None, 0, 0);
         lua_pushstring(l, c"interrupted".as_ptr());
         lua_error(l);
     }
@@ -89,12 +84,7 @@ extern "C" fn signal_handler(_: c_int) {
                 }
                 // Run the hook 1 instruction later.
                 unsafe {
-                    lua_sethook(
-                        v.l,
-                        lua_interrupt,
-                        MASKCOUNT | MASKCALL | MASKLINE | MASKRET,
-                        1,
-                    )
+                    lua_sethook(v.l, Some(lua_interrupt), MASKCOUNT | MASKCALL | MASKLINE | MASKRET, 1)
                 };
                 v.return_chan.send(Ok(())).unwrap();
             }
