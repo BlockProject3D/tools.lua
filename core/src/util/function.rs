@@ -37,7 +37,7 @@ use crate::vm::registry::Registry;
 pub struct LuaFunction(RegistryKey<Function>);
 
 impl LuaFunction {
-    pub fn create(f: crate::vm::value::function::Function) -> Self {
+    pub fn create(f: crate::vm::value::Function) -> Self {
         Self(f.registry_put())
     }
 

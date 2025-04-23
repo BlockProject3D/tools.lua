@@ -43,10 +43,10 @@ impl RegistryValue for Table {
 }
 
 impl RegistryValue for Function {
-    type Value<'a> = crate::vm::value::function::Function<'a>;
+    type Value<'a> = crate::vm::value::Function<'a>;
 
     #[inline(always)]
     unsafe fn to_lua_value(vm: &Vm, index: i32) -> Self::Value<'_> {
-        unsafe { crate::vm::value::function::Function::from_lua_unchecked(vm, index) }
+        unsafe { crate::vm::value::Function::from_lua_unchecked(vm, index) }
     }
 }

@@ -32,7 +32,7 @@ use crate::vm::error::Error;
 use crate::vm::function::types::RFunction;
 use crate::util::Namespace;
 use crate::vm::value::any::{AnyParam, UncheckedAnyReturn};
-use crate::vm::value::function::Function;
+use crate::vm::value::Function;
 
 decl_lib_func! {
     fn pcall(vm: &Vm, func: Function) -> UncheckedAnyReturn {

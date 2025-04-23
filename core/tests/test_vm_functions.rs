@@ -27,7 +27,7 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use bp3d_lua::vm::table::Table;
-use bp3d_lua::vm::value::function::Function;
+use bp3d_lua::vm::value::Function;
 use bp3d_lua::vm::RootVm;
 use std::ffi::CStr;
 

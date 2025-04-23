@@ -38,7 +38,7 @@ use crate::vm::core::{Load, LoadString};
 use crate::vm::error::Error;
 use crate::vm::userdata::core::Registry;
 use crate::vm::userdata::{NameConvert, UserData};
-use crate::vm::value::function::Function;
+use crate::vm::value::Function;
 use crate::vm::value::{FromLua, IntoLua};
 use bp3d_debug::debug;
 use std::cell::Cell;
