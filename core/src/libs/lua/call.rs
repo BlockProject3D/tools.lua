@@ -32,10 +32,10 @@ use crate::vm::error::Error;
 use crate::vm::function::types::RFunction;
 use crate::vm::namespace::Namespace;
 use crate::vm::value::any::{AnyParam, UncheckedAnyReturn};
-use crate::vm::value::function::LuaFunction;
+use crate::vm::value::function::Function;
 
 decl_lib_func! {
-    fn pcall(vm: &Vm, func: LuaFunction) -> UncheckedAnyReturn {
+    fn pcall(vm: &Vm, func: Function) -> UncheckedAnyReturn {
         let top = vm.top();
         true.into_param(vm);
         let ret = func.call::<AnyParam>(());

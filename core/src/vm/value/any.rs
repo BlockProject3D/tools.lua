@@ -34,7 +34,7 @@ use crate::vm::table::Table;
 use crate::vm::thread::Thread;
 use crate::vm::userdata::AnyUserData;
 use crate::vm::util::{lua_rust_error, LuaType};
-use crate::vm::value::function::LuaFunction;
+use crate::vm::value::function::Function;
 use crate::vm::value::{FromLua, IntoLua};
 use crate::vm::Vm;
 use std::fmt::Display;
@@ -47,7 +47,7 @@ pub enum AnyValue<'a> {
     Boolean(bool),
     String(&'a str),
     Buffer(&'a [u8]),
-    Function(LuaFunction<'a>),
+    Function(Function<'a>),
     Table(Table<'a>),
     UserData(AnyUserData<'a>),
     Thread(Thread<'a>),

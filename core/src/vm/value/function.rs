@@ -39,22 +39,22 @@ use crate::vm::value::{FromLua, IntoLua};
 use crate::vm::Vm;
 use std::fmt::{Debug, Display};
 
-pub struct LuaFunction<'a> {
+pub struct Function<'a> {
     vm: &'a Vm,
     index: i32,
 }
 
-impl Clone for LuaFunction<'_> {
+impl Clone for Function<'_> {
     fn clone(&self) -> Self {
         unsafe { lua_pushvalue(self.vm.as_ptr(), self.index) };
-        LuaFunction {
+        Function {
             vm: self.vm,
             index: self.vm.top(),
         }
     }
 }
 
-impl PartialEq for LuaFunction<'_> {
+impl PartialEq for Function<'_> {
     fn eq(&self, other: &Self) -> bool {
         let a = unsafe { lua_topointer(self.vm.as_ptr(), self.index) };
         let b = unsafe { lua_topointer(other.vm.as_ptr(), other.index) };
@@ -62,9 +62,9 @@ impl PartialEq for LuaFunction<'_> {
     }
 }
 
-impl Eq for LuaFunction<'_> {}
+impl Eq for Function<'_> {}
 
-impl Display for LuaFunction<'_> {
+impl Display for Function<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
@@ -74,20 +74,20 @@ impl Display for LuaFunction<'_> {
     }
 }
 
-impl Debug for LuaFunction<'_> {
+impl Debug for Function<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "LuaFunction({:?})", self.index)
     }
 }
 
-unsafe impl SimpleDrop for LuaFunction<'_> {}
+unsafe impl SimpleDrop for Function<'_> {}
 
-impl LuaType for LuaFunction<'_> {}
+impl LuaType for Function<'_> {}
 
-impl<'a> FromParam<'a> for LuaFunction<'a> {
+impl<'a> FromParam<'a> for Function<'a> {
     unsafe fn from_param(vm: &'a Vm, index: i32) -> Self {
         unsafe { luaL_checktype(vm.as_ptr(), index, Type::Function) };
-        LuaFunction { vm, index }
+        Function { vm, index }
     }
 
     fn try_from_param(vm: &'a Vm, index: i32) -> Option<Self> {
@@ -95,14 +95,14 @@ impl<'a> FromParam<'a> for LuaFunction<'a> {
     }
 }
 
-unsafe impl IntoParam for LuaFunction<'_> {
+unsafe impl IntoParam for Function<'_> {
     fn into_param(self, vm: &Vm) -> u16 {
         unsafe { lua_pushvalue(vm.as_ptr(), self.index) };
         1
     }
 }
 
-impl LuaFunction<'_> {
+impl Function<'_> {
     pub fn call<'b, R: FromLua<'b>>(&'b self, value: impl IntoLua) -> crate::vm::Result<R> {
         let pos = unsafe { push_error_handler(self.vm.as_ptr()) };
         unsafe {
@@ -114,10 +114,10 @@ impl LuaFunction<'_> {
     }
 }
 
-impl<'a> FromLua<'a> for LuaFunction<'a> {
+impl<'a> FromLua<'a> for Function<'a> {
     #[inline(always)]
-    unsafe fn from_lua_unchecked(vm: &'a Vm, index: i32) -> LuaFunction<'a> {
-        LuaFunction {
+    unsafe fn from_lua_unchecked(vm: &'a Vm, index: i32) -> Function<'a> {
+        Function {
             vm,
             index: vm.get_absolute_index(index),
         }
@@ -125,15 +125,15 @@ impl<'a> FromLua<'a> for LuaFunction<'a> {
 
     fn from_lua(vm: &'a Vm, index: i32) -> crate::vm::Result<Self> {
         ensure_type_equals(vm, index, Type::Function)?;
-        Ok(LuaFunction {
+        Ok(Function {
             vm,
             index: vm.get_absolute_index(index),
         })
     }
 }
 
-impl Registry for LuaFunction<'_> {
-    type RegistryValue = crate::vm::registry::types::LuaFunction;
+impl Registry for Function<'_> {
+    type RegistryValue = crate::vm::registry::types::Function;
 
     #[inline(always)]
     fn registry_put(self, vm: &Vm) -> RegistryKey<Self::RegistryValue> {

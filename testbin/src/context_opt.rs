@@ -28,7 +28,7 @@
 
 use bp3d_lua::decl_closure;
 use bp3d_lua::vm::closure::context::{CellMut, ContextMut};
-use bp3d_lua::vm::value::function::LuaFunction;
+use bp3d_lua::vm::value::function::Function as LuaFunction;
 use bp3d_lua::vm::RootVm;
 use mlua::{Function, Lua, UserDataMethods};
 use std::time::Duration;

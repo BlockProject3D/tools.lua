@@ -31,7 +31,7 @@ use crate::vm::core::load::{Code, Script};
 use crate::vm::function::types::RFunction;
 use crate::vm::namespace::Namespace;
 use crate::vm::value::any::{AnyParam, UncheckedAnyReturn};
-use crate::vm::value::function::LuaFunction;
+use crate::vm::value::function::Function;
 use crate::{decl_closure, decl_lib_func};
 use bp3d_util::simple_error;
 use std::path::{Path, PathBuf};
@@ -48,7 +48,7 @@ decl_lib_func! {
 }
 
 decl_lib_func! {
-    fn load_string<'a>(vm: &Vm, s: &str, chunkname: Option<&str>) -> (Option<LuaFunction<'a>>, Option<String>) {
+    fn load_string<'a>(vm: &Vm, s: &str, chunkname: Option<&str>) -> (Option<Function<'a>>, Option<String>) {
         match chunkname {
             None => match vm.load_code(s) {
                 Ok(v) => (Some(v), None),
@@ -86,7 +86,7 @@ fn parse_lua_path(chroot: &Path, path: &str) -> Result<PathBuf, Error> {
 }
 
 decl_closure! {
-    fn load_file<'a> |chroot: &Path| (vm: &Vm, path: &str) -> (Option<LuaFunction<'a>>, Option<String>) {
+    fn load_file<'a> |chroot: &Path| (vm: &Vm, path: &str) -> (Option<Function<'a>>, Option<String>) {
         let path = match parse_lua_path(chroot, path) {
             Ok(v) => v,
             Err(e) => return (None, Some(e.to_string()))

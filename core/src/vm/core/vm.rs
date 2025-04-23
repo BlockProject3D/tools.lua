@@ -38,7 +38,7 @@ use crate::vm::core::{Load, LoadString};
 use crate::vm::error::Error;
 use crate::vm::userdata::core::Registry;
 use crate::vm::userdata::{NameConvert, UserData};
-use crate::vm::value::function::LuaFunction;
+use crate::vm::value::function::Function;
 use crate::vm::value::{FromLua, IntoLua};
 use bp3d_debug::debug;
 use std::cell::Cell;
@@ -152,7 +152,7 @@ impl Vm {
         FromLua::from_lua(self, -(R::num_values() as i32))
     }
 
-    pub fn load_code(&self, code: impl LoadString) -> crate::vm::Result<LuaFunction> {
+    pub fn load_code(&self, code: impl LoadString) -> crate::vm::Result<Function> {
         let l = self.as_ptr();
         unsafe {
             // Push the lua code.
@@ -177,7 +177,7 @@ impl Vm {
         FromLua::from_lua(self, -(R::num_values() as i32))
     }
 
-    pub fn load(&self, obj: impl Load) -> crate::vm::Result<LuaFunction> {
+    pub fn load(&self, obj: impl Load) -> crate::vm::Result<Function> {
         let l = self.as_ptr();
         let res = obj.load(l);
         unsafe {

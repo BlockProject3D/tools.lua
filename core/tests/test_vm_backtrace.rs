@@ -28,7 +28,7 @@
 
 use bp3d_lua::decl_lib_func;
 use bp3d_lua::vm::function::types::RFunction;
-use bp3d_lua::vm::value::function::LuaFunction;
+use bp3d_lua::vm::value::function::Function;
 use bp3d_lua::vm::RootVm;
 use bp3d_util::simple_error;
 
@@ -66,7 +66,7 @@ fn test_vm_backtrace() {
     ",
     )
     .unwrap();
-    let func: LuaFunction = vm.get_global(c"main").unwrap();
+    let func: Function = vm.get_global(c"main").unwrap();
     let err = func.call::<()>(()).unwrap_err().into_runtime().unwrap();
     assert_eq!(err.msg(), "rust error: useless function called");
     assert_eq!(err.backtrace(), "rust error: useless function called\nstack traceback:\n\t[C]: in function 'error_func'\n\t[string \"...\"]:3: in function 'raise'\n\t[string \"...\"]:7: in function 'a'\n\t[string \"...\"]:11: in function <[string \"...\"]:10>");

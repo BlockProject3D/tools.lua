@@ -27,7 +27,7 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use bp3d_lua::vm::table::Table;
-use bp3d_lua::vm::value::function::LuaFunction;
+use bp3d_lua::vm::value::function::Function;
 use bp3d_lua::vm::RootVm;
 use std::ffi::CStr;
 
@@ -35,7 +35,7 @@ use std::ffi::CStr;
 fn test_vm_function_1_arg() {
     let mut vm = RootVm::new();
     let top = vm.top();
-    let f: LuaFunction = vm
+    let f: Function = vm
         .run_code(c"return function(value) return 'this is a test ' .. value end")
         .unwrap();
     let str: &str = f.call(42.42).unwrap();
@@ -50,7 +50,7 @@ fn test_vm_function_1_arg() {
 fn test_vm_function_2_args() {
     let mut vm = RootVm::new();
     let top = vm.top();
-    let f: LuaFunction = vm.run_code(c"return function(value, value2) return 'this ' .. value .. ' is a test ' .. tostring(value2) end").unwrap();
+    let f: Function = vm.run_code(c"return function(value, value2) return 'this ' .. value .. ' is a test ' .. tostring(value2) end").unwrap();
     let str: &str = f.call((42.42, false)).unwrap();
     assert_eq!(str, "this 42.42 is a test false");
     let str: &str = f.call((42, true)).unwrap();

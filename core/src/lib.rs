@@ -28,6 +28,15 @@
 
 //TODO: Support dynamic linking and modules by dynamic linking to luajit.
 //TODO: Use features to disable RootVm related stuff, such as destructors, interruption, etc.
+//TODO: Add support for LuaMethod to optimize calling methods on tables from registry (a function
+// create to create from a LuaTable and an AnyStr matching the name of the method and a call method
+// to call directly from registry). /!\ should be implemented as a higher-level helper like namespace,
+// not a value /!\ => should probably refactor namespace into a new helper module outside the vm module.
+//TODO: Add a LuaFunction helper as well to replace LuaFunction::call in registry.
+//TODO: Probably rename LuaFunction as Function to match with Table vm component.
+//TODO: Simplify API for get/set/geti/seti/get_field/set_field to accept a trait and implement for i32/string/etc.
+//TODO: Remove LuaTable::call_method/call_function once the new LuaMethod exists.
+//TODO: Attempt to implement custom __index on userdata.
 
 pub mod ffi;
 pub mod libs;
