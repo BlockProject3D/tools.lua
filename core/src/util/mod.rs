@@ -31,3 +31,4 @@ mod namespace;
 mod function;
 
 pub use namespace::Namespace;
+pub use function::LuaFunction;
