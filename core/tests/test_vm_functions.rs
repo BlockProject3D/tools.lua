@@ -30,6 +30,7 @@ use bp3d_lua::vm::table::Table;
 use bp3d_lua::vm::value::Function;
 use bp3d_lua::vm::RootVm;
 use std::ffi::CStr;
+use bp3d_lua::util::LuaMethod;
 
 #[test]
 fn test_vm_function_1_arg() {
@@ -74,8 +75,10 @@ fn test_vm_function_method() {
     let mut vm = RootVm::new();
     let top = vm.top();
     let obj: Table = vm.run_code(METHODS).unwrap();
-    let str: &str = obj.call_method(c"greeting", ()).unwrap();
+    let method = LuaMethod::create(obj, c"greeting").unwrap();
+    let str: &str = method.call(&vm, ()).unwrap();
     assert_eq!(str, "Hello this is a test");
-    assert_eq!(vm.top(), top + 2); // Table + 1 result
+    method.delete(&vm);
+    assert_eq!(vm.top(), top + 1); // 1 result
     vm.clear();
 }

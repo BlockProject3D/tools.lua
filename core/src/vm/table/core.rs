@@ -32,7 +32,6 @@ use crate::ffi::lua::{
     lua_rawgeti, lua_rawseti, lua_setfield, lua_setmetatable, lua_settable, lua_topointer,
 };
 use crate::util::core::AnyStr;
-use crate::vm::core::util::{pcall, push_error_handler};
 use crate::vm::table::iter::Iter;
 use crate::vm::value::util::ensure_single_into_lua;
 use crate::vm::value::{FromLua, IntoLua};
@@ -135,31 +134,6 @@ impl<'a> Table<'a> {
     #[inline(always)]
     pub fn is_empty(&self) -> bool {
         self.len() == 0
-    }
-
-    pub fn call_function<'b, T: IntoLua, R: FromLua<'b>>(
-        &'b self,
-        name: impl AnyStr,
-        value: T,
-    ) -> crate::vm::Result<R> {
-        let pos = unsafe { push_error_handler(self.vm.as_ptr()) };
-        unsafe { lua_getfield(self.vm.as_ptr(), self.index, name.to_str()?.as_ptr()) };
-        let num_values = value.into_lua(self.vm);
-        unsafe { pcall(self.vm, num_values as _, R::num_values() as _, pos)? };
-        R::from_lua(self.vm, -(R::num_values() as i32))
-    }
-
-    pub fn call_method<'b, T: IntoLua, R: FromLua<'b>>(
-        &'b self,
-        name: impl AnyStr,
-        value: T,
-    ) -> crate::vm::Result<R> {
-        let pos = unsafe { push_error_handler(self.vm.as_ptr()) };
-        unsafe { lua_getfield(self.vm.as_ptr(), self.index, name.to_str()?.as_ptr()) };
-        unsafe { lua_pushvalue(self.vm.as_ptr(), self.index) };
-        let num_values = value.into_lua(self.vm);
-        unsafe { pcall(self.vm, (num_values + 1) as _, R::num_values() as _, pos)? };
-        R::from_lua(self.vm, -(R::num_values() as i32))
     }
 
     /// Creates a new iterator for this table.

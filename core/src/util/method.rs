@@ -26,11 +26,38 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-pub mod core;
-mod namespace;
-mod function;
-mod method;
+use crate::util::core::AnyStr;
+use crate::vm::core::util::{pcall, push_error_handler};
+use crate::vm::registry::core::RegistryKey;
+use crate::vm::registry::Registry;
+use crate::vm::registry::types::{Function, Table};
+use crate::vm::value::{FromLua, IntoLua};
+use crate::vm::Vm;
 
-pub use namespace::Namespace;
-pub use function::LuaFunction;
-pub use method::LuaMethod;
+pub struct LuaMethod {
+    obj: RegistryKey<Table>,
+    method: RegistryKey<Function>
+}
+
+impl LuaMethod {
+    pub fn create(obj: crate::vm::table::Table, method_name: impl AnyStr) -> crate::vm::Result<Self> {
+        let method: crate::vm::value::Function = obj.get_field(method_name)?;
+        let method = method.registry_put();
+        let obj = obj.registry_put();
+        Ok(Self { obj, method })
+    }
+
+    pub fn call<'a, R: FromLua<'a>>(&self, vm: &'a Vm, value: impl IntoLua) -> crate::vm::Result<R> {
+        let pos = unsafe { push_error_handler(vm.as_ptr()) };
+        unsafe { self.method.as_raw().push(vm) };
+        unsafe { self.obj.as_raw().push(vm) };
+        let num_values = value.into_lua(vm);
+        unsafe { pcall(vm, (num_values + 1) as _, R::num_values() as _, pos)? };
+        R::from_lua(vm, -(R::num_values() as i32))
+    }
+
+    pub fn delete(self, vm: &Vm) {
+        self.method.delete(vm);
+        self.obj.delete(vm);
+    }
+}

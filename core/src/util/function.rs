@@ -41,11 +41,15 @@ impl LuaFunction {
         Self(f.registry_put())
     }
 
-    pub fn call<'a, T: IntoLua, R: FromLua<'a>>(&self, vm: &'a Vm, value: T) -> crate::vm::Result<R> {
+    pub fn call<'a, R: FromLua<'a>>(&self, vm: &'a Vm, value: impl IntoLua) -> crate::vm::Result<R> {
         let pos = unsafe { push_error_handler(vm.as_ptr()) };
         unsafe { self.0.as_raw().push(vm) };
         let num_values = value.into_lua(vm);
         unsafe { pcall(vm, num_values as _, R::num_values() as _, pos)? };
         R::from_lua(vm, -(R::num_values() as i32))
+    }
+
+    pub fn delete(self, vm: &Vm) {
+        self.0.delete(vm)
     }
 }
