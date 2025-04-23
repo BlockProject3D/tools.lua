@@ -29,7 +29,7 @@
 use crate::libs::Lib;
 use crate::vm::function::types::RFunction;
 use crate::vm::function::IntoParam;
-use crate::vm::namespace::Namespace;
+use crate::util::Namespace;
 use crate::vm::table::Table;
 use crate::vm::Vm;
 use crate::{decl_lib_func, decl_userdata};

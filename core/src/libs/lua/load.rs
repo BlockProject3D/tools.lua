@@ -29,7 +29,7 @@
 use crate::libs::interface::Lib;
 use crate::vm::core::load::{Code, Script};
 use crate::vm::function::types::RFunction;
-use crate::vm::namespace::Namespace;
+use crate::util::Namespace;
 use crate::vm::value::any::{AnyParam, UncheckedAnyReturn};
 use crate::vm::value::function::Function;
 use crate::{decl_closure, decl_lib_func};

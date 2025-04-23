@@ -29,7 +29,7 @@
 use crate::decl_lib_func;
 use crate::libs::Lib;
 use crate::vm::function::types::RFunction;
-use crate::vm::namespace::Namespace;
+use crate::util::Namespace;
 use crate::vm::table::Table as LuaTable;
 use crate::vm::value::any::AnyValue;
 use crate::vm::Vm;

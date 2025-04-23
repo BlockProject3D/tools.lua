@@ -29,7 +29,7 @@
 use crate::decl_closure;
 use crate::libs::interface::Lib;
 use crate::vm::closure::rc::Rc;
-use crate::vm::namespace::Namespace;
+use crate::util::Namespace;
 use crate::vm::value::any::{AnyParam, UncheckedAnyReturn};
 use crate::vm::Vm;
 use bp3d_util::simple_error;

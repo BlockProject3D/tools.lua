@@ -30,7 +30,6 @@ pub mod closure;
 pub mod core;
 pub mod error;
 pub mod function;
-pub mod namespace;
 pub mod registry;
 pub mod table;
 pub mod thread;

@@ -27,7 +27,7 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::libs::Lib;
-use crate::vm::namespace::Namespace;
+use crate::util::Namespace;
 use crate::vm::table::Table;
 
 const PATCH_LIST: &[&str] = &[
