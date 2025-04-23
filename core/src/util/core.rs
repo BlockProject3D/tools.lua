@@ -26,7 +26,7 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-//! Generic rust utilities module.
+//! Core rust utilities module.
 
 use std::borrow::Cow;
 use std::ffi::{CStr, CString, OsStr};
