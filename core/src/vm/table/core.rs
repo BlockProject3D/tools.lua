@@ -40,7 +40,7 @@ use crate::vm::Vm;
 use std::fmt::{Debug, Display};
 
 pub struct Table<'a> {
-    vm: &'a Vm,
+    pub(super) vm: &'a Vm,
     index: i32,
 }
 

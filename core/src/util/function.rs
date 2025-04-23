@@ -26,8 +26,26 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-pub mod core;
-mod namespace;
-mod function;
+use crate::vm::core::util::{pcall, push_error_handler};
+use crate::vm::registry::core::RegistryKey;
+use crate::vm::registry::types::Function;
+use crate::vm::value::{FromLua, IntoLua};
+use crate::vm::Vm;
+use crate::vm::registry::Registry;
 
-pub use namespace::Namespace;
+/// This represents a Lua callback.
+pub struct LuaFunction(RegistryKey<Function>);
+
+impl LuaFunction {
+    pub fn create(f: crate::vm::value::function::Function) -> Self {
+        Self(f.registry_put())
+    }
+
+    pub fn call<'a, T: IntoLua, R: FromLua<'a>>(&self, vm: &'a Vm, value: T) -> crate::vm::Result<R> {
+        let pos = unsafe { push_error_handler(vm.as_ptr()) };
+        unsafe { self.0.as_raw().push(vm) };
+        let num_values = value.into_lua(vm);
+        unsafe { pcall(vm, num_values as _, R::num_values() as _, pos)? };
+        R::from_lua(vm, -(R::num_values() as i32))
+    }
+}

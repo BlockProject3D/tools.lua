@@ -56,25 +56,13 @@ pub trait Registry: Sized {
 
     /// Register this value into the registry.
     ///
-    /// # Arguments
-    ///
-    /// * `vm`: the [Vm] to attach this value to.
-    ///
     /// returns: RegistryKey<Self::RegistryValue>
-    fn registry_put(self, vm: &Vm) -> RegistryKey<Self::RegistryValue>;
+    fn registry_put(self) -> RegistryKey<Self::RegistryValue>;
 
     /// Swaps the value pointed by `old` in the registry to this value.
     ///
     /// # Arguments
     ///
-    /// * `vm`: the [Vm] to attach this value to.
     /// * `old`: the old registry key to be replaced.
-    fn registry_swap(
-        self,
-        vm: &Vm,
-        old: RegistryKey<Self::RegistryValue>,
-    ) -> RegistryKey<Self::RegistryValue> {
-        old.delete(vm);
-        self.registry_put(vm)
-    }
+    fn registry_swap(self, old: RegistryKey<Self::RegistryValue>) -> RegistryKey<Self::RegistryValue>;
 }

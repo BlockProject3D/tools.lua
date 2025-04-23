@@ -136,21 +136,17 @@ impl Registry for Function<'_> {
     type RegistryValue = crate::vm::registry::types::Function;
 
     #[inline(always)]
-    fn registry_put(self, vm: &Vm) -> RegistryKey<Self::RegistryValue> {
+    fn registry_put(self) -> RegistryKey<Self::RegistryValue> {
         // If the function is not at the top of the stack, move it to the top.
-        ensure_value_top(vm, self.index);
-        unsafe { RegistryKey::from_top(vm) }
+        ensure_value_top(self.vm, self.index);
+        unsafe { RegistryKey::from_top(self.vm) }
     }
 
     #[inline(always)]
-    fn registry_swap(
-        self,
-        vm: &Vm,
-        old: RegistryKey<Self::RegistryValue>,
-    ) -> RegistryKey<Self::RegistryValue> {
+    fn registry_swap(self, old: RegistryKey<Self::RegistryValue>) -> RegistryKey<Self::RegistryValue> {
         // If the function is not at the top of the stack, move it to the top.
-        ensure_value_top(vm, self.index);
-        unsafe { old.as_raw().replace(vm) };
+        ensure_value_top(self.vm, self.index);
+        unsafe { old.as_raw().replace(self.vm) };
         old
     }
 }

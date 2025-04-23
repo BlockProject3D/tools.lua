@@ -43,7 +43,7 @@ impl<'a> Namespace<'a> {
         table: Table<'a>,
         names: impl Iterator<Item = &'b str>,
     ) -> crate::vm::Result<Self> {
-        let mut key = table.registry_put(vm);
+        let mut key = table.registry_put();
         let key = vm.scope(|vm| {
             for name in names {
                 let mut table = key.push(vm);
@@ -55,7 +55,7 @@ impl<'a> Namespace<'a> {
                         table.get_field(name)?
                     }
                 };
-                key = tab.registry_swap(vm, key);
+                key = tab.registry_swap(key);
             }
             Ok(key)
         })?;

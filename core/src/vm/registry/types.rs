@@ -26,10 +26,8 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use crate::vm::core::util::{pcall, push_error_handler};
-use crate::vm::registry::core::RegistryKey;
 use crate::vm::registry::RegistryValue;
-use crate::vm::value::{FromLua, IntoLua};
+use crate::vm::value::FromLua;
 use crate::vm::Vm;
 
 pub struct Table;
@@ -50,19 +48,5 @@ impl RegistryValue for Function {
     #[inline(always)]
     unsafe fn to_lua_value(vm: &Vm, index: i32) -> Self::Value<'_> {
         unsafe { crate::vm::value::function::Function::from_lua_unchecked(vm, index) }
-    }
-}
-
-impl RegistryKey<Function> {
-    pub fn call<'a, T: IntoLua, R: FromLua<'a>>(
-        &self,
-        vm: &'a Vm,
-        value: T,
-    ) -> crate::vm::Result<R> {
-        let pos = unsafe { push_error_handler(vm.as_ptr()) };
-        unsafe { self.as_raw().push(vm) };
-        let num_values = value.into_lua(vm);
-        unsafe { pcall(vm, num_values as _, R::num_values() as _, pos)? };
-        R::from_lua(vm, -(R::num_values() as i32))
     }
 }
