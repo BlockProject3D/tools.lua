@@ -7,6 +7,9 @@ publish = false
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-mlua = { version = "0.10.3", features = ["luajit", "vendored"] }
+mlua = { version = "0.10.3", features = ["luajit"] }
 bp3d-lua = { version = "1.0.0-rc.1.0.0", path = "../core" }
 bp3d-os = { version = "1.0.0-rc.4.2.1", features = ["time"] }
+
+[workspace]
+members = []

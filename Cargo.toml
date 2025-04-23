@@ -2,6 +2,5 @@
 members = [
     "build",
     "codegen",
-    "core",
-    "testbin"
+    "core"
 ]
