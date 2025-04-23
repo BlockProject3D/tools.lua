@@ -31,7 +31,7 @@ use crate::ffi::lua::{
     lua_close, lua_getfield, lua_gettop, lua_pushnil, lua_remove, lua_setfield, lua_settop, State,
     ThreadStatus, GLOBALSINDEX, REGISTRYINDEX,
 };
-use crate::util::AnyStr;
+use crate::util::core::AnyStr;
 use crate::vm::core::destructor::Pool;
 use crate::vm::core::util::{handle_syntax_error, pcall, push_error_handler};
 use crate::vm::core::{Load, LoadString};

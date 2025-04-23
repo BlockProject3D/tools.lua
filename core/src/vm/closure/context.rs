@@ -30,7 +30,7 @@
 
 use crate::ffi::laux::luaL_error;
 use crate::ffi::lua::lua_newuserdata;
-use crate::util::SimpleDrop;
+use crate::util::core::SimpleDrop;
 use crate::vm::closure::{FromUpvalue, IntoUpvalue, Upvalue};
 use crate::vm::registry::core::RawRegistryKey;
 use crate::vm::Vm;

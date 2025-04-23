@@ -31,7 +31,7 @@ use crate::ffi::lua::{
     lua_createtable, lua_getfield, lua_gettable, lua_gettop, lua_objlen, lua_pushvalue,
     lua_rawgeti, lua_rawseti, lua_setfield, lua_setmetatable, lua_settable, lua_topointer,
 };
-use crate::util::AnyStr;
+use crate::util::core::AnyStr;
 use crate::vm::core::util::{pcall, push_error_handler};
 use crate::vm::table::iter::Iter;
 use crate::vm::value::util::ensure_single_into_lua;

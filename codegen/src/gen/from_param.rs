@@ -179,7 +179,7 @@ impl Parser for FromParam {
                 }
             }
 
-            unsafe impl #generics bp3d_lua::util::SimpleDrop for #name #generics { }
+            unsafe impl #generics bp3d_lua::util::core::SimpleDrop for #name #generics { }
         }
     }
 
@@ -207,7 +207,7 @@ impl Parser for FromParam {
                 }
             }
 
-            unsafe impl #generics bp3d_lua::util::SimpleDrop for #name #generics { }
+            unsafe impl #generics bp3d_lua::util::core::SimpleDrop for #name #generics { }
         }
     }
 }

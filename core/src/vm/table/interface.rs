@@ -28,7 +28,7 @@
 
 use crate::ffi::laux::luaL_checktype;
 use crate::ffi::lua::{lua_gettop, lua_pushvalue, lua_type, Type};
-use crate::util::SimpleDrop;
+use crate::util::core::SimpleDrop;
 use crate::vm::function::{FromParam, IntoParam};
 use crate::vm::registry::core::RegistryKey;
 use crate::vm::registry::Registry;

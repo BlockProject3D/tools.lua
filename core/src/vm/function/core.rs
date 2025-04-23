@@ -32,7 +32,7 @@ use crate::ffi::lua::{
     lua_newuserdata, lua_pushboolean, lua_pushinteger, lua_pushlstring, lua_pushnil,
     lua_pushnumber, lua_type, Integer, Number, Type,
 };
-use crate::util::SimpleDrop;
+use crate::util::core::SimpleDrop;
 use crate::vm::function::{FromParam, IntoParam};
 use crate::vm::userdata::UserData;
 use crate::vm::util::{lua_rust_error, LuaType, TypeName};

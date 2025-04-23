@@ -27,7 +27,7 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::ffi::lua::{lua_pushnil, lua_toboolean, lua_tonumber, lua_type, Type};
-use crate::util::SimpleDrop;
+use crate::util::core::SimpleDrop;
 use crate::vm::error::Error;
 use crate::vm::function::{FromParam, IntoParam};
 use crate::vm::table::Table;
