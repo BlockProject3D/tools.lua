@@ -28,15 +28,15 @@
 
 use crate::util::core::AnyStr;
 use crate::vm::core::util::{pcall, push_error_handler};
-use crate::vm::registry::core::RegistryKey;
+use crate::vm::registry::core::Key;
 use crate::vm::registry::Registry;
 use crate::vm::registry::types::{Function, Table};
 use crate::vm::value::{FromLua, IntoLua};
 use crate::vm::Vm;
 
 pub struct LuaMethod {
-    obj: RegistryKey<Table>,
-    method: RegistryKey<Function>
+    obj: Key<Table>,
+    method: Key<Function>
 }
 
 impl LuaMethod {

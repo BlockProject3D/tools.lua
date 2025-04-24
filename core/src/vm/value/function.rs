@@ -31,7 +31,7 @@ use crate::ffi::lua::{lua_pushvalue, lua_topointer, Type};
 use crate::util::core::SimpleDrop;
 use crate::vm::core::util::{pcall, push_error_handler};
 use crate::vm::function::{FromParam, IntoParam};
-use crate::vm::registry::core::RegistryKey;
+use crate::vm::registry::core::Key;
 use crate::vm::registry::Registry;
 use crate::vm::util::LuaType;
 use crate::vm::value::util::{ensure_type_equals, ensure_value_top};
@@ -136,14 +136,14 @@ impl Registry for Function<'_> {
     type RegistryValue = crate::vm::registry::types::Function;
 
     #[inline(always)]
-    fn registry_put(self) -> RegistryKey<Self::RegistryValue> {
+    fn registry_put(self) -> Key<Self::RegistryValue> {
         // If the function is not at the top of the stack, move it to the top.
         ensure_value_top(self.vm, self.index);
-        unsafe { RegistryKey::from_top(self.vm) }
+        unsafe { Key::from_top(self.vm) }
     }
 
     #[inline(always)]
-    fn registry_swap(self, old: RegistryKey<Self::RegistryValue>) -> RegistryKey<Self::RegistryValue> {
+    fn registry_swap(self, old: Key<Self::RegistryValue>) -> Key<Self::RegistryValue> {
         // If the function is not at the top of the stack, move it to the top.
         ensure_value_top(self.vm, self.index);
         unsafe { old.as_raw().replace(self.vm) };

@@ -37,9 +37,9 @@ use std::marker::PhantomData;
 
 #[derive(Debug, Copy, Clone)]
 #[repr(transparent)]
-pub struct RawRegistryKey(c_int);
+pub struct RawKey(c_int);
 
-impl RawRegistryKey {
+impl RawKey {
     /// Returns the raw key.
     #[inline(always)]
     pub fn as_int(&self) -> c_int {
@@ -48,8 +48,8 @@ impl RawRegistryKey {
 
     /// Wraps a raw integer as a registry key.
     #[inline(always)]
-    pub fn from_int(v: c_int) -> RawRegistryKey {
-        RawRegistryKey(v)
+    pub fn from_int(v: c_int) -> RawKey {
+        RawKey(v)
     }
 
     /// Pushes the lua value associated to this registry key on the lua stack.
@@ -100,7 +100,7 @@ impl RawRegistryKey {
         lua_rawseti(vm.as_ptr(), REGISTRYINDEX, self.0);
     }
 
-    /// Creates a new [RawRegistryKey] from the top of the lua stack.
+    /// Creates a new [RawKey] from the top of the lua stack.
     ///
     /// # Arguments
     ///
@@ -112,18 +112,18 @@ impl RawRegistryKey {
     ///
     /// This is UB to call if the stack is empty.
     #[inline(always)]
-    pub unsafe fn from_top(vm: &Vm) -> RawRegistryKey {
+    pub unsafe fn from_top(vm: &Vm) -> RawKey {
         let key = unsafe { luaL_ref(vm.as_ptr(), REGISTRYINDEX) };
-        RawRegistryKey(key)
+        RawKey(key)
     }
 }
 
-pub struct RegistryKey<T> {
-    raw: RawRegistryKey,
+pub struct Key<T> {
+    raw: RawKey,
     useless: PhantomData<*const T>,
 }
 
-impl<T: RegistryValue> RegistryKey<T> {
+impl<T: RegistryValue> Key<T> {
     /// Pushes the lua value associated to this registry key on the lua stack.
     ///
     /// # Arguments
@@ -145,7 +145,7 @@ impl<T: RegistryValue> RegistryKey<T> {
     ///
     /// returns: <T as RegistryValue>::Value
     #[inline(always)]
-    pub fn as_raw(&self) -> RawRegistryKey {
+    pub fn as_raw(&self) -> RawKey {
         self.raw
     }
 
@@ -161,7 +161,7 @@ impl<T: RegistryValue> RegistryKey<T> {
         unsafe { self.raw.delete(vm) };
     }
 
-    /// Creates a new [RegistryKey] from the top of the lua stack.
+    /// Creates a new [Key] from the top of the lua stack.
     ///
     /// # Arguments
     ///
@@ -173,9 +173,9 @@ impl<T: RegistryValue> RegistryKey<T> {
     ///
     /// The type T must match the type of the value at the top of the stack. Additionally, the value
     /// at the top of the stack must not be referenced as it will be popped.
-    pub unsafe fn from_top(vm: &Vm) -> RegistryKey<T> {
-        RegistryKey {
-            raw: RawRegistryKey::from_top(vm),
+    pub unsafe fn from_top(vm: &Vm) -> Key<T> {
+        Key {
+            raw: RawKey::from_top(vm),
             useless: PhantomData,
         }
     }

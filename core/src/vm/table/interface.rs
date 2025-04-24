@@ -30,7 +30,7 @@ use crate::ffi::laux::luaL_checktype;
 use crate::ffi::lua::{lua_gettop, lua_pushvalue, lua_type, Type};
 use crate::util::core::SimpleDrop;
 use crate::vm::function::{FromParam, IntoParam};
-use crate::vm::registry::core::RegistryKey;
+use crate::vm::registry::core::Key;
 use crate::vm::registry::Registry;
 use crate::vm::table::Table;
 use crate::vm::util::LuaType;
@@ -83,14 +83,14 @@ impl Registry for Table<'_> {
     type RegistryValue = crate::vm::registry::types::Table;
 
     #[inline(always)]
-    fn registry_put(self) -> RegistryKey<Self::RegistryValue> {
+    fn registry_put(self) -> Key<Self::RegistryValue> {
         // If the table is not at the top of the stack, move it to the top.
         ensure_value_top(self.vm, self.index());
-        unsafe { RegistryKey::from_top(self.vm) }
+        unsafe { Key::from_top(self.vm) }
     }
 
     #[inline(always)]
-    fn registry_swap(self, old: RegistryKey<Self::RegistryValue>) -> RegistryKey<Self::RegistryValue> {
+    fn registry_swap(self, old: Key<Self::RegistryValue>) -> Key<Self::RegistryValue> {
         // If the table is not at the top of the stack, move it to the top.
         ensure_value_top(self.vm, self.index());
         unsafe { old.as_raw().replace(self.vm) };

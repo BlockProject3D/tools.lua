@@ -32,7 +32,7 @@ use crate::ffi::laux::luaL_error;
 use crate::ffi::lua::lua_newuserdata;
 use crate::util::core::SimpleDrop;
 use crate::vm::closure::{FromUpvalue, IntoUpvalue, Upvalue};
-use crate::vm::registry::core::RawRegistryKey;
+use crate::vm::registry::core::RawKey;
 use crate::vm::Vm;
 use std::marker::PhantomData;
 use std::ops::{Deref, DerefMut};
@@ -74,7 +74,7 @@ impl<T> CellMut<T> {
 }
 
 pub struct Context<T> {
-    key: RawRegistryKey,
+    key: RawKey,
     ptr: *mut *const T,
 }
 
@@ -100,7 +100,7 @@ impl<T: 'static> Context<T> {
     pub fn new(vm: &Vm) -> Self {
         let (ptr, key) = unsafe {
             let ptr = lua_newuserdata(vm.as_ptr(), 8);
-            (ptr, RawRegistryKey::from_top(vm))
+            (ptr, RawKey::from_top(vm))
         };
         Self {
             key,

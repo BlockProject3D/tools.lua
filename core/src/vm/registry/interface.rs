@@ -26,7 +26,7 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use crate::vm::registry::core::RegistryKey;
+use crate::vm::registry::core::Key;
 use crate::vm::Vm;
 
 //TODO: Try to find a better name.
@@ -57,12 +57,12 @@ pub trait Registry: Sized {
     /// Register this value into the registry.
     ///
     /// returns: RegistryKey<Self::RegistryValue>
-    fn registry_put(self) -> RegistryKey<Self::RegistryValue>;
+    fn registry_put(self) -> Key<Self::RegistryValue>;
 
     /// Swaps the value pointed by `old` in the registry to this value.
     ///
     /// # Arguments
     ///
     /// * `old`: the old registry key to be replaced.
-    fn registry_swap(self, old: RegistryKey<Self::RegistryValue>) -> RegistryKey<Self::RegistryValue>;
+    fn registry_swap(self, old: Key<Self::RegistryValue>) -> Key<Self::RegistryValue>;
 }

@@ -27,14 +27,14 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::vm::core::util::{pcall, push_error_handler};
-use crate::vm::registry::core::RegistryKey;
+use crate::vm::registry::core::Key;
 use crate::vm::registry::types::Function;
 use crate::vm::value::{FromLua, IntoLua};
 use crate::vm::Vm;
 use crate::vm::registry::Registry;
 
 /// This represents a Lua callback.
-pub struct LuaFunction(RegistryKey<Function>);
+pub struct LuaFunction(Key<Function>);
 
 impl LuaFunction {
     pub fn create(f: crate::vm::value::Function) -> Self {
