@@ -40,6 +40,9 @@ use std::cell::OnceCell;
 use std::ffi::CStr;
 use std::marker::PhantomData;
 
+//TODO: This should be a builder.
+//TODO: The actual function structure should only contain name and CFunction.
+
 pub struct Function {
     is_mutable: bool,
     args: Vec<TypeName>,

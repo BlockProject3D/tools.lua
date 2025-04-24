@@ -38,8 +38,10 @@ macro_rules! c_stringify {
     };
 }
 
+/// This macro is unsafe and should not be used from safe code directly. It is intended as a
+/// building block for other macros.
 #[macro_export]
-macro_rules! decl_from_param {
+macro_rules! decl_from_param_unchecked {
     (
         $vm: ident, $start_index: literal,
     ) => {
@@ -57,7 +59,7 @@ macro_rules! decl_from_param {
     ) => {
         use $crate::vm::function::FromParam;
         let mut index = $start_index;
-        $crate::decl_from_param!(_from_param $vm, index, $(($arg_name: $arg_ty))*);
+        $crate::decl_from_param_unchecked!(_from_param $vm, index, $(($arg_name: $arg_ty))*);
     };
 
     (_from_param $vm: ident, $index: ident, ) => { };
@@ -69,6 +71,6 @@ macro_rules! decl_from_param {
     (_from_param $vm: ident, $index: ident, ($arg_name: ident: $arg_ty: ty) $(($arg_name2: ident: $arg_ty2: ty))*) => {
         let $arg_name: $arg_ty = unsafe { FromParam::from_param($vm, $index) };
         $index += 1;
-        $crate::decl_from_param!(_from_param $vm, $index, $(($arg_name2: $arg_ty2))*);
+        $crate::decl_from_param_unchecked!(_from_param $vm, $index, $(($arg_name2: $arg_ty2))*);
     };
 }

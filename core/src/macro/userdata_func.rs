@@ -40,7 +40,7 @@ macro_rules! decl_userdata_func {
                     let vm = unsafe { $crate::vm::Vm::from_raw(l) };
                     #[inline(always)]
                     extern "C-unwind" fn _vmfunc $(<$lifetime>)? (this_ptr: *mut $obj_name, vm: &$($lifetime)? $crate::vm::Vm) -> i32 {
-                        $($crate::decl_from_param!(vm, 2, $($arg_name: $arg_ty)*);)?
+                        $($crate::decl_from_param_unchecked!(vm, 2, $($arg_name: $arg_ty)*);)?
                         let ret = _func(unsafe { &mut *this_ptr }, vm $(, $($arg_name),*)?);
                         ret.into_param(vm) as _
                     }
@@ -66,7 +66,7 @@ macro_rules! decl_userdata_func {
                     let vm = unsafe { $crate::vm::Vm::from_raw(l) };
                     #[inline(always)]
                     extern "C-unwind" fn _vmfunc $(<$lifetime>)? (this_ptr: *mut $obj_name, vm: &$($lifetime)? $crate::vm::Vm) -> i32 {
-                        $($crate::decl_from_param!(vm, 2, $($arg_name: $arg_ty)*);)?
+                        $($crate::decl_from_param_unchecked!(vm, 2, $($arg_name: $arg_ty)*);)?
                         let ret = _func(unsafe { &mut *this_ptr } $(, $($arg_name),*)?);
                         ret.into_param(vm) as _
                     }
@@ -92,7 +92,7 @@ macro_rules! decl_userdata_func {
                     let vm = unsafe { $crate::vm::Vm::from_raw(l) };
                     #[inline(always)]
                     extern "C-unwind" fn _vmfunc $(<$lifetime>)? (this_ptr: *const $obj_name, vm: &$($lifetime)? $crate::vm::Vm) -> i32 {
-                        $($crate::decl_from_param!(vm, 2, $($arg_name: $arg_ty)*);)?
+                        $($crate::decl_from_param_unchecked!(vm, 2, $($arg_name: $arg_ty)*);)?
                         let ret = _func(unsafe { &*this_ptr }, vm $(, $($arg_name),*)?);
                         ret.into_param(vm) as _
                     }
@@ -117,7 +117,7 @@ macro_rules! decl_userdata_func {
                     let vm = unsafe { $crate::vm::Vm::from_raw(l) };
                     #[inline(always)]
                     extern "C-unwind" fn _vmfunc $(<$lifetime>)? (this_ptr: *const $obj_name, vm: &$($lifetime)? $crate::vm::Vm) -> i32 {
-                        $($crate::decl_from_param!(vm, 2, $($arg_name: $arg_ty)*);)?
+                        $($crate::decl_from_param_unchecked!(vm, 2, $($arg_name: $arg_ty)*);)?
                         let ret = _func(unsafe { &*this_ptr } $(, $($arg_name),*)?);
                         ret.into_param(vm) as _
                     }

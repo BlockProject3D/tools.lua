@@ -34,6 +34,8 @@ use crate::vm::Vm;
 use bp3d_debug::debug;
 use std::rc::Rc;
 
+//TODO: Use rawgetp/rawsetp to manage the pointer to the destructor.
+
 /// This trait represents a value which can be attached to a [Pool](Pool).
 pub trait Raw {
     type Ptr: Copy;

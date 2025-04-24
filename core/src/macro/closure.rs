@@ -39,7 +39,7 @@ macro_rules! decl_closure {
                 #[inline(always)]
                 extern "C-unwind" fn _vmfunc $(<$lifetime>)? (vm: &$($lifetime)? $crate::vm::Vm) -> i32 {
                     let $upvalue_name: <$upvalue_ty as $crate::vm::closure::Upvalue>::From<'_> = unsafe { $crate::vm::closure::FromUpvalue::from_upvalue(vm, 1) };
-                    $($crate::decl_from_param!(vm, 1, $($arg_name: $arg_ty)*);)?
+                    $($crate::decl_from_param_unchecked!(vm, 1, $($arg_name: $arg_ty)*);)?
                     let ret = _func(vm, $upvalue_name $(, $($arg_name),*)?);
                     ret.into_param(vm) as _
                 }
@@ -59,7 +59,7 @@ macro_rules! decl_closure {
                 #[inline(always)]
                 extern "C-unwind" fn _vmfunc $(<$lifetime>)? (vm: &$($lifetime)? $crate::vm::Vm) -> i32 {
                     let $upvalue_name: <$upvalue_ty as $crate::vm::closure::Upvalue>::From<'_> = unsafe { $crate::vm::closure::FromUpvalue::from_upvalue(vm, 1) };
-                    $crate::decl_from_param!(vm, 1, $($arg_name: $arg_ty)*);
+                    $crate::decl_from_param_unchecked!(vm, 1, $($arg_name: $arg_ty)*);
                     let ret = _func($upvalue_name, $($arg_name),*);
                     ret.into_param(vm) as _
                 }

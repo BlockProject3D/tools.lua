@@ -37,7 +37,7 @@ macro_rules! decl_lib_func {
             let vm = unsafe { $crate::vm::Vm::from_raw(l) };
             #[inline(always)]
             extern "C-unwind" fn _vmfunc $(<$lifetime>)? (vm: &$($lifetime)? $crate::vm::Vm) -> i32 {
-                $($crate::decl_from_param!(vm, 1, $($arg_name: $arg_ty)*);)?
+                $($crate::decl_from_param_unchecked!(vm, 1, $($arg_name: $arg_ty)*);)?
                 let ret = _func(vm $(, $($arg_name),*)?);
                 ret.into_param(vm) as _
             }
@@ -53,7 +53,7 @@ macro_rules! decl_lib_func {
             let vm = unsafe { $crate::vm::Vm::from_raw(l) };
             #[inline(always)]
             extern "C-unwind" fn _vmfunc $(<$lifetime>)? (vm: &$($lifetime)? $crate::vm::Vm) -> i32 {
-                $crate::decl_from_param!(vm, 1, $($arg_name: $arg_ty)*);
+                $crate::decl_from_param_unchecked!(vm, 1, $($arg_name: $arg_ty)*);
                 let ret = _func($($arg_name),*);
                 ret.into_param(vm) as _
             }
