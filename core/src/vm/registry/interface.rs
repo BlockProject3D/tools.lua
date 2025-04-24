@@ -27,12 +27,13 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::vm::registry::core::Key;
+use crate::vm::value::IntoLua;
 use crate::vm::Vm;
 
 //TODO: Try to find a better name.
 
 pub trait Value: 'static {
-    type Value<'a>;
+    type Value<'a>: IntoLua;
 
     /// Reads the upvalue at the given location on the lua stack.
     ///

@@ -26,96 +26,54 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use crate::ffi::laux::{luaL_ref, luaL_unref};
-use crate::ffi::lua::{lua_rawgeti, lua_rawseti, REGISTRYINDEX};
-use crate::vm::registry::Value;
-use crate::vm::Vm;
-use std::ffi::c_int;
+use std::ffi::c_void;
 use std::marker::PhantomData;
-
-//TODO: Check if possible to implement from_top as a safe function.
-//TODO: Check if key can be a NonZeroI32.
+use crate::ffi::lua::{lua_insert, lua_pushlightuserdata, lua_pushnil, lua_rawget, lua_rawset, REGISTRYINDEX};
+use crate::vm::registry::Value;
+use crate::vm::value::IntoLua;
+use crate::vm::Vm;
 
 #[derive(Debug, Copy, Clone)]
-#[repr(transparent)]
-pub struct RawKey(c_int);
+pub struct RawKey(*const c_void);
 
 impl RawKey {
-    /// Returns the raw key.
-    #[inline(always)]
-    pub fn as_int(&self) -> c_int {
-        self.0
-    }
-
-    /// Wraps a raw integer as a registry key.
-    #[inline(always)]
-    pub fn from_int(v: c_int) -> RawKey {
-        RawKey(v)
-    }
-
-    /// Pushes the lua value associated to this registry key on the lua stack.
+    /// Sets the value for this key to the value on top of the given lua stack.
+    /// This function pops the value on top of the stack.
     ///
     /// # Arguments
     ///
-    /// * `vm`: the [Vm] to attach the produced lua value to.
-    ///
-    /// returns: <T as RegistryValue>::Value
+    /// * `vm`: the [Vm] instance to manipulate.
     ///
     /// # Safety
     ///
-    /// This is UB to call if the key is invalid or already freed.
-    #[inline(always)]
-    pub unsafe fn push(&self, vm: &Vm) {
-        lua_rawgeti(vm.as_ptr(), REGISTRYINDEX, self.0);
+    /// This function assumes that the value expected to be inserted in the registry is on top of
+    /// the stack. This function also assumes that the value on top of the stack does not have any
+    /// references to it anymore.
+    pub unsafe fn set(&self, vm: &Vm) {
+        let l = vm.as_ptr();
+        lua_pushlightuserdata(l, self.0 as _);
+        lua_insert(l, -2); // Move key after value;
+        lua_rawset(l, REGISTRYINDEX);
     }
 
-    /// Deletes this registry key from the specified [Vm].
+    /// Pushes the value associated with this key on the lua stack.
     ///
     /// # Arguments
     ///
-    /// * `vm`: the [Vm] to unregister from.
+    /// * `vm`: the [Vm] instance to manipulate.
     ///
     /// returns: ()
-    ///
-    /// # Safety
-    ///
-    /// This is UB to call if the registry key is invalid or was already freed.
-    #[inline(always)]
-    pub unsafe fn delete(self, vm: &Vm) {
-        luaL_unref(vm.as_ptr(), REGISTRYINDEX, self.0);
+    pub fn push(&self, vm: &Vm) {
+        let l = vm.as_ptr();
+        unsafe {
+            lua_pushlightuserdata(l, self.0 as _);
+            lua_rawget(l, REGISTRYINDEX);
+        }
     }
 
-    /// Replaces the content of this key with the value on top of the stack.
-    ///
-    /// # Arguments
-    ///
-    /// * `vm`: the vm associated with this key.
-    ///
-    /// returns: ()
-    ///
-    /// # Safety
-    ///
-    /// This is UB to call if the key has already been deleted.
-    #[inline(always)]
-    pub unsafe fn replace(&self, vm: &Vm) {
-        lua_rawseti(vm.as_ptr(), REGISTRYINDEX, self.0);
-    }
-
-    /// Creates a new [RawKey] from the top of the lua stack.
-    ///
-    /// # Arguments
-    ///
-    /// * `vm`: the [Vm] instance representing the lua stack.
-    ///
-    /// returns: RegistryKey<T>
-    ///
-    /// # Safety
-    ///
-    /// This is UB to call if the stack is empty.
-    #[inline(always)]
-    pub unsafe fn from_top(vm: &Vm) -> RawKey {
-        let key = unsafe { luaL_ref(vm.as_ptr(), REGISTRYINDEX) };
-        RawKey(key)
+    pub const fn new(name: &str) -> Self {
+        //TODO: implement hash function.
+        todo!()
     }
 }
 
@@ -134,10 +92,8 @@ impl<T: Value> Key<T> {
     /// returns: <T as RegistryValue>::Value
     #[inline(always)]
     pub fn push<'a>(&self, vm: &'a Vm) -> T::Value<'a> {
-        unsafe {
-            self.raw.push(vm);
-            T::from_lua(vm, -1)
-        }
+        self.raw.push(vm);
+        unsafe { T::from_lua(vm, -1) }
     }
 
     /// Pushes the lua value associated to this registry key on the lua stack.
@@ -161,25 +117,24 @@ impl<T: Value> Key<T> {
     /// returns: ()
     #[inline(always)]
     pub fn delete(self, vm: &Vm) {
-        unsafe { self.raw.delete(vm) };
+        unsafe {
+            lua_pushnil(vm.as_ptr());
+            self.raw.set(vm);
+        }
     }
 
-    /// Creates a new [Key] from the top of the lua stack.
+    /// Sets the value for this key.
     ///
     /// # Arguments
     ///
-    /// * `vm`: the [Vm] instance representing the lua stack.
+    /// * `vm`: the [Vm] instance to manipulate.
+    /// * `value`: the value to replace with.
     ///
-    /// returns: RegistryKey<T>
-    ///
-    /// # Safety
-    ///
-    /// The type T must match the type of the value at the top of the stack. Additionally, the value
-    /// at the top of the stack must not be referenced as it will be popped.
-    pub unsafe fn from_top(vm: &Vm) -> Key<T> {
-        Key {
-            raw: RawKey::from_top(vm),
-            useless: PhantomData,
-        }
+    /// returns: ()
+    pub fn set(&self, vm: &Vm, value: T::Value<'_>) {
+        value.into_lua(vm);
+        unsafe { self.raw.set(vm); }
     }
+
+    //TODO: new function
 }
