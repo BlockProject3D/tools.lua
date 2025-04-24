@@ -31,10 +31,9 @@ use crate::ffi::lua::{lua_pushvalue, lua_topointer, Type};
 use crate::util::core::SimpleDrop;
 use crate::vm::core::util::{pcall, push_error_handler};
 use crate::vm::function::{FromParam, IntoParam};
-use crate::vm::registry::core::Key;
-use crate::vm::registry::Registry;
+use crate::vm::registry::{FromIndex, Set};
 use crate::vm::util::LuaType;
-use crate::vm::value::util::{ensure_type_equals, ensure_value_top};
+use crate::vm::value::util::ensure_type_equals;
 use crate::vm::value::{FromLua, IntoLua};
 use crate::vm::Vm;
 use std::fmt::{Debug, Display};
@@ -112,6 +111,12 @@ impl Function<'_> {
         unsafe { pcall(self.vm, num_values as _, R::num_values() as _, pos)? };
         R::from_lua(self.vm, -(R::num_values() as i32))
     }
+
+    /// Returns the absolute index of this function on the Lua stack.
+    #[inline(always)]
+    pub fn index(&self) -> i32 {
+        self.index
+    }
 }
 
 impl<'a> FromLua<'a> for Function<'a> {
@@ -132,21 +137,21 @@ impl<'a> FromLua<'a> for Function<'a> {
     }
 }
 
-impl Registry for Function<'_> {
-    type RegistryValue = crate::vm::registry::types::Function;
+impl crate::vm::registry::Value for crate::vm::registry::types::Function {
+    type Value<'a> = Function<'a>;
 
     #[inline(always)]
-    fn registry_put(self) -> Key<Self::RegistryValue> {
-        // If the function is not at the top of the stack, move it to the top.
-        ensure_value_top(self.vm, self.index);
-        unsafe { Key::from_top(self.vm) }
+    unsafe fn from_registry(vm: &Vm, index: i32) -> Self::Value<'_> {
+        unsafe { Function::from_lua_unchecked(vm, index) }
     }
 
     #[inline(always)]
-    fn registry_swap(self, old: Key<Self::RegistryValue>) -> Key<Self::RegistryValue> {
-        // If the function is not at the top of the stack, move it to the top.
-        ensure_value_top(self.vm, self.index);
-        unsafe { old.as_raw().replace(self.vm) };
-        old
+    fn push_registry<R: FromIndex>(value: Self::Value<'_>) -> R {
+        unsafe { R::from_index(value.vm, value.index()) }
+    }
+
+    #[inline(always)]
+    unsafe fn set_registry(key: &impl Set, value: Self::Value<'_>) {
+        key.set(value.vm, value.index())
     }
 }

@@ -29,33 +29,14 @@
 use std::ffi::c_void;
 use std::marker::PhantomData;
 use crate::ffi::lua::{lua_insert, lua_pushlightuserdata, lua_pushnil, lua_rawget, lua_rawset, REGISTRYINDEX};
-use crate::vm::registry::Value;
-use crate::vm::value::IntoLua;
+use crate::vm::registry::{Set, Value};
+use crate::vm::value::util::ensure_value_top;
 use crate::vm::Vm;
 
 #[derive(Debug, Copy, Clone)]
 pub struct RawKey(*const c_void);
 
 impl RawKey {
-    /// Sets the value for this key to the value on top of the given lua stack.
-    /// This function pops the value on top of the stack.
-    ///
-    /// # Arguments
-    ///
-    /// * `vm`: the [Vm] instance to manipulate.
-    ///
-    /// # Safety
-    ///
-    /// This function assumes that the value expected to be inserted in the registry is on top of
-    /// the stack. This function also assumes that the value on top of the stack does not have any
-    /// references to it anymore.
-    pub unsafe fn set(&self, vm: &Vm) {
-        let l = vm.as_ptr();
-        lua_pushlightuserdata(l, self.0 as _);
-        lua_insert(l, -2); // Move key after value;
-        lua_rawset(l, REGISTRYINDEX);
-    }
-
     /// Pushes the value associated with this key on the lua stack.
     ///
     /// # Arguments
@@ -72,8 +53,30 @@ impl RawKey {
     }
 
     pub const fn new(name: &str) -> Self {
-        //TODO: implement hash function.
-        todo!()
+        // This is a re-write of https://github.com/BPXFormat/bpx-rs/blob/develop/src/hash.rs
+        // in const context.
+        let mut val: u64 = 5381;
+        let bytes = name.as_bytes();
+        // Unreadable algorithm: see the hash loop in bpx-rs for the readable variant.
+        let mut i = 0;
+        while i != bytes.len() {
+            let temp1 = val.wrapping_shl(5);
+            let temp2 = temp1.wrapping_add(val);
+            val = temp2.wrapping_add(bytes[i] as u64);
+            i += 1;
+        }
+        // And now a hack to turn u64 into ptr (btw, do NOT dereference it).
+        Self(val as usize as *const c_void)
+    }
+}
+
+impl Set for RawKey {
+    unsafe fn set(&self, vm: &Vm, index: i32) {
+        let l = vm.as_ptr();
+        ensure_value_top(vm, index);
+        lua_pushlightuserdata(l, self.0 as _);
+        lua_insert(l, -2); // Move key after value;
+        lua_rawset(l, REGISTRYINDEX);
     }
 }
 
@@ -93,7 +96,7 @@ impl<T: Value> Key<T> {
     #[inline(always)]
     pub fn push<'a>(&self, vm: &'a Vm) -> T::Value<'a> {
         self.raw.push(vm);
-        unsafe { T::from_lua(vm, -1) }
+        unsafe { T::from_registry(vm, -1) }
     }
 
     /// Pushes the lua value associated to this registry key on the lua stack.
@@ -119,7 +122,7 @@ impl<T: Value> Key<T> {
     pub fn delete(self, vm: &Vm) {
         unsafe {
             lua_pushnil(vm.as_ptr());
-            self.raw.set(vm);
+            self.raw.set(vm, -1);
         }
     }
 
@@ -127,14 +130,16 @@ impl<T: Value> Key<T> {
     ///
     /// # Arguments
     ///
-    /// * `vm`: the [Vm] instance to manipulate.
     /// * `value`: the value to replace with.
     ///
     /// returns: ()
-    pub fn set(&self, vm: &Vm, value: T::Value<'_>) {
-        value.into_lua(vm);
-        unsafe { self.raw.set(vm); }
+    pub fn set(&self, value: T::Value<'_>) {
+        unsafe { T::set_registry(&self.raw, value) };
     }
 
-    //TODO: new function
+    pub fn new(raw_key: RawKey, value: T::Value<'_>) -> Self {
+        let key = Key { raw: raw_key, useless: PhantomData };
+        key.set(value);
+        key
+    }
 }

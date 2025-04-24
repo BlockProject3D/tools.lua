@@ -27,7 +27,7 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::ffi::lua::lua_settop;
-use crate::vm::registry::Registry;
+use crate::vm::registry::core::Key;
 use crate::vm::table::Table;
 use crate::vm::value::IntoLua;
 use crate::vm::Vm;
@@ -43,7 +43,7 @@ impl<'a> Namespace<'a> {
         table: Table<'a>,
         names: impl Iterator<Item = &'b str>,
     ) -> crate::vm::Result<Self> {
-        let mut key = table.registry_put();
+        let key = Key::<crate::vm::registry::types::Table>::new(table);
         let key = vm.scope(|vm| {
             for name in names {
                 let mut table = key.push(vm);
@@ -55,7 +55,7 @@ impl<'a> Namespace<'a> {
                         table.get_field(name)?
                     }
                 };
-                key = tab.registry_swap(key);
+                key.set(tab);
             }
             Ok(key)
         })?;

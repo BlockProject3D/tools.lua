@@ -28,11 +28,11 @@
 
 use crate::ffi::laux::{luaL_ref, luaL_unref};
 use crate::ffi::lua::{lua_rawgeti, lua_rawseti, REGISTRYINDEX};
-use crate::vm::registry::Value;
+use crate::vm::registry::{FromIndex, Set, Value};
 use crate::vm::Vm;
 use std::ffi::c_int;
 use std::marker::PhantomData;
-
+use crate::vm::value::util::ensure_value_top;
 //TODO: Check if possible to implement from_top as a safe function.
 //TODO: Check if key can be a NonZeroI32.
 
@@ -85,7 +85,7 @@ impl RawKey {
         luaL_unref(vm.as_ptr(), REGISTRYINDEX, self.0);
     }
 
-    /// Replaces the content of this key with the value on top of the stack.
+    /// Sets the content of this key with the value on top of the stack.
     ///
     /// # Arguments
     ///
@@ -97,7 +97,7 @@ impl RawKey {
     ///
     /// This is UB to call if the key has already been deleted.
     #[inline(always)]
-    pub unsafe fn replace(&self, vm: &Vm) {
+    pub unsafe fn set(&self, vm: &Vm) {
         lua_rawseti(vm.as_ptr(), REGISTRYINDEX, self.0);
     }
 
@@ -119,6 +119,20 @@ impl RawKey {
     }
 }
 
+impl FromIndex for RawKey {
+    unsafe fn from_index(vm: &Vm, index: i32) -> Self {
+        ensure_value_top(vm, index);
+        Self::from_top(vm)
+    }
+}
+
+impl Set for RawKey {
+    unsafe fn set(&self, vm: &Vm, index: i32) {
+        ensure_value_top(vm, index);
+        self.set(vm);
+    }
+}
+
 pub struct Key<T> {
     raw: RawKey,
     useless: PhantomData<*const T>,
@@ -136,7 +150,7 @@ impl<T: Value> Key<T> {
     pub fn push<'a>(&self, vm: &'a Vm) -> T::Value<'a> {
         unsafe {
             self.raw.push(vm);
-            T::from_lua(vm, -1)
+            T::from_registry(vm, -1)
         }
     }
 
@@ -181,5 +195,18 @@ impl<T: Value> Key<T> {
             raw: RawKey::from_top(vm),
             useless: PhantomData,
         }
+    }
+
+    #[inline(always)]
+    pub fn new(value: T::Value<'_>) -> Key<T> {
+        Key {
+            raw: T::push_registry(value),
+            useless: PhantomData
+        }
+    }
+
+    #[inline(always)]
+    pub fn set(&self, value: T::Value<'_>) {
+        unsafe { T::set_registry(&self.raw, value) }
     }
 }

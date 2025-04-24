@@ -29,7 +29,6 @@
 use crate::util::core::AnyStr;
 use crate::vm::core::util::{pcall, push_error_handler};
 use crate::vm::registry::core::Key;
-use crate::vm::registry::Registry;
 use crate::vm::registry::types::{Function, Table};
 use crate::vm::value::{FromLua, IntoLua};
 use crate::vm::Vm;
@@ -42,9 +41,7 @@ pub struct LuaMethod {
 impl LuaMethod {
     pub fn create(obj: crate::vm::table::Table, method_name: impl AnyStr) -> crate::vm::Result<Self> {
         let method: crate::vm::value::Function = obj.get_field(method_name)?;
-        let method = method.registry_put();
-        let obj = obj.registry_put();
-        Ok(Self { obj, method })
+        Ok(Self { method: Key::new(method), obj: Key::new(obj) })
     }
 
     pub fn call<'a, R: FromLua<'a>>(&self, vm: &'a Vm, value: impl IntoLua) -> crate::vm::Result<R> {

@@ -26,14 +26,50 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use crate::vm::registry::core::Key;
-use crate::vm::value::IntoLua;
 use crate::vm::Vm;
 
 //TODO: Try to find a better name.
 
+/// This trait represents a generic key which can be constructed from an index on the lua stack.
+pub trait FromIndex {
+    /// Constructs a new instance of this generic key from the given vm and index.
+    ///
+    /// # Arguments
+    ///
+    /// * `vm`: the [Vm] instance to manipulate.
+    /// * `index`: the index of the value on the lua stack.
+    ///
+    /// returns: Self
+    ///
+    /// # Safety
+    ///
+    /// This function removes the value at index `index` and so assumes no more references exists
+    /// to it, failure to ensure this is UB.
+    unsafe fn from_index(vm: &Vm, index: i32) -> Self;
+
+}
+
+/// This trait represents a generic key which can be set from an index on the lua stack.
+pub trait Set {
+    /// Sets the value of this generic key from the given vm and index.
+    ///
+    /// # Arguments
+    ///
+    /// * `vm`: the [Vm] instance to manipulate.
+    /// * `index`: the index of the value on the lua stack.
+    ///
+    /// returns: ()
+    ///
+    /// # Safety
+    ///
+    /// This function removes the value at index `index` and so assumes no more references exists
+    /// to it, failure to ensure this is UB. The function also assumes this generic key still
+    /// exists in the registry table.
+    unsafe fn set(&self, vm: &Vm, index: i32);
+}
+
 pub trait Value: 'static {
-    type Value<'a>: IntoLua;
+    type Value<'a>;
 
     /// Reads the upvalue at the given location on the lua stack.
     ///
@@ -48,22 +84,26 @@ pub trait Value: 'static {
     ///
     /// This function assumes the value at the top of the stack is of type `Self`. This function is
     /// UB otherwise.
-    unsafe fn from_lua(vm: &Vm, index: i32) -> Self::Value<'_>;
-}
+    unsafe fn from_registry(vm: &Vm, index: i32) -> Self::Value<'_>;
 
-/// A trait to produce registry values safely.
-pub trait Registry: Sized {
-    type RegistryValue: Value;
-
-    /// Register this value into the registry.
+    /// Intializes a new generic key from the given value.
     ///
-    /// returns: RegistryKey<Self::RegistryValue>
-    fn registry_put(self) -> Key<Self::RegistryValue>;
+    /// This function should call R::from_index with a matching index and [Vm] instance.
+    fn push_registry<R: FromIndex>(value: Self::Value<'_>) -> R;
 
-    /// Swaps the value pointed by `old` in the registry to this value.
+    /// Assign this value to the given generic registry key.
+    ///
+    /// This function should call key.set with a matching index and [Vm] instance.
     ///
     /// # Arguments
     ///
-    /// * `old`: the old registry key to be replaced.
-    fn registry_swap(self, old: Key<Self::RegistryValue>) -> Key<Self::RegistryValue>;
+    /// * `key`: the key to update.
+    /// * `value`: the new value.
+    ///
+    /// returns: ()
+    ///
+    /// # Safety
+    ///
+    /// This function assumes the generic key still exists in the registry table.
+    unsafe fn set_registry(key: &impl Set, value: Self::Value<'_>);
 }
