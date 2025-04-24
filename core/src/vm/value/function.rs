@@ -143,7 +143,10 @@ impl Registry for Function<'_> {
     }
 
     #[inline(always)]
-    fn registry_swap(self, old: RegistryKey<Self::RegistryValue>) -> RegistryKey<Self::RegistryValue> {
+    fn registry_swap(
+        self,
+        old: RegistryKey<Self::RegistryValue>,
+    ) -> RegistryKey<Self::RegistryValue> {
         // If the function is not at the top of the stack, move it to the top.
         ensure_value_top(self.vm, self.index);
         unsafe { old.as_raw().replace(self.vm) };

@@ -28,9 +28,9 @@
 
 use crate::decl_lib_func;
 use crate::libs::interface::Lib;
+use crate::util::Namespace;
 use crate::vm::error::Error;
 use crate::vm::function::types::RFunction;
-use crate::util::Namespace;
 use crate::vm::value::any::{AnyParam, UncheckedAnyReturn};
 use crate::vm::value::Function;
 

@@ -64,5 +64,8 @@ pub trait Registry: Sized {
     /// # Arguments
     ///
     /// * `old`: the old registry key to be replaced.
-    fn registry_swap(self, old: RegistryKey<Self::RegistryValue>) -> RegistryKey<Self::RegistryValue>;
+    fn registry_swap(
+        self,
+        old: RegistryKey<Self::RegistryValue>,
+    ) -> RegistryKey<Self::RegistryValue>;
 }

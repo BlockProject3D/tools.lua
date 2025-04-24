@@ -27,9 +27,9 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::libs::Lib;
+use crate::util::Namespace;
 use crate::vm::function::types::RFunction;
 use crate::vm::function::IntoParam;
-use crate::util::Namespace;
 use crate::vm::table::Table;
 use crate::vm::Vm;
 use crate::{decl_lib_func, decl_userdata};

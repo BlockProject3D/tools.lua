@@ -29,25 +29,32 @@
 use crate::util::core::AnyStr;
 use crate::vm::core::util::{pcall, push_error_handler};
 use crate::vm::registry::core::RegistryKey;
-use crate::vm::registry::Registry;
 use crate::vm::registry::types::{Function, Table};
+use crate::vm::registry::Registry;
 use crate::vm::value::{FromLua, IntoLua};
 use crate::vm::Vm;
 
 pub struct LuaMethod {
     obj: RegistryKey<Table>,
-    method: RegistryKey<Function>
+    method: RegistryKey<Function>,
 }
 
 impl LuaMethod {
-    pub fn create(obj: crate::vm::table::Table, method_name: impl AnyStr) -> crate::vm::Result<Self> {
+    pub fn create(
+        obj: crate::vm::table::Table,
+        method_name: impl AnyStr,
+    ) -> crate::vm::Result<Self> {
         let method: crate::vm::value::Function = obj.get_field(method_name)?;
         let method = method.registry_put();
         let obj = obj.registry_put();
         Ok(Self { obj, method })
     }
 
-    pub fn call<'a, R: FromLua<'a>>(&self, vm: &'a Vm, value: impl IntoLua) -> crate::vm::Result<R> {
+    pub fn call<'a, R: FromLua<'a>>(
+        &self,
+        vm: &'a Vm,
+        value: impl IntoLua,
+    ) -> crate::vm::Result<R> {
         let pos = unsafe { push_error_handler(vm.as_ptr()) };
         unsafe { self.method.as_raw().push(vm) };
         unsafe { self.obj.as_raw().push(vm) };
