@@ -26,27 +26,27 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use crate::vm::registry::RegistryValue;
+use crate::vm::registry::Value;
 use crate::vm::value::FromLua;
 use crate::vm::Vm;
 
 pub struct Table;
 pub struct Function;
 
-impl RegistryValue for Table {
+impl Value for Table {
     type Value<'a> = crate::vm::table::Table<'a>;
 
     #[inline(always)]
-    unsafe fn to_lua_value(vm: &Vm, index: i32) -> Self::Value<'_> {
+    unsafe fn from_lua(vm: &Vm, index: i32) -> Self::Value<'_> {
         unsafe { crate::vm::table::Table::from_lua_unchecked(vm, index) }
     }
 }
 
-impl RegistryValue for Function {
+impl Value for Function {
     type Value<'a> = crate::vm::value::Function<'a>;
 
     #[inline(always)]
-    unsafe fn to_lua_value(vm: &Vm, index: i32) -> Self::Value<'_> {
+    unsafe fn from_lua(vm: &Vm, index: i32) -> Self::Value<'_> {
         unsafe { crate::vm::value::Function::from_lua_unchecked(vm, index) }
     }
 }

@@ -31,7 +31,7 @@ use crate::vm::Vm;
 
 //TODO: Try to find a better name.
 
-pub trait RegistryValue: 'static {
+pub trait Value: 'static {
     type Value<'a>;
 
     /// Reads the upvalue at the given location on the lua stack.
@@ -47,12 +47,12 @@ pub trait RegistryValue: 'static {
     ///
     /// This function assumes the value at the top of the stack is of type `Self`. This function is
     /// UB otherwise.
-    unsafe fn to_lua_value(vm: &Vm, index: i32) -> Self::Value<'_>;
+    unsafe fn from_lua(vm: &Vm, index: i32) -> Self::Value<'_>;
 }
 
 /// A trait to produce registry values safely.
 pub trait Registry: Sized {
-    type RegistryValue: RegistryValue;
+    type RegistryValue: Value;
 
     /// Register this value into the registry.
     ///

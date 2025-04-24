@@ -28,7 +28,7 @@
 
 use crate::ffi::laux::{luaL_ref, luaL_unref};
 use crate::ffi::lua::{lua_rawgeti, lua_rawseti, REGISTRYINDEX};
-use crate::vm::registry::RegistryValue;
+use crate::vm::registry::Value;
 use crate::vm::Vm;
 use std::ffi::c_int;
 use std::marker::PhantomData;
@@ -123,7 +123,7 @@ pub struct Key<T> {
     useless: PhantomData<*const T>,
 }
 
-impl<T: RegistryValue> Key<T> {
+impl<T: Value> Key<T> {
     /// Pushes the lua value associated to this registry key on the lua stack.
     ///
     /// # Arguments
@@ -133,8 +133,10 @@ impl<T: RegistryValue> Key<T> {
     /// returns: <T as RegistryValue>::Value
     #[inline(always)]
     pub fn push<'a>(&self, vm: &'a Vm) -> T::Value<'a> {
-        unsafe { self.raw.push(vm) };
-        unsafe { T::to_lua_value(vm, -1) }
+        unsafe {
+            self.raw.push(vm);
+            T::from_lua(vm, -1)
+        }
     }
 
     /// Pushes the lua value associated to this registry key on the lua stack.
