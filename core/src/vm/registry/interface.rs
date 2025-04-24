@@ -28,8 +28,6 @@
 
 use crate::vm::Vm;
 
-//TODO: Try to find a better name.
-
 /// This trait represents a generic key which can be constructed from an index on the lua stack.
 pub trait FromIndex {
     /// Constructs a new instance of this generic key from the given vm and index.

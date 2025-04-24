@@ -133,6 +133,7 @@ impl<T: Value> Key<T> {
     /// * `value`: the value to replace with.
     ///
     /// returns: ()
+    #[inline(always)]
     pub fn set(&self, value: T::Value<'_>) {
         unsafe { T::set_registry(&self.raw, value) };
     }

@@ -33,7 +33,7 @@ use crate::vm::Vm;
 use std::ffi::c_int;
 use std::marker::PhantomData;
 use crate::vm::value::util::ensure_value_top;
-//TODO: Check if possible to implement from_top as a safe function.
+
 //TODO: Check if key can be a NonZeroI32.
 
 #[derive(Debug, Copy, Clone)]
