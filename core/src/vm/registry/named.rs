@@ -28,13 +28,16 @@
 
 use std::ffi::c_void;
 use std::marker::PhantomData;
-use crate::ffi::lua::{lua_insert, lua_pushlightuserdata, lua_pushnil, lua_rawget, lua_rawset, REGISTRYINDEX};
+use crate::ffi::lua::{lua_createtable, lua_insert, lua_pushboolean, lua_pushlightuserdata, lua_pushnil, lua_rawget, lua_rawset, lua_settop, lua_type, Type, REGISTRYINDEX};
 use crate::vm::registry::{Set, Value};
 use crate::vm::value::util::ensure_value_top;
 use crate::vm::Vm;
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub struct RawKey(*const c_void);
+
+unsafe impl Send for RawKey {}
+unsafe impl Sync for RawKey {}
 
 impl RawKey {
     /// Pushes the value associated with this key on the lua stack.
@@ -72,6 +75,48 @@ impl RawKey {
 
 impl Set for RawKey {
     unsafe fn set(&self, vm: &Vm, index: i32) {
+        let l = vm.as_ptr();
+        ensure_value_top(vm, index);
+        lua_pushlightuserdata(l, self.0 as _);
+        lua_insert(l, -2); // Move key after value;
+        lua_rawset(l, REGISTRYINDEX);
+    }
+}
+
+struct InitKey(*const c_void);
+
+const USED_KEYS: RawKey = RawKey::new("__used_keys__");
+
+unsafe fn check_key_already_used(vm: &Vm, key: *const c_void) {
+    if key == USED_KEYS.0 {
+        panic!("Attempt to use reserved named key __used_keys__");
+    }
+    let l = vm.as_ptr();
+    USED_KEYS.push(vm);
+    if lua_type(l, -1) != Type::Table {
+        lua_settop(l, -2); // Clear nil/none from the top of the stack.
+        lua_createtable(l, 0, 0);
+        USED_KEYS.set(vm, -1); // Pop the table and set it in the registry.
+        USED_KEYS.push(vm); // Re-push the table so that following code can use it.
+    }
+    lua_pushlightuserdata(l, key as _);
+    lua_rawget(l, -2); // Table is now at index -2 on the stack.
+    let ty = lua_type(l, -1);
+    lua_settop(l, -2); // Remove value from stack.
+    if ty == Type::Boolean {
+        // Key is already taken, this is bad.
+        panic!("Attempt to register an already used named key");
+    }
+    lua_pushlightuserdata(l, key as _);
+    lua_pushboolean(l, 1);
+    lua_rawset(l, -3); // Table is now at -3 on the stack because we've just pushed a key and a
+    // value.
+    lua_settop(l, -2); // Clear the used keys table from the stack.
+}
+
+impl Set for InitKey {
+    unsafe fn set(&self, vm: &Vm, index: i32) {
+        check_key_already_used(vm, self.0);
         let l = vm.as_ptr();
         ensure_value_top(vm, index);
         lua_pushlightuserdata(l, self.0 as _);
@@ -139,8 +184,7 @@ impl<T: Value> Key<T> {
     }
 
     pub fn new(raw_key: RawKey, value: T::Value<'_>) -> Self {
-        let key = Key { raw: raw_key, useless: PhantomData };
-        key.set(value);
-        key
+        unsafe { T::set_registry(&InitKey(raw_key.0), value) };
+        Key { raw: raw_key, useless: PhantomData }
     }
 }
