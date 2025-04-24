@@ -51,6 +51,7 @@ pub fn ensure_type_equals(vm: &Vm, index: i32, expected: Type) -> crate::vm::Res
 /// replaces the original index by a nil value.
 #[inline(always)]
 pub fn ensure_value_top(vm: &Vm, index: i32) {
+    let index = vm.get_absolute_index(index);
     if index != vm.top() {
         let l = vm.as_ptr();
         unsafe {

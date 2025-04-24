@@ -28,7 +28,7 @@
 
 use std::ffi::c_void;
 use std::marker::PhantomData;
-use crate::ffi::lua::{lua_createtable, lua_insert, lua_pushboolean, lua_pushlightuserdata, lua_pushnil, lua_rawget, lua_rawset, lua_settop, lua_type, Type, REGISTRYINDEX};
+use crate::ffi::lua::{lua_createtable, lua_insert, lua_pushboolean, lua_pushlightuserdata, lua_pushnil, lua_rawget, lua_rawset, lua_settop, lua_type, State, Type, REGISTRYINDEX};
 use crate::vm::registry::{Set, Value};
 use crate::vm::value::util::ensure_value_top;
 use crate::vm::Vm;
@@ -55,6 +55,12 @@ impl RawKey {
         }
     }
 
+    /// Attempts to register this key with the given [Vm] instance. This function ensures the key
+    /// does not collide.
+    pub fn register(&self, vm: &Vm) {
+        unsafe { check_key_already_used(vm, self.0) };
+    }
+
     pub const fn new(name: &str) -> Self {
         // This is a re-write of https://github.com/BPXFormat/bpx-rs/blob/develop/src/hash.rs
         // in const context.
@@ -73,13 +79,17 @@ impl RawKey {
     }
 }
 
+unsafe fn rawsetp(l: State, idx: i32, key: *const c_void) {
+    lua_pushlightuserdata(l, key as _);
+    lua_insert(l, -2); // Move key after value;
+    lua_rawset(l, idx);
+}
+
 impl Set for RawKey {
     unsafe fn set(&self, vm: &Vm, index: i32) {
         let l = vm.as_ptr();
         ensure_value_top(vm, index);
-        lua_pushlightuserdata(l, self.0 as _);
-        lua_insert(l, -2); // Move key after value;
-        lua_rawset(l, REGISTRYINDEX);
+        rawsetp(l, REGISTRYINDEX, self.0);
     }
 }
 
@@ -94,7 +104,7 @@ unsafe fn check_key_already_used(vm: &Vm, key: *const c_void) {
     let l = vm.as_ptr();
     USED_KEYS.push(vm);
     if lua_type(l, -1) != Type::Table {
-        lua_settop(l, -2); // Clear nil/none from the top of the stack.
+        lua_settop(l, -2); // Clear nil from the top of the stack.
         lua_createtable(l, 0, 0);
         USED_KEYS.set(vm, -1); // Pop the table and set it in the registry.
         USED_KEYS.push(vm); // Re-push the table so that following code can use it.
@@ -119,9 +129,7 @@ impl Set for InitKey {
         check_key_already_used(vm, self.0);
         let l = vm.as_ptr();
         ensure_value_top(vm, index);
-        lua_pushlightuserdata(l, self.0 as _);
-        lua_insert(l, -2); // Move key after value;
-        lua_rawset(l, REGISTRYINDEX);
+        rawsetp(l, REGISTRYINDEX, self.0);
     }
 }
 

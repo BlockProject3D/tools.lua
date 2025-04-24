@@ -26,15 +26,12 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use crate::ffi::lua::{
-    lua_gettable, lua_pushlightuserdata, lua_pushstring, lua_settable, lua_settop, lua_touserdata,
-    REGISTRYINDEX,
-};
+use crate::ffi::lua::{lua_pushlightuserdata, lua_settop, lua_touserdata};
 use crate::vm::Vm;
 use bp3d_debug::debug;
 use std::rc::Rc;
-
-//TODO: Use rawgetp/rawsetp to manage the pointer to the destructor.
+use crate::vm::registry::named::RawKey;
+use crate::vm::registry::Set;
 
 /// This trait represents a value which can be attached to a [Pool](Pool).
 pub trait Raw {
@@ -75,6 +72,8 @@ impl<T> Raw for Rc<T> {
     }
 }
 
+const DESTRUCTOR_POOL: RawKey = RawKey::new("__destructor_pool__");
+
 #[derive(Default)]
 pub struct Pool {
     leaked: Vec<Box<dyn FnOnce()>>,
@@ -91,14 +90,12 @@ impl Pool {
     ///
     /// This is only safe to be called on [RootVm](crate::vm::RootVm) construction.
     pub unsafe fn new_in_vm(vm: &mut Vm) {
+        DESTRUCTOR_POOL.register(vm);
         let l = vm.as_ptr();
         let b = Box::leak(Box::new(Pool::new()));
-        unsafe {
-            lua_pushstring(l, c"__destructor_pool__".as_ptr());
-            let ptr = b as *mut Pool as _;
-            lua_pushlightuserdata(l, ptr);
-            lua_settable(l, REGISTRYINDEX);
-        };
+        let ptr = b as *mut Pool as _;
+        lua_pushlightuserdata(l, ptr);
+        DESTRUCTOR_POOL.set(vm, -1);
     }
 
     /// Extracts a destructor pool from the given [Vm].
@@ -108,14 +105,11 @@ impl Pool {
     /// The returned reference must not be aliased.
     unsafe fn _from_vm(vm: &Vm) -> *mut Self {
         let l = vm.as_ptr();
-        unsafe {
-            lua_pushstring(l, c"__destructor_pool__".as_ptr());
-            lua_gettable(l, REGISTRYINDEX);
-            let ptr = lua_touserdata(l, -1) as *mut Pool;
-            assert!(!ptr.is_null());
-            lua_settop(l, -2); // Remove the pointer from the lua stack.
-            ptr
-        }
+        DESTRUCTOR_POOL.push(vm);
+        let ptr = lua_touserdata(l, -1) as *mut Pool;
+        assert!(!ptr.is_null());
+        lua_settop(l, -2); // Remove the pointer from the lua stack.
+        ptr
     }
 
     pub fn from_vm(vm: &mut Vm) -> &mut Self {

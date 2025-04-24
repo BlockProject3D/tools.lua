@@ -62,7 +62,8 @@ pub trait Set {
     ///
     /// This function removes the value at index `index` and so assumes no more references exists
     /// to it, failure to ensure this is UB. The function also assumes this generic key still
-    /// exists in the registry table.
+    /// exists in the registry table. Finally, this assumes this key does not conflict with a
+    /// different one.
     unsafe fn set(&self, vm: &Vm, index: i32);
 }
 
