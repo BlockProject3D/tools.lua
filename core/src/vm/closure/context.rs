@@ -100,6 +100,7 @@ impl<T: 'static> Context<T> {
     pub fn new(vm: &Vm) -> Self {
         let (ptr, key) = unsafe {
             let ptr = lua_newuserdata(vm.as_ptr(), 8);
+            std::ptr::write(ptr as *mut u64, 0);
             (ptr, RawKey::from_top(vm))
         };
         Self {
