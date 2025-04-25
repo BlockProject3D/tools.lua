@@ -44,7 +44,6 @@ pub trait FromIndex {
     /// This function removes the value at index `index` and so assumes no more references exists
     /// to it, failure to ensure this is UB.
     unsafe fn from_index(vm: &Vm, index: i32) -> Self;
-
 }
 
 /// This trait represents a generic key which can be set from an index on the lua stack.
