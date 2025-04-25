@@ -29,7 +29,6 @@
 use crate::vm::core::util::{pcall, push_error_handler};
 use crate::vm::registry::core::Key;
 use crate::vm::registry::types::Function;
-use crate::vm::registry::Registry;
 use crate::vm::value::{FromLua, IntoLua};
 use crate::vm::Vm;
 
