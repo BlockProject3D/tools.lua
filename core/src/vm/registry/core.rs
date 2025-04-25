@@ -29,10 +29,10 @@
 use crate::ffi::laux::{luaL_ref, luaL_unref};
 use crate::ffi::lua::{lua_rawgeti, lua_rawseti, REGISTRYINDEX};
 use crate::vm::registry::{FromIndex, Set, Value};
+use crate::vm::value::util::ensure_value_top;
 use crate::vm::Vm;
 use std::ffi::c_int;
 use std::marker::PhantomData;
-use crate::vm::value::util::ensure_value_top;
 
 //TODO: Check if key can be a NonZeroI32.
 
@@ -201,7 +201,7 @@ impl<T: Value> Key<T> {
     pub fn new(value: T::Value<'_>) -> Key<T> {
         Key {
             raw: T::push_registry(value),
-            useless: PhantomData
+            useless: PhantomData,
         }
     }
 

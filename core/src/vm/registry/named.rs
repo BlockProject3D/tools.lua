@@ -26,13 +26,16 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::cell::Cell;
-use std::ffi::c_void;
-use std::marker::PhantomData;
-use crate::ffi::lua::{lua_createtable, lua_insert, lua_pushboolean, lua_pushlightuserdata, lua_pushnil, lua_rawget, lua_rawset, lua_settop, lua_type, State, Type, REGISTRYINDEX};
+use crate::ffi::lua::{
+    lua_createtable, lua_insert, lua_pushboolean, lua_pushlightuserdata, lua_pushnil, lua_rawget,
+    lua_rawset, lua_settop, lua_type, State, Type, REGISTRYINDEX,
+};
 use crate::vm::registry::{Set, Value};
 use crate::vm::value::util::ensure_value_top;
 use crate::vm::Vm;
+use std::cell::Cell;
+use std::ffi::c_void;
+use std::marker::PhantomData;
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub struct RawKey(*const c_void);
@@ -131,7 +134,7 @@ unsafe fn check_key_already_used(vm: &Vm, key: *const c_void) {
     lua_pushlightuserdata(l, key as _);
     lua_pushboolean(l, 1);
     lua_rawset(l, -3); // Table is now at -3 on the stack because we've just pushed a key and a
-    // value.
+                       // value.
     lua_settop(l, -2); // Clear the used keys table from the stack.
 }
 
@@ -157,7 +160,7 @@ impl<T> PartialEq for Key<T> {
     }
 }
 
-impl<T> Eq for Key<T> { }
+impl<T> Eq for Key<T> {}
 
 impl<T: Value> Key<T> {
     #[inline(always)]
@@ -233,7 +236,7 @@ impl<T: Value> Key<T> {
         Key {
             raw: RawKey::new(name),
             registered: Cell::new(false),
-            useless: PhantomData
+            useless: PhantomData,
         }
     }
 }

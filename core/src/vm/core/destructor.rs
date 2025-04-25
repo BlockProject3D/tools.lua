@@ -27,11 +27,11 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::ffi::lua::{lua_pushlightuserdata, lua_settop, lua_touserdata};
+use crate::vm::registry::named::RawKey;
+use crate::vm::registry::Set;
 use crate::vm::Vm;
 use bp3d_debug::debug;
 use std::rc::Rc;
-use crate::vm::registry::named::RawKey;
-use crate::vm::registry::Set;
 
 /// This trait represents a value which can be attached to a [Pool](Pool).
 pub trait Raw {

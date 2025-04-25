@@ -35,16 +35,26 @@ use crate::vm::Vm;
 
 pub struct LuaMethod {
     obj: Key<Table>,
-    method: Key<Function>
+    method: Key<Function>,
 }
 
 impl LuaMethod {
-    pub fn create(obj: crate::vm::table::Table, method_name: impl AnyStr) -> crate::vm::Result<Self> {
+    pub fn create(
+        obj: crate::vm::table::Table,
+        method_name: impl AnyStr,
+    ) -> crate::vm::Result<Self> {
         let method: crate::vm::value::Function = obj.get_field(method_name)?;
-        Ok(Self { method: Key::new(method), obj: Key::new(obj) })
+        Ok(Self {
+            method: Key::new(method),
+            obj: Key::new(obj),
+        })
     }
 
-    pub fn call<'a, R: FromLua<'a>>(&self, vm: &'a Vm, value: impl IntoLua) -> crate::vm::Result<R> {
+    pub fn call<'a, R: FromLua<'a>>(
+        &self,
+        vm: &'a Vm,
+        value: impl IntoLua,
+    ) -> crate::vm::Result<R> {
         let pos = unsafe { push_error_handler(vm.as_ptr()) };
         unsafe { self.method.as_raw().push(vm) };
         unsafe { self.obj.as_raw().push(vm) };

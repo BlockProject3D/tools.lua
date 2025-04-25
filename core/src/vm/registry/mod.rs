@@ -28,7 +28,7 @@
 
 pub mod core;
 mod interface;
-pub mod types;
 pub mod named;
+pub mod types;
 
 pub use interface::*;

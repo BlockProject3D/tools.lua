@@ -43,13 +43,13 @@ use std::marker::PhantomData;
 #[derive(Copy, Clone)]
 pub struct Function {
     pub name: &'static CStr,
-    pub func: CFunction
+    pub func: CFunction,
 }
 
 pub struct Builder {
     is_mutable: bool,
     args: Vec<TypeName>,
-    f: Function
+    f: Function,
 }
 
 impl Builder {
@@ -57,10 +57,7 @@ impl Builder {
         Builder {
             is_mutable: false,
             args: Vec::new(),
-            f: Function {
-                name,
-                func
-            }
+            f: Function { name, func },
         }
     }
 
@@ -166,7 +163,11 @@ impl<'a, T: UserData, C: NameConvert> Registry<'a, T, C> {
             if &f.name.to_bytes()[..2] == b"__" {
                 lua_setfield(self.vm.as_ptr(), -2, f.name.as_ptr());
             } else {
-                lua_setfield(self.vm.as_ptr(), -2, self.case.name_convert(f.name).as_ptr());
+                lua_setfield(
+                    self.vm.as_ptr(),
+                    -2,
+                    self.case.name_convert(f.name).as_ptr(),
+                );
             }
         }
     }
@@ -184,7 +185,7 @@ impl<'a, T: UserData, C: NameConvert> Registry<'a, T, C> {
             }
             self.add_method(Function {
                 name: c"__gc",
-                func: run_drop::<T>
+                func: run_drop::<T>,
             });
             debug!({UD=?T::CLASS_NAME}, "Type registered with simple Drop");
         }
@@ -216,13 +217,13 @@ impl<T: UserData + LuaDrop, C: NameConvert> Registry<'_, T, C> {
         if std::mem::needs_drop::<T>() {
             self.add_method(Function {
                 name: c"__gc",
-                func: run_lua_drop_full::<T>
+                func: run_lua_drop_full::<T>,
             });
             debug!({UD=?T::CLASS_NAME}, "Type registered with Drop and LuaDrop");
         } else {
             self.add_method(Function {
                 name: c"__gc",
-                func: run_lua_drop::<T>
+                func: run_lua_drop::<T>,
             });
             debug!({UD=?T::CLASS_NAME}, "Type registered with LuaDrop");
         }
