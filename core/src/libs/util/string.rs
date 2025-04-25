@@ -28,8 +28,8 @@
 
 use crate::decl_lib_func;
 use crate::libs::Lib;
-use crate::vm::function::types::RFunction;
 use crate::util::Namespace;
+use crate::vm::function::types::RFunction;
 use crate::vm::table::Table;
 use bp3d_util::string::BufTools;
 use std::borrow::Cow;

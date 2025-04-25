@@ -29,6 +29,7 @@
 use crate::vm::core::util::{pcall, push_error_handler};
 use crate::vm::registry::core::Key;
 use crate::vm::registry::types::Function;
+use crate::vm::registry::Registry;
 use crate::vm::value::{FromLua, IntoLua};
 use crate::vm::Vm;
 
@@ -40,7 +41,11 @@ impl LuaFunction {
         Self(Key::new(f))
     }
 
-    pub fn call<'a, R: FromLua<'a>>(&self, vm: &'a Vm, value: impl IntoLua) -> crate::vm::Result<R> {
+    pub fn call<'a, R: FromLua<'a>>(
+        &self,
+        vm: &'a Vm,
+        value: impl IntoLua,
+    ) -> crate::vm::Result<R> {
         let pos = unsafe { push_error_handler(vm.as_ptr()) };
         unsafe { self.0.as_raw().push(vm) };
         let num_values = value.into_lua(vm);

@@ -27,8 +27,8 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::libs::Lib;
-use crate::vm::function::types::RFunction;
 use crate::util::Namespace;
+use crate::vm::function::types::RFunction;
 use crate::{decl_lib_func, decl_userdata};
 
 struct Wrapper(bp3d_os::time::Instant);

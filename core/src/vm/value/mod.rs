@@ -32,5 +32,5 @@ mod function;
 mod interface;
 pub mod util;
 
-pub use interface::*;
 pub use function::Function;
+pub use interface::*;

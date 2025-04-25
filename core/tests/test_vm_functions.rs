@@ -26,11 +26,11 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use bp3d_lua::util::LuaMethod;
 use bp3d_lua::vm::table::Table;
 use bp3d_lua::vm::value::Function;
 use bp3d_lua::vm::RootVm;
 use std::ffi::CStr;
-use bp3d_lua::util::LuaMethod;
 
 #[test]
 fn test_vm_function_1_arg() {

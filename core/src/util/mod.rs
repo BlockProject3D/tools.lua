@@ -27,10 +27,10 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 pub mod core;
-mod namespace;
 mod function;
 mod method;
+mod namespace;
 
-pub use namespace::Namespace;
 pub use function::LuaFunction;
 pub use method::LuaMethod;
+pub use namespace::Namespace;

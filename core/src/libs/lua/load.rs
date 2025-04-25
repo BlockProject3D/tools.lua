@@ -27,9 +27,9 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::libs::interface::Lib;
+use crate::util::Namespace;
 use crate::vm::core::load::{Code, Script};
 use crate::vm::function::types::RFunction;
-use crate::util::Namespace;
 use crate::vm::value::any::{AnyParam, UncheckedAnyReturn};
 use crate::vm::value::Function;
 use crate::{decl_closure, decl_lib_func};
