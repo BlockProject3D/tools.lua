@@ -34,8 +34,8 @@ macro_rules! _impl_userdata {
 
             fn register<C: $crate::vm::userdata::NameConvert>(registry: &$crate::vm::userdata::core::Registry<Self, C>) -> Result<(), $crate::vm::userdata::Error> {
                 $(
-                    let (name, func) = unsafe { $obj_name::$fn_name().build()? };
-                    registry.add_method(name, func);
+                    let f = $obj_name::$fn_name()?;
+                    registry.add_method(f);
                 )*
                 use $crate::vm::userdata::AddGcMethod;
                 (&$crate::vm::userdata::core::AddGcMethodAuto::<$obj_name>::default()).add_gc_method(registry);

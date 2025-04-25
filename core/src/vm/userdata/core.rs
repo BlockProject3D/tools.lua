@@ -40,23 +40,27 @@ use std::cell::OnceCell;
 use std::ffi::CStr;
 use std::marker::PhantomData;
 
-//TODO: This should be a builder.
-//TODO: The actual function structure should only contain name and CFunction.
-
+#[derive(Copy, Clone)]
 pub struct Function {
-    is_mutable: bool,
-    args: Vec<TypeName>,
-    name: &'static CStr,
-    func: CFunction,
+    pub name: &'static CStr,
+    pub func: CFunction
 }
 
-impl Function {
-    pub fn new(name: &'static CStr, func: CFunction) -> Function {
-        Function {
+pub struct Builder {
+    is_mutable: bool,
+    args: Vec<TypeName>,
+    f: Function
+}
+
+impl Builder {
+    pub fn new(name: &'static CStr, func: CFunction) -> Builder {
+        Builder {
             is_mutable: false,
             args: Vec::new(),
-            name,
-            func,
+            f: Function {
+                name,
+                func
+            }
         }
     }
 
@@ -78,28 +82,28 @@ impl Function {
     ///
     /// All function arguments must be added through the arg function, if not calling this function
     /// is considered UB.
-    pub unsafe fn build(&self) -> Result<(&'static CStr, CFunction), Error> {
+    pub unsafe fn build(&self) -> Result<Function, Error> {
         if self.args.is_empty() {
             return Err(Error::ArgsEmpty);
         }
-        if self.name == c"__gc" {
+        if self.f.name == c"__gc" {
             return Err(Error::Gc);
         }
-        if self.name == c"__index" {
+        if self.f.name == c"__index" {
             return Err(Error::Index);
         }
-        if self.name == c"__metatable" {
+        if self.f.name == c"__metatable" {
             return Err(Error::Metatable);
         }
         if self.is_mutable {
             let initial = &self.args[0];
             for v in self.args.iter().skip(1) {
                 if initial == v {
-                    return Err(Error::MutViolation(self.name));
+                    return Err(Error::MutViolation(self.f.name));
                 }
             }
         }
-        Ok((self.name, self.func))
+        Ok(self.f)
     }
 }
 
@@ -156,13 +160,13 @@ impl<'a, T: UserData, C: NameConvert> Registry<'a, T, C> {
         Ok(())
     }
 
-    pub fn add_method(&self, name: &'static CStr, func: CFunction) {
+    pub fn add_method(&self, f: Function) {
         unsafe {
-            lua_pushcclosure(self.vm.as_ptr(), func, 0);
-            if &name.to_bytes()[..2] == b"__" {
-                lua_setfield(self.vm.as_ptr(), -2, name.as_ptr());
+            lua_pushcclosure(self.vm.as_ptr(), f.func, 0);
+            if &f.name.to_bytes()[..2] == b"__" {
+                lua_setfield(self.vm.as_ptr(), -2, f.name.as_ptr());
             } else {
-                lua_setfield(self.vm.as_ptr(), -2, self.case.name_convert(name).as_ptr());
+                lua_setfield(self.vm.as_ptr(), -2, self.case.name_convert(f.name).as_ptr());
             }
         }
     }
@@ -178,7 +182,10 @@ impl<'a, T: UserData, C: NameConvert> Registry<'a, T, C> {
                 }
                 0
             }
-            self.add_method(c"__gc", run_drop::<T>);
+            self.add_method(Function {
+                name: c"__gc",
+                func: run_drop::<T>
+            });
             debug!({UD=?T::CLASS_NAME}, "Type registered with simple Drop");
         }
         self.has_gc.set(()).unwrap();
@@ -207,10 +214,16 @@ impl<T: UserData + LuaDrop, C: NameConvert> Registry<'_, T, C> {
             0
         }
         if std::mem::needs_drop::<T>() {
-            self.add_method(c"__gc", run_lua_drop_full::<T>);
+            self.add_method(Function {
+                name: c"__gc",
+                func: run_lua_drop_full::<T>
+            });
             debug!({UD=?T::CLASS_NAME}, "Type registered with Drop and LuaDrop");
         } else {
-            self.add_method(c"__gc", run_lua_drop::<T>);
+            self.add_method(Function {
+                name: c"__gc",
+                func: run_lua_drop::<T>
+            });
             debug!({UD=?T::CLASS_NAME}, "Type registered with LuaDrop");
         }
         self.has_gc.set(()).unwrap();
