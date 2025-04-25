@@ -144,11 +144,20 @@ impl Set for InitKey {
     }
 }
 
+#[derive(Clone)]
 pub struct Key<T> {
     raw: RawKey,
     registered: Cell<bool>,
     useless: PhantomData<*const T>,
 }
+
+impl<T> PartialEq for Key<T> {
+    fn eq(&self, other: &Self) -> bool {
+        self.raw.eq(&other.raw)
+    }
+}
+
+impl<T> Eq for Key<T> { }
 
 impl<T: Value> Key<T> {
     #[inline(always)]
