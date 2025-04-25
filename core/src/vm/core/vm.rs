@@ -237,7 +237,9 @@ impl DerefMut for RootVm {
 impl Drop for RootVm {
     fn drop(&mut self) {
         debug!("Deleting destructor pool");
-        unsafe { std::ptr::drop_in_place(Pool::from_vm(self)) };
+        unsafe {
+            drop(Box::from_raw(Pool::from_vm(self)));
+        }
         unsafe {
             debug!("Closing Lua VM...");
             lua_close(self.vm.as_ptr());
