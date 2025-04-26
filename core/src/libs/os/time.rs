@@ -82,25 +82,25 @@ decl_userdata! {
 
         fn get_date<'a>(this: &Wrapper, vm: &Vm) -> crate::vm::Result<Table<'a>> {
             let mut table = Table::with_capacity(vm, 0, 3);
-            table.set_field(c"year", this.0.year())?;
-            table.set_field(c"month", this.0.month() as u8)?;
-            table.set_field(c"day", this.0.day())?;
+            table.set(c"year", this.0.year())?;
+            table.set(c"month", this.0.month() as u8)?;
+            table.set(c"day", this.0.day())?;
             Ok(table)
         }
 
         fn get_time<'a>(this: &Wrapper, vm: &Vm) -> crate::vm::Result<Table<'a>> {
             let mut table = Table::with_capacity(vm, 0, 3);
-            table.set_field(c"hour", this.0.hour())?;
-            table.set_field(c"minute", this.0.minute())?;
-            table.set_field(c"second", this.0.second())?;
+            table.set(c"hour", this.0.hour())?;
+            table.set(c"minute", this.0.minute())?;
+            table.set(c"second", this.0.second())?;
             Ok(table)
         }
 
         fn get_offset<'a>(this: &Wrapper, vm: &Vm) -> crate::vm::Result<Table<'a>> {
             let mut table = Table::with_capacity(vm, 0, 3);
-            table.set_field(c"hours", this.0.offset().whole_hours())?;
-            table.set_field(c"minutes", this.0.offset().whole_minutes())?;
-            table.set_field(c"seconds", this.0.offset().whole_seconds())?;
+            table.set(c"hours", this.0.offset().whole_hours())?;
+            table.set(c"minutes", this.0.offset().whole_minutes())?;
+            table.set(c"seconds", this.0.offset().whole_seconds())?;
             Ok(table)
         }
     }
@@ -140,22 +140,22 @@ simple_error! {
 
 decl_lib_func! {
     fn new(table: Table) -> Result<OffsetDateTime, DateTimeError> {
-        let year: i32 = table.get_field(c"year")?;
-        let month: u8 = table.get_field(c"month")?;
-        let day: u8 = table.get_field(c"day")?;
+        let year: i32 = table.get(c"year")?;
+        let month: u8 = table.get(c"month")?;
+        let day: u8 = table.get(c"day")?;
         let date = Date::from_calendar_date(year, Month::from_index(month).ok_or(DateTimeError::InvalidMonthIndex(month))?, day)?;
-        let hour: Option<u8> = table.get_field(c"hour")?;
-        let minute: Option<u8> = table.get_field(c"min")?;
-        let second: Option<u8> = table.get_field(c"sec")?;
+        let hour: Option<u8> = table.get(c"hour")?;
+        let minute: Option<u8> = table.get(c"min")?;
+        let second: Option<u8> = table.get(c"sec")?;
         let hour = hour.unwrap_or(12);
         let minute = minute.unwrap_or(0);
         let second = second.unwrap_or(0);
         let time = time::Time::from_hms(hour, minute, second)?;
-        let offset: Option<Table> = table.get_field(c"offset")?;
+        let offset: Option<Table> = table.get(c"offset")?;
         if let Some(offset) = offset {
-            let offset_hours: i8 = offset.get_field(c"hours")?;
-            let offset_minutes: i8 = offset.get_field(c"minutes")?;
-            let offset_seconds: i8 = offset.get_field(c"seconds")?;
+            let offset_hours: i8 = offset.get(c"hours")?;
+            let offset_minutes: i8 = offset.get(c"minutes")?;
+            let offset_seconds: i8 = offset.get(c"seconds")?;
             let offset = UtcOffset::from_hms(offset_hours, offset_minutes, offset_seconds)?;
             Ok(OffsetDateTime::new_in_offset(date, time, offset))
         } else {

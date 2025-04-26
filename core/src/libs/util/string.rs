@@ -49,7 +49,7 @@ decl_lib_func! {
         let mut tbl = Table::new(vm);
         for (i, v) in split.enumerate() {
             // Indices starts at 1 in lua.
-            tbl.seti((i + 1) as _, v)?;
+            tbl.set(i + 1, v)?;
         }
         Ok(tbl)
     }

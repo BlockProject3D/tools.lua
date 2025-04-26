@@ -59,7 +59,7 @@ impl Parser for IntoParam {
         } else {
             let name = field.unique_name;
             quote! {
-                tbl.set_field(bp3d_lua::c_stringify!(#name), self.#name).unwrap();
+                tbl.set(bp3d_lua::c_stringify!(#name), self.#name).unwrap();
             }
         }
     }

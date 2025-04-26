@@ -29,5 +29,6 @@
 mod core;
 mod interface;
 mod iter;
+pub mod traits;
 
 pub use core::Table;

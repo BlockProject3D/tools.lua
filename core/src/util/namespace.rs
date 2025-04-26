@@ -47,12 +47,12 @@ impl<'a> Namespace<'a> {
         let key = vm.scope(|vm| {
             for name in names {
                 let mut table = key.push(vm);
-                let tbl: Option<Table> = table.get_field(name)?;
+                let tbl: Option<Table> = table.get(name)?;
                 let tab = match tbl {
                     Some(v) => v,
                     None => {
-                        table.set_field(name, Table::new(vm))?;
-                        table.get_field(name)?
+                        table.set(name, Table::new(vm))?;
+                        table.get(name)?
                     }
                 };
                 key.set(tab);
@@ -83,7 +83,7 @@ impl<'a> Namespace<'a> {
         items: impl IntoIterator<Item = (&'b str, T)>,
     ) -> crate::vm::Result<()> {
         for (name, item) in items {
-            self.table.set_field(name, item)?;
+            self.table.set(name, item)?;
         }
         Ok(())
     }

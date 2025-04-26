@@ -27,16 +27,13 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::ffi::ext::{lua_ext_tab_len, MSize};
-use crate::ffi::lua::{
-    lua_createtable, lua_getfield, lua_gettable, lua_gettop, lua_objlen, lua_pushvalue,
-    lua_rawgeti, lua_rawseti, lua_setfield, lua_setmetatable, lua_settable, lua_topointer,
-};
-use crate::util::core::AnyStr;
+use crate::ffi::lua::{lua_createtable, lua_gettable, lua_gettop, lua_objlen, lua_pushvalue, lua_rawseti, lua_setmetatable, lua_settable, lua_topointer};
 use crate::vm::table::iter::Iter;
 use crate::vm::value::util::ensure_single_into_lua;
 use crate::vm::value::{FromLua, IntoLua};
 use crate::vm::Vm;
 use std::fmt::{Debug, Display};
+use crate::vm::table::traits::{GetTable, SetTable};
 
 pub struct Table<'a> {
     pub(super) vm: &'a Vm,
@@ -143,52 +140,25 @@ impl<'a> Table<'a> {
         Iter::from_raw(self.vm, self.index)
     }
 
-    pub fn set_field(&mut self, name: impl AnyStr, value: impl IntoLua) -> crate::vm::Result<()> {
-        unsafe {
-            ensure_single_into_lua(self.vm, value)?;
-            lua_setfield(self.vm.as_ptr(), self.index, name.to_str()?.as_ptr());
-        }
-        Ok(())
-    }
-
-    pub fn get_field<'b, T: FromLua<'b>>(&'b self, name: impl AnyStr) -> crate::vm::Result<T> {
+    pub fn get<'b, T: FromLua<'b>>(&'b self, key: impl GetTable) -> crate::vm::Result<T> {
         if T::num_values() != 1 {
             return Err(crate::vm::error::Error::MultiValue);
         }
         unsafe {
-            lua_getfield(self.vm.as_ptr(), self.index, name.to_str()?.as_ptr());
+            key.get_table(self.vm.as_ptr(), self.index)?;
             T::from_lua(self.vm, -1)
         }
     }
 
-    pub fn seti(&mut self, i: i32, value: impl IntoLua) -> crate::vm::Result<()> {
+    pub fn set(&mut self, key: impl SetTable, value: impl IntoLua) -> crate::vm::Result<()> {
         unsafe {
             ensure_single_into_lua(self.vm, value)?;
-            lua_rawseti(self.vm.as_ptr(), self.index, i);
+            key.set_table(self.vm.as_ptr(), self.index)?;
         }
         Ok(())
     }
 
-    pub fn geti<'b, T: FromLua<'b>>(&'b self, i: i32) -> crate::vm::Result<T> {
-        if T::num_values() != 1 {
-            return Err(crate::vm::error::Error::MultiValue);
-        }
-        unsafe {
-            lua_rawgeti(self.vm.as_ptr(), self.index, i);
-            T::from_lua(self.vm, -1)
-        }
-    }
-
-    pub fn set(&mut self, key: impl IntoLua, value: impl IntoLua) -> crate::vm::Result<()> {
-        unsafe {
-            ensure_single_into_lua(self.vm, key)?;
-            ensure_single_into_lua(self.vm, value)?;
-            lua_settable(self.vm.as_ptr(), self.index);
-        }
-        Ok(())
-    }
-
-    pub fn get<'b, T: FromLua<'b>>(&'b self, key: impl IntoLua) -> crate::vm::Result<T> {
+    pub fn get_any<'b, T: FromLua<'b>>(&'b self, key: impl IntoLua) -> crate::vm::Result<T> {
         if T::num_values() != 1 {
             return Err(crate::vm::error::Error::MultiValue);
         }
@@ -197,6 +167,15 @@ impl<'a> Table<'a> {
             lua_gettable(self.vm.as_ptr(), self.index);
             T::from_lua(self.vm, -1)
         }
+    }
+
+    pub fn set_any(&mut self, key: impl IntoLua, value: impl IntoLua) -> crate::vm::Result<()> {
+        unsafe {
+            ensure_single_into_lua(self.vm, key)?;
+            ensure_single_into_lua(self.vm, value)?;
+            lua_settable(self.vm.as_ptr(), self.index);
+        }
+        Ok(())
     }
 
     pub fn push(&mut self, value: impl IntoLua) -> crate::vm::Result<()> {

@@ -40,18 +40,18 @@ fn update_rec(vm: &Vm, mut dst: LuaTable, mut src: LuaTable) -> crate::vm::Resul
         let (k, v) = res?;
         match v {
             AnyValue::Table(v) => vm.scope(|_| {
-                let dst1: Option<LuaTable> = dst.get(k.clone())?;
+                let dst1: Option<LuaTable> = dst.get_any(k.clone())?;
                 match dst1 {
                     None => {
                         let tbl = LuaTable::new(vm);
                         update_rec(vm, tbl.clone(), v)?;
-                        dst.set(k, tbl)?;
+                        dst.set_any(k, tbl)?;
                     }
                     Some(v1) => update_rec(vm, v1, v)?,
                 }
                 Ok(())
             })?,
-            _ => dst.set(k, v)?,
+            _ => dst.set_any(k, v)?,
         }
     }
     Ok(())
@@ -155,8 +155,8 @@ decl_lib_func! {
     fn protect<'a>(vm: &Vm, src: LuaTable) -> crate::vm::Result<LuaTable<'a>> {
         let mut wrapper = LuaTable::new(vm);
         let mut metatable = LuaTable::new(vm);
-        metatable.set_field(c"__index", src)?;
-        metatable.set_field(c"__newindex", RFunction::wrap(__newindex))?;
+        metatable.set(c"__index", src)?;
+        metatable.set(c"__newindex", RFunction::wrap(__newindex))?;
         wrapper.set_metatable(metatable);
         Ok(wrapper)
     }

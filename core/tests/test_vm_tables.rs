@@ -35,13 +35,13 @@ fn tables() {
     let top = vm.top();
     vm.scope(|vm| {
         let mut tbl = Table::new(vm);
-        tbl.set_field(c"a", 0.42)?;
-        tbl.set_field(c"b", "My great string")?;
+        tbl.set(c"a", 0.42)?;
+        tbl.set(c"b", "My great string")?;
         let mut new_table = Table::new(vm);
-        new_table.set_field(c"whatever", 42)?;
-        let s: &str = tbl.get_field(c"b")?;
+        new_table.set(c"whatever", 42)?;
+        let s: &str = tbl.get(c"b")?;
         assert_eq!(s, "My great string");
-        tbl.set_field(c"sub", new_table)?;
+        tbl.set(c"sub", new_table)?;
         assert_eq!(tbl.len(), 3);
         vm.set_global(c"myTable", tbl)
     })
@@ -65,12 +65,12 @@ fn tables() {
     vm.scope(|vm| {
         let tbl: Table = vm.get_global("myTable")?;
         assert_eq!(tbl.len(), 3);
-        let v: f64 = tbl.get_field(c"a")?;
+        let v: f64 = tbl.get(c"a")?;
         assert_eq!(v, 0.42);
         let v = vm.run_code::<&str>(c"return myTable.b")?;
         assert_eq!(v, "My great string");
         {
-            let v: f64 = tbl.get_field(c"a")?;
+            let v: f64 = tbl.get(c"a")?;
             assert_eq!(v, 0.42);
         }
         assert_eq!(v, "My great string");

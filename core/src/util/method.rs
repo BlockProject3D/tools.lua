@@ -43,7 +43,7 @@ impl LuaMethod {
         obj: crate::vm::table::Table,
         method_name: impl AnyStr,
     ) -> crate::vm::Result<Self> {
-        let method: crate::vm::value::Function = obj.get_field(method_name)?;
+        let method: crate::vm::value::Function = obj.get(method_name)?;
         Ok(Self {
             method: Key::new(method),
             obj: Key::new(obj),

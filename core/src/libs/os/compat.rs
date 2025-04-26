@@ -102,15 +102,15 @@ decl_lib_func! {
         if format == "*t" {
             let std_offset = get_std_offset();
             let mut table = Table::new(vm);
-            table.set_field(c"sec", time.second()).unwrap();
-            table.set_field(c"min", time.minute()).unwrap();
-            table.set_field(c"hour", time.hour()).unwrap();
-            table.set_field(c"day", time.day()).unwrap();
-            table.set_field(c"month", time.month() as u8).unwrap();
-            table.set_field(c"year", time.year()).unwrap();
-            table.set_field(c"wday", time.weekday() as u8 + 1).unwrap();
-            table.set_field(c"yday", time.to_julian_day()).unwrap();
-            table.set_field(c"isdst", time.offset() < std_offset).unwrap();
+            table.set(c"sec", time.second()).unwrap();
+            table.set(c"min", time.minute()).unwrap();
+            table.set(c"hour", time.hour()).unwrap();
+            table.set(c"day", time.day()).unwrap();
+            table.set(c"month", time.month() as u8).unwrap();
+            table.set(c"year", time.year()).unwrap();
+            table.set(c"wday", time.weekday() as u8 + 1).unwrap();
+            table.set(c"yday", time.to_julian_day()).unwrap();
+            table.set(c"isdst", time.offset() < std_offset).unwrap();
             Some(TableOrString::Table(table))
         } else {
             let mut format = String::from(format);
@@ -132,21 +132,21 @@ simple_error! {
 }
 
 fn get_time_from_table(table: Table) -> Result<OffsetDateTime, TimeFormatError> {
-    let year: i32 = table.get_field(c"year")?;
-    let month: u8 = table.get_field(c"month")?;
-    let day: u8 = table.get_field(c"day")?;
+    let year: i32 = table.get(c"year")?;
+    let month: u8 = table.get(c"month")?;
+    let day: u8 = table.get(c"day")?;
     let date = Date::from_calendar_date(
         year,
         Month::from_index(month).ok_or(TimeFormatError::InvalidMonthIndex(month))?,
         day,
     )?;
-    let hour: Option<u8> = table.get_field(c"hour")?;
-    let minute: Option<u8> = table.get_field(c"min")?;
-    let second: Option<u8> = table.get_field(c"sec")?;
+    let hour: Option<u8> = table.get(c"hour")?;
+    let minute: Option<u8> = table.get(c"min")?;
+    let second: Option<u8> = table.get(c"sec")?;
     let mut hour = hour.unwrap_or(12);
     let minute = minute.unwrap_or(0);
     let second = second.unwrap_or(0);
-    let dst: Option<bool> = table.get_field(c"isdst")?;
+    let dst: Option<bool> = table.get(c"isdst")?;
     let dst = dst.unwrap_or(false);
     // Consider DST to be always +1H, this may not always be true but is true in most countries.
     if dst {
