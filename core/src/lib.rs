@@ -27,7 +27,6 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 //TODO: Support dynamic linking and modules by dynamic linking to luajit.
-//TODO: Use features to disable RootVm related stuff, such as destructors, interruption, etc.
 //TODO: Attempt to implement custom __index on userdata.
 
 pub mod ffi;
@@ -35,3 +34,4 @@ pub mod libs;
 mod r#macro;
 pub mod util;
 pub mod vm;
+mod module;

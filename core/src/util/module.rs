@@ -26,19 +26,25 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-pub mod core;
-#[cfg(feature = "util-function")]
-mod function;
-#[cfg(feature = "util-method")]
-mod method;
-#[cfg(feature = "util-namespace")]
-mod namespace;
-#[cfg(feature = "util-module")]
-pub mod module;
+use std::collections::HashMap;
+use std::path::PathBuf;
+use crate::vm::Vm;
 
-#[cfg(feature = "util-function")]
-pub use function::LuaFunction;
-#[cfg(feature = "util-method")]
-pub use method::LuaMethod;
-#[cfg(feature = "util-namespace")]
-pub use namespace::Namespace;
+pub struct ModuleLoader {
+    map: HashMap<String, fn(&Vm)>,
+    paths: Vec<PathBuf>
+}
+
+impl ModuleLoader {
+    fn load_dynamic(&mut self, name: &str) {
+
+    }
+
+    pub fn load(&mut self, name: &str, vm: &Vm) {
+
+    }
+
+    pub fn add_search_path(&mut self, name: PathBuf) {
+        self.paths.push(name)
+    }
+}

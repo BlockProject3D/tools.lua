@@ -26,19 +26,13 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-pub mod core;
-#[cfg(feature = "util-function")]
-mod function;
-#[cfg(feature = "util-method")]
-mod method;
-#[cfg(feature = "util-namespace")]
-mod namespace;
-#[cfg(feature = "util-module")]
-pub mod module;
+use crate::ffi::lua::State;
+use crate::vm::Vm;
 
-#[cfg(feature = "util-function")]
-pub use function::LuaFunction;
-#[cfg(feature = "util-method")]
-pub use method::LuaMethod;
-#[cfg(feature = "util-namespace")]
-pub use namespace::Namespace;
+extern "Rust" { fn bp3d_lua_nodule_main(vm: &Vm); }
+
+#[cfg(feature="dynamic")]
+#[no_mangle]
+extern "C" fn bp3d_lua_c_module_main(l: State) {
+    unsafe { bp3d_lua_nodule_main(&Vm::from_raw(l)) }
+}
