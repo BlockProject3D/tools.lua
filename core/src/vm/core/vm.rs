@@ -26,13 +26,11 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use crate::ffi::laux::{luaL_newstate, luaL_openlibs};
 use crate::ffi::lua::{
-    lua_close, lua_getfield, lua_gettop, lua_pushnil, lua_remove, lua_setfield, lua_settop, State,
+    lua_getfield, lua_gettop, lua_pushnil, lua_remove, lua_setfield, lua_settop, State,
     ThreadStatus, GLOBALSINDEX, REGISTRYINDEX,
 };
 use crate::util::core::AnyStr;
-use crate::vm::core::destructor::Pool;
 use crate::vm::core::util::{handle_syntax_error, pcall, push_error_handler};
 use crate::vm::core::{Load, LoadString};
 use crate::vm::error::Error;
@@ -40,9 +38,6 @@ use crate::vm::userdata::core::Registry;
 use crate::vm::userdata::{NameConvert, UserData};
 use crate::vm::value::Function;
 use crate::vm::value::{FromLua, IntoLua};
-use bp3d_debug::debug;
-use std::cell::Cell;
-use std::ops::{Deref, DerefMut};
 
 #[repr(transparent)]
 pub struct Vm {
@@ -184,66 +179,5 @@ impl Vm {
             handle_syntax_error(self, res)?;
             Ok(FromLua::from_lua_unchecked(self, -1))
         }
-    }
-}
-
-thread_local! {
-    // WTF?! The compiler should be smart enough to do this on its own! Another compiler defect!
-    static HAS_VM: Cell<bool> = const { Cell::new(false) };
-}
-
-pub struct RootVm {
-    vm: Vm,
-}
-
-impl Default for RootVm {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl RootVm {
-    pub fn new() -> RootVm {
-        if HAS_VM.get() {
-            panic!("A VM already exists for this thread.")
-        }
-        let l = unsafe { luaL_newstate() };
-        unsafe { luaL_openlibs(l) };
-        HAS_VM.set(true);
-        let mut vm = RootVm {
-            vm: unsafe { Vm::from_raw(l) },
-        };
-        unsafe { Pool::new_in_vm(&mut vm) };
-        vm
-    }
-}
-
-impl Deref for RootVm {
-    type Target = Vm;
-
-    #[inline(always)]
-    fn deref(&self) -> &Self::Target {
-        &self.vm
-    }
-}
-
-impl DerefMut for RootVm {
-    #[inline(always)]
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.vm
-    }
-}
-
-impl Drop for RootVm {
-    fn drop(&mut self) {
-        debug!("Deleting destructor pool");
-        unsafe {
-            drop(Box::from_raw(Pool::from_vm(self)));
-        }
-        unsafe {
-            debug!("Closing Lua VM...");
-            lua_close(self.vm.as_ptr());
-        }
-        HAS_VM.set(false);
     }
 }

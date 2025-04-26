@@ -26,56 +26,72 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#![cfg(feature = "root-vm")]
+use std::cell::Cell;
+use std::ops::{Deref, DerefMut};
+use bp3d_debug::debug;
+use crate::ffi::laux::{luaL_newstate, luaL_openlibs};
+use crate::ffi::lua::lua_close;
+use crate::vm::core::destructor::Pool;
+use crate::vm::Vm;
 
-use bp3d_lua::decl_lib_func;
-use bp3d_lua::vm::function::types::RFunction;
-use bp3d_lua::vm::RootVm;
+thread_local! {
+    // WTF?! The compiler should be smart enough to do this on its own! Another compiler defect!
+    static HAS_VM: Cell<bool> = const { Cell::new(false) };
+}
 
-struct ValueWithDrop;
-impl ValueWithDrop {
-    pub fn print(&self) {
-        println!("ValueWithDrop")
+pub struct RootVm {
+    vm: Vm
+}
+
+impl Default for RootVm {
+    fn default() -> Self {
+        Self::new()
     }
 }
-impl Drop for ValueWithDrop {
+
+impl RootVm {
+    pub fn new() -> RootVm {
+        if HAS_VM.get() {
+            panic!("A VM already exists for this thread.")
+        }
+        let l = unsafe { luaL_newstate() };
+        unsafe { luaL_openlibs(l) };
+        HAS_VM.set(true);
+        let mut vm = RootVm {
+            vm: unsafe { Vm::from_raw(l) },
+        };
+        unsafe { Pool::new_in_vm(&mut vm) };
+        vm
+    }
+}
+
+impl Deref for RootVm {
+    type Target = Vm;
+
+    #[inline(always)]
+    fn deref(&self) -> &Self::Target {
+        &self.vm
+    }
+}
+
+impl DerefMut for RootVm {
+    #[inline(always)]
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.vm
+    }
+}
+
+impl Drop for RootVm {
     fn drop(&mut self) {
-        println!("Dropping!");
+        debug!("Deleting destructor pool");
+        unsafe {
+            drop(Box::from_raw(Pool::from_vm(self)));
+        }
+        unsafe {
+            debug!("Closing Lua VM...");
+            lua_close(self.vm.as_ptr());
+        }
+        HAS_VM.set(false);
     }
 }
 
-decl_lib_func! {
-    fn test_c_function(name: &str, value: f64) -> String {
-        let drop = ValueWithDrop;
-        drop.print();
-        format!("Hello {} ({})", name, value)
-    }
-}
-
-#[test]
-fn test_vm_destructor() {
-    let mut vm = RootVm::new();
-    vm.set_global(c"test_c_function", RFunction::wrap(test_c_function))
-        .unwrap();
-    let time = std::time::Instant::now();
-    let res = vm.run_code::<&str>(c"return test_c_function('this is a test\\xFF', 0.42)");
-    assert!(res.is_err());
-    let err = res.unwrap_err().into_runtime().unwrap();
-    assert_eq!(
-        err.msg(),
-        "rust error: invalid utf-8 sequence of 1 bytes from index 14"
-    );
-    assert!(vm
-        .run_code::<&str>(c"return test_c_function('this is a test', 0.42)")
-        .is_ok());
-    let s = vm
-        .run_code::<&str>(c"return test_c_function('this is a test', 0.42)")
-        .unwrap();
-    assert_eq!(s, "Hello this is a test (0.42)");
-    assert!(vm
-        .run_code::<bool>(c"return test_c_function('this is a test', 0.42)")
-        .is_err());
-    vm.clear();
-    let time = time.elapsed();
-    println!("time: {:?}", time);
-}

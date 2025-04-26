@@ -26,6 +26,8 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+#![cfg(feature = "root-vm")]
+
 use bp3d_lua::ffi::lua::Number;
 use bp3d_lua::vm::function::types::RFunction;
 use bp3d_lua::vm::userdata::LuaDrop;

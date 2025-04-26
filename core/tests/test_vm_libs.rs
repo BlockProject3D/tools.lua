@@ -26,6 +26,8 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+#![cfg(all(feature = "root-vm", feature = "libs"))]
+
 use bp3d_lua::libs::lua::Lua;
 use bp3d_lua::libs::util::Util;
 use bp3d_lua::libs::Lib;

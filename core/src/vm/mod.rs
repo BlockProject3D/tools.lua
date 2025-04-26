@@ -37,6 +37,9 @@ pub mod userdata;
 pub mod util;
 pub mod value;
 
-pub use core::{RootVm, Vm};
+pub use core::Vm;
+
+#[cfg(feature = "root-vm")]
+pub use core::RootVm;
 
 pub type Result<T> = std::result::Result<T, error::Error>;

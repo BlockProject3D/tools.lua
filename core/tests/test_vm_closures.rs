@@ -26,6 +26,8 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+#![cfg(all(feature = "root-vm", feature = "util-namespace"))]
+
 use bp3d_lua::decl_closure;
 use bp3d_lua::util::Namespace;
 use bp3d_lua::vm::closure::context::{CellMut, ContextMut};

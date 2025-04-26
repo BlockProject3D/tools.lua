@@ -27,10 +27,16 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 pub mod core;
+#[cfg(feature = "util-function")]
 mod function;
+#[cfg(feature = "util-method")]
 mod method;
+#[cfg(feature = "util-namespace")]
 mod namespace;
 
+#[cfg(feature = "util-function")]
 pub use function::LuaFunction;
+#[cfg(feature = "util-method")]
 pub use method::LuaMethod;
+#[cfg(feature = "util-namespace")]
 pub use namespace::Namespace;

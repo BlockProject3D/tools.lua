@@ -32,5 +32,11 @@ libc = { version = "0.2.170", optional = true }
 bp3d-lua-build = { version = "1.0.0-rc.1.0.0", path = "../build" }
 
 [features]
-interrupt = ["libc", "windows-sys"]
+interrupt = ["libc", "windows-sys", "root-vm"]
 dynamic = []
+root-vm = []
+util-method = []
+util-function = []
+util-namespace = []
+libs-core = ["util-namespace"]
+libs = ["libs-core"]

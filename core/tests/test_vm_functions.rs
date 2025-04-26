@@ -26,6 +26,8 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+#![cfg(all(feature = "root-vm", feature = "util-method"))]
+
 use bp3d_lua::util::LuaMethod;
 use bp3d_lua::vm::table::Table;
 use bp3d_lua::vm::value::Function;
