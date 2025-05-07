@@ -17,7 +17,7 @@ publish = false
 bp3d-util = { version = "2.0.1", features = ["simple-error", "format", "string"] }
 log = "0.4.26"
 bp3d-lua-codegen = { version = "0.1.0", path = "../codegen" }
-bp3d-debug = "1.0.0-rc.6.1.0"
+bp3d-debug = "1.0.0-rc.6.2.0"
 bp3d-os = { version = "1.0.0-rc.4.2.1", features = ["fs", "time"] }
 time = { version = "0.3.37", features = ["formatting"] }
 itertools = { version = "0.14.0" }
