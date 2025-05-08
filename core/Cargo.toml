@@ -15,12 +15,13 @@ publish = false
 
 [dependencies]
 bp3d-util = { version = "2.0.1", features = ["simple-error", "format", "string"] }
-log = "0.4.26"
-bp3d-lua-codegen = { version = "0.1.0", path = "../codegen" }
 bp3d-debug = "1.0.0-rc.6.2.0"
-bp3d-os = { version = "1.0.0-rc.4.2.1", features = ["fs", "time"] }
-time = { version = "0.3.37", features = ["formatting"] }
+bp3d-os = { version = "1.0.0-rc.4.2.1", features = ["time"], optional = true }
+time = { version = "0.3.37", features = ["formatting"], optional = true }
 itertools = { version = "0.14.0" }
+
+[dev-dependencies]
+bp3d-lua-codegen = { version = "0.1.0", path = "../codegen" }
 
 [target.'cfg(windows)'.dependencies]
 windows-sys = { version = "0.59.0", features = ["Win32_System_Threading", "Win32_System_Kernel", "Win32_System_Diagnostics", "Win32_System_Diagnostics_Debug"], optional = true }
@@ -41,4 +42,4 @@ util-function = []
 util-namespace = []
 util-module = []
 libs-core = ["util-namespace"]
-libs = ["libs-core"]
+libs = ["libs-core", "time", "bp3d-os"]
