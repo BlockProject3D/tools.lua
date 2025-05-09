@@ -32,6 +32,8 @@ mod parser;
 use crate::gen::{FromParam, IntoParam, LuaType};
 use crate::parser::Parser;
 use proc_macro::TokenStream;
+use proc_macro2::Ident;
+use quote::quote;
 use syn::{parse_macro_input, DeriveInput};
 
 #[proc_macro_derive(FromParam)]
@@ -65,4 +67,19 @@ pub fn lua_type(input: TokenStream) -> TokenStream {
         ..
     } = parse_macro_input!(input);
     LuaType::new(ident, generics).parse(data).into()
+}
+
+#[proc_macro]
+pub fn decl_lua_plugin(input: TokenStream) -> TokenStream {
+    let ident = parse_macro_input!(input as Ident);
+    let func_name = String::from("bp3d_lua_plugin_") + ident.to_string().as_str();
+    let func = Ident::new(&func_name, ident.span());
+    let q = quote! {
+        #[no_mangle]
+        extern "Rust" fn #func(l: bp3d_lua::ffi::lua::State) -> bp3d_lua::vm::Result<()> {
+            let vm = unsafe { bp3d_lua::vm::Vm::from_raw(l) };
+            #ident.register(&vm)
+        }
+    };
+    q.into()
 }

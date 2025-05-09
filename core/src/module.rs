@@ -26,13 +26,5 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use crate::ffi::lua::State;
-use crate::vm::Vm;
-
-extern "Rust" { fn bp3d_lua_nodule_main(vm: &Vm); }
-
-#[cfg(feature="dynamic")]
-#[no_mangle]
-extern "C" fn bp3d_lua_c_module_main(l: State) {
-    unsafe { bp3d_lua_nodule_main(&Vm::from_raw(l)) }
-}
+pub const VERSION: &str = env!("CARGO_PKG_VERSION");
+pub use bp3d_lua_codegen::decl_lua_plugin;

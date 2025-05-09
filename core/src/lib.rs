@@ -34,4 +34,6 @@ pub mod libs;
 mod r#macro;
 pub mod util;
 pub mod vm;
-mod module;
+
+#[cfg(feature="module")]
+pub mod module;

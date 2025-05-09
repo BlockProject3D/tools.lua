@@ -19,6 +19,7 @@ bp3d-debug = "1.0.0-rc.6.2.0"
 bp3d-os = { version = "1.0.0-rc.4.2.1", features = ["time"], optional = true }
 time = { version = "0.3.37", features = ["formatting"], optional = true }
 itertools = { version = "0.14.0" }
+bp3d-lua-codegen = { version = "0.1.0", path = "../codegen", optional = true }
 
 [dev-dependencies]
 bp3d-lua-codegen = { version = "0.1.0", path = "../codegen" }
@@ -35,7 +36,7 @@ bp3d-lua-build = { version = "1.0.0-rc.1.0.0", path = "../build" }
 [features]
 interrupt = ["libc", "windows-sys", "root-vm"]
 dynamic = []
-module = ["dynamic"]
+module = ["dynamic", "libs-core", "bp3d-lua-codegen"]
 root-vm = []
 util-method = []
 util-function = []
