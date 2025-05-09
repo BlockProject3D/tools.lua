@@ -50,7 +50,8 @@ impl Build for Linux {
         let path_to_dylib = info.build_dir().join(&filename);
         std::fs::copy(&path_to_so, path_to_dylib)?;
         let path_to_dylib2 = info.target_dir().join(filename);
-        std::fs::copy(path_to_so, path_to_dylib2)?;
+        std::fs::copy(&path_to_so, path_to_dylib2)?;
+        std::fs::remove_file(path_to_so.join("libluajit.so"))?;
         Ok(())
     }
 
