@@ -8,7 +8,7 @@ publish = false
 
 [dependencies]
 mlua = { version = "0.10.3", features = ["luajit"] }
-bp3d-lua = { version = "1.0.0-rc.1.0.0", path = "../core" }
+bp3d-lua = { version = "1.0.0-rc.1.0.0", path = "../core", features = ["root-vm"] }
 bp3d-os = { version = "1.0.0-rc.4.2.1", features = ["time"] }
 
 [workspace]
