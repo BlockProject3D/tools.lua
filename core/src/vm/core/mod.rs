@@ -30,15 +30,15 @@ pub mod destructor;
 mod interface;
 pub mod iter;
 pub mod load;
-pub mod util;
-mod vm;
 #[cfg(feature = "root-vm")]
 mod root_vm;
+pub mod util;
+mod vm;
 
 #[cfg(feature = "interrupt")]
 pub mod interrupt;
 
 pub use interface::*;
-pub use vm::Vm;
 #[cfg(feature = "root-vm")]
 pub use root_vm::RootVm;
+pub use vm::Vm;

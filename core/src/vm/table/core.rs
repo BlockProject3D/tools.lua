@@ -27,13 +27,16 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::ffi::ext::{lua_ext_tab_len, MSize};
-use crate::ffi::lua::{lua_createtable, lua_gettable, lua_gettop, lua_objlen, lua_pushvalue, lua_rawseti, lua_setmetatable, lua_settable, lua_topointer};
+use crate::ffi::lua::{
+    lua_createtable, lua_gettable, lua_gettop, lua_objlen, lua_pushvalue, lua_rawseti,
+    lua_setmetatable, lua_settable, lua_topointer,
+};
 use crate::vm::table::iter::Iter;
+use crate::vm::table::traits::{GetTable, SetTable};
 use crate::vm::value::util::ensure_single_into_lua;
 use crate::vm::value::{FromLua, IntoLua};
 use crate::vm::Vm;
 use std::fmt::{Debug, Display};
-use crate::vm::table::traits::{GetTable, SetTable};
 
 pub struct Table<'a> {
     pub(super) vm: &'a Vm,

@@ -26,13 +26,13 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::cell::Cell;
-use std::ops::{Deref, DerefMut};
-use bp3d_debug::debug;
 use crate::ffi::laux::{luaL_newstate, luaL_openlibs};
 use crate::ffi::lua::lua_close;
 use crate::vm::core::destructor::Pool;
 use crate::vm::Vm;
+use bp3d_debug::debug;
+use std::cell::Cell;
+use std::ops::{Deref, DerefMut};
 
 thread_local! {
     // WTF?! The compiler should be smart enough to do this on its own! Another compiler defect!
@@ -40,7 +40,7 @@ thread_local! {
 }
 
 pub struct RootVm {
-    vm: Vm
+    vm: Vm,
 }
 
 impl Default for RootVm {
@@ -94,4 +94,3 @@ impl Drop for RootVm {
         HAS_VM.set(false);
     }
 }
-

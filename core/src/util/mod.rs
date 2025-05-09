@@ -31,10 +31,10 @@ pub mod core;
 mod function;
 #[cfg(feature = "util-method")]
 mod method;
-#[cfg(feature = "util-namespace")]
-mod namespace;
 #[cfg(feature = "util-module")]
 pub mod module;
+#[cfg(feature = "util-namespace")]
+mod namespace;
 
 #[cfg(feature = "util-function")]
 pub use function::LuaFunction;

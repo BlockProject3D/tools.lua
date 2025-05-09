@@ -138,7 +138,7 @@ impl Pool {
 
 impl Drop for Pool {
     fn drop(&mut self) {
-        debug!({ num=self.leaked.len() }, "Deleting leaked pointers...");
+        debug!({ num = self.leaked.len() }, "Deleting leaked pointers...");
         let v = std::mem::take(&mut self.leaked);
         for f in v {
             f()

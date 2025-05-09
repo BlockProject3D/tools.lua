@@ -35,5 +35,5 @@ mod r#macro;
 pub mod util;
 pub mod vm;
 
-#[cfg(feature="module")]
+#[cfg(feature = "module")]
 pub mod module;

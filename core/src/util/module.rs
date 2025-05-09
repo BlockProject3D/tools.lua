@@ -26,23 +26,19 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use crate::vm::Vm;
 use std::collections::HashMap;
 use std::path::PathBuf;
-use crate::vm::Vm;
 
 pub struct ModuleLoader {
     map: HashMap<String, fn(&Vm)>,
-    paths: Vec<PathBuf>
+    paths: Vec<PathBuf>,
 }
 
 impl ModuleLoader {
-    fn load_dynamic(&mut self, name: &str) {
+    fn load_dynamic(&mut self, name: &str) {}
 
-    }
-
-    pub fn load(&mut self, name: &str, vm: &Vm) {
-
-    }
+    pub fn load(&mut self, name: &str, vm: &Vm) {}
 
     pub fn add_search_path(&mut self, name: PathBuf) {
         self.paths.push(name)

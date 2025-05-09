@@ -27,12 +27,15 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::ffi::laux::luaL_checktype;
-use crate::ffi::lua::{lua_getfield, lua_gettop, lua_pushvalue, lua_rawgeti, lua_rawseti, lua_setfield, lua_type, State, Type};
+use crate::ffi::lua::{
+    lua_getfield, lua_gettop, lua_pushvalue, lua_rawgeti, lua_rawseti, lua_setfield, lua_type,
+    State, Type,
+};
 use crate::util::core::{AnyStr, SimpleDrop};
 use crate::vm::function::{FromParam, IntoParam};
 use crate::vm::registry::{FromIndex, Set};
-use crate::vm::table::Table;
 use crate::vm::table::traits::{GetTable, SetTable};
+use crate::vm::table::Table;
 use crate::vm::util::LuaType;
 use crate::vm::value::util::ensure_type_equals;
 use crate::vm::value::FromLua;
