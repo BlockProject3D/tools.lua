@@ -32,11 +32,12 @@ libc = { version = "0.2.170", optional = true }
 
 [build-dependencies]
 bp3d-lua-build = { version = "1.0.0-rc.1.0.0", path = "../build" }
+rustc_version = { version = "0.4.1", optional = true }
 
 [features]
 interrupt = ["libc", "windows-sys", "root-vm"]
 dynamic = []
-module = ["dynamic", "libs-core", "bp3d-lua-codegen"]
+module = ["dynamic", "libs-core", "bp3d-lua-codegen", "rustc_version"]
 root-vm = []
 util-method = []
 util-function = []

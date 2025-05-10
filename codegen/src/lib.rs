@@ -72,7 +72,8 @@ pub fn lua_type(input: TokenStream) -> TokenStream {
 #[proc_macro]
 pub fn decl_lua_plugin(input: TokenStream) -> TokenStream {
     let ident = parse_macro_input!(input as Ident);
-    let func_name = String::from("bp3d_lua_plugin_") + ident.to_string().as_str();
+    let crate_name = std::env::var("CARGO_PKG_NAME").unwrap();
+    let func_name = format!("bp3d_lua_{}_register_{}", crate_name.to_uppercase(), ident.to_string());
     let func = Ident::new(&func_name, ident.span());
     let q = quote! {
         #[no_mangle]
@@ -80,6 +81,29 @@ pub fn decl_lua_plugin(input: TokenStream) -> TokenStream {
             let vm = unsafe { bp3d_lua::vm::Vm::from_raw(l) };
             #ident.register(&vm)
         }
+    };
+    q.into()
+}
+
+#[proc_macro]
+pub fn decl_lua_lib(input: TokenStream) -> TokenStream {
+    let ident = parse_macro_input!(input as Ident);
+    let crate_name = std::env::var("CARGO_PKG_NAME").unwrap();
+    let rustc_const_name = format!("BP3D_LUA_{}_RUSTC_VERSION", crate_name.to_uppercase());
+    let bp3d_lua_const_name = format!("BP3D_LUA_{}_ENGINE_VERSION", crate_name.to_uppercase());
+    let const_name = format!("BP3D_LUA_{}_VERSION", crate_name.to_uppercase());
+    let rustc_const = Ident::new(&rustc_const_name, ident.span());
+    let bp3d_lua_const = Ident::new(&bp3d_lua_const_name, ident.span());
+    let cons = Ident::new(&const_name, ident.span());
+    let q = quote! {
+        #[no_mangle]
+        extern "C" const #rustc_const: *const std::ffi::c_char = bp3d_lua::module::RUSTC_VERSION.as_ptr() as _;
+
+        #[no_mangle]
+        extern "C" const #bp3d_lua_const: *const std::ffi::c_char = bp3d_lua::module::VERSION.as_ptr() as _;
+
+        #[no_mangle]
+        extern "C" const #cons: *const std::ffi::c_char = concat!(env!("CARGO_PKG_VERSION"), "\0").as_ptr() as _;
     };
     q.into()
 }

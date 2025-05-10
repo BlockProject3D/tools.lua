@@ -26,5 +26,14 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-pub const VERSION: &str = env!("CARGO_PKG_VERSION");
+/// The BP3D Lua & LuaJIT version.
+pub const VERSION: &str = concat!(env!("CARGO_PKG_VERSION"), "\0");
+
+/// The rustc version being used.
+pub const RUSTC_VERSION: &str = concat!(env!("RUSTC_VERSION"), "\0");
+
+/// The macro which generates a plugin entry point.
 pub use bp3d_lua_codegen::decl_lua_plugin;
+
+/// The macro which generates a library entry point.
+pub use bp3d_lua_codegen::decl_lua_lib;
