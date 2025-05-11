@@ -26,14 +26,88 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-/// The BP3D Lua & LuaJIT version.
-pub const VERSION: &str = concat!(env!("CARGO_PKG_VERSION"), "\0");
+use libc::c_char;
+use crate::ffi::lua::Type;
 
-/// The rustc version being used.
-pub const RUSTC_VERSION: &str = concat!(env!("RUSTC_VERSION"), "\0");
+pub const STRING_BUF_LEN: usize = 4096;
 
-/// The macro which generates a plugin entry point.
-pub use bp3d_lua_codegen::decl_lua_plugin;
+#[derive(Copy, Clone)]
+#[repr(i32)]
+pub enum ErrorType {
+    None = 0,
+    Utf8 = -1,
+    Type = -2,
+    Syntax = -3,
+    Runtime = -4,
+    Memory = -5,
+    Unknown = -6,
+    Error = -7,
+    Null = -8,
+    MultiValue = -9,
+    UnsupportedType = -10,
+    Loader = -11,
+    UserDataArgsEmpty = 1,
+    UserDataMutViolation = 2,
+    UserDataGc = 3,
+    UserDataIndex = 4,
+    UserDataMetatable = 5,
+    UserDataMultiValueField = 6,
+    UserDataAlreadyRegistered = 7,
+    UserDataAlignment = 8
+}
 
-/// The macro which generates a library entry point.
-pub use bp3d_lua_codegen::decl_lua_lib;
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct Utf8Error {
+    pub ty: ErrorType,
+    pub valid_up_to: usize,
+    pub error_len: i16,
+}
+
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct TypeError {
+    pub ty: ErrorType,
+    pub expected: Type,
+    pub actual: Type,
+}
+
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct UnsupportedType {
+    pub ty: ErrorType,
+    pub actual: Type,
+}
+
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct String {
+    pub ty: ErrorType,
+    pub data: [u8; STRING_BUF_LEN],
+    pub len: usize
+}
+
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct StaticString {
+    pub ty: ErrorType,
+    pub data: *const c_char,
+}
+
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct Alignment {
+    pub ty: ErrorType,
+    pub alignment: usize,
+}
+
+#[repr(C)]
+pub union Error {
+    pub ty: ErrorType,
+    pub string: String,
+    pub type_mismatch: TypeError,
+    pub utf8: Utf8Error,
+    pub unsupported_type: UnsupportedType,
+    pub static_string: StaticString,
+    pub alignment: Alignment
+}
