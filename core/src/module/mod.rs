@@ -29,10 +29,13 @@
 pub mod error;
 
 /// The BP3D Lua & LuaJIT version.
-pub const VERSION: &str = concat!(env!("CARGO_PKG_VERSION"), "\0");
+pub static VERSION: &str = concat!(env!("CARGO_PKG_VERSION"), "\0");
 
 /// The rustc version being used.
-pub const RUSTC_VERSION: &str = concat!(env!("RUSTC_VERSION"), "\0");
+pub static RUSTC_VERSION: &str = concat!(env!("RUSTC_VERSION"), "\0");
+
+/// The version of the time library used by bp3d-lua.
+pub static TIME_VERSION: &str = "0.3.41";
 
 /// The macro which generates a plugin entry point.
 pub use bp3d_lua_codegen::decl_lua_plugin;
