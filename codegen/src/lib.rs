@@ -32,6 +32,8 @@ mod parser;
 use crate::gen::{FromParam, IntoParam, LuaType};
 use crate::parser::Parser;
 use proc_macro::TokenStream;
+use cargo_manifest::Manifest;
+use itertools::Itertools;
 use proc_macro2::Ident;
 use quote::quote;
 use syn::{parse_macro_input, DeriveInput};
@@ -91,10 +93,16 @@ pub fn decl_lua_lib(input: TokenStream) -> TokenStream {
     let crate_name = std::env::var("CARGO_PKG_NAME").unwrap();
     let rustc_const_name = format!("BP3D_LUA_{}_RUSTC_VERSION", crate_name.to_uppercase());
     let bp3d_lua_const_name = format!("BP3D_LUA_{}_ENGINE_VERSION", crate_name.to_uppercase());
-    let const_name = format!("BP3D_LUA_{}_VERSION", crate_name.to_uppercase());
+    let deps_const_name = format!("BP3D_LUA_{}_DEPS", crate_name.to_uppercase());
     let rustc_const = Ident::new(&rustc_const_name, ident.span());
     let bp3d_lua_const = Ident::new(&bp3d_lua_const_name, ident.span());
-    let cons = Ident::new(&const_name, ident.span());
+    let deps_const = Ident::new(&deps_const_name, ident.span());
+    let package = Manifest::from_path(std::env::var_os("CARGO_MANIFEST_PATH")
+        .expect("Failed to get CARGO_MANIFEST_PATH"))
+        .expect("Failed to read CARGO_MANIFEST_PATH");
+    let mut deps_list = package.dependencies.map(|v| v.iter()
+        .map(|(k, v)| format!("{}={}", k, v.req())).join(",")).unwrap_or("".into());
+    deps_list += "\0";
     let q = quote! {
         #[no_mangle]
         extern "C" const #rustc_const: *const std::ffi::c_char = bp3d_lua::module::RUSTC_VERSION.as_ptr() as _;
@@ -103,7 +111,7 @@ pub fn decl_lua_lib(input: TokenStream) -> TokenStream {
         extern "C" const #bp3d_lua_const: *const std::ffi::c_char = bp3d_lua::module::VERSION.as_ptr() as _;
 
         #[no_mangle]
-        extern "C" const #cons: *const std::ffi::c_char = concat!(env!("CARGO_PKG_VERSION"), "\0").as_ptr() as _;
+        extern "C" const #deps_const: *const std::ffi::c_char = #deps_list.as_ptr() as _;
     };
     q.into()
 }

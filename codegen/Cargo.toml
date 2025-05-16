@@ -11,3 +11,5 @@ proc-macro = true
 quote = "1.0"
 syn = { version = "2.0.98", features = ["full"] }
 proc-macro2 = "1.0.26"
+cargo-manifest = "0.19.1"
+itertools = { version = "0.14.0" }
