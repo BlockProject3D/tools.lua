@@ -90,7 +90,9 @@ simple_error! {
         MultiValue => "only one value is supported by this API",
         UserData(crate::vm::userdata::Error) => "userdata: {}",
         UnsupportedType(Type) => "unsupported lua type: {:?}",
-        Loader(String) => "loader error: {}"
+        Loader(String) => "loader error: {}",
+        ParseFloat => "parse float error",
+        ParseInt => "parse int error"
     }
 }
 

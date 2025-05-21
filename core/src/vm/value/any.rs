@@ -28,7 +28,7 @@
 
 use crate::ffi::lua::{lua_pushnil, lua_toboolean, lua_tonumber, lua_type, Type};
 use crate::util::core::SimpleDrop;
-use crate::vm::error::Error;
+use crate::vm::error::{Error, TypeError};
 use crate::vm::function::{FromParam, IntoParam};
 use crate::vm::table::Table;
 use crate::vm::thread::Thread;
@@ -38,6 +38,7 @@ use crate::vm::value::function::Function;
 use crate::vm::value::{FromLua, IntoLua};
 use crate::vm::Vm;
 use std::fmt::Display;
+use std::str::FromStr;
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum AnyValue<'a> {
@@ -85,6 +86,28 @@ impl AnyValue<'_> {
             AnyValue::Table(_) => Type::Table,
             AnyValue::UserData(_) => Type::Userdata,
             AnyValue::Thread(_) => Type::Thread,
+        }
+    }
+
+    pub fn to_number(&self) -> Result<crate::ffi::lua::Number, Error> {
+        match self {
+            AnyValue::Number(v) => Ok(*v),
+            AnyValue::String(v) => crate::ffi::lua::Number::from_str(v).map_err(|_| Error::ParseFloat),
+            _ => Err(Error::Type(TypeError {
+                expected: Type::Number,
+                actual: self.ty()
+            }))
+        }
+    }
+
+    pub fn to_integer(&self) -> Result<crate::ffi::lua::Integer, Error> {
+        match self {
+            AnyValue::Number(v) => Ok(*v as _),
+            AnyValue::String(v) => crate::ffi::lua::Integer::from_str(v).map_err(|_| Error::ParseInt),
+            _ => Err(Error::Type(TypeError {
+                expected: Type::Number,
+                actual: self.ty()
+            }))
         }
     }
 }

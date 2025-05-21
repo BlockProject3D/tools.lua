@@ -46,6 +46,8 @@ pub enum ErrorType {
     MultiValue = -9,
     UnsupportedType = -10,
     Loader = -11,
+    ParseFloat = -12,
+    ParseInt = -13,
     UserDataArgsEmpty = 1,
     UserDataMutViolation = 2,
     UserDataGc = 3,
