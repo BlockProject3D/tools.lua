@@ -36,7 +36,7 @@ use crate::vm::Vm;
 pub struct LuaFunction(Key<Function>);
 
 impl LuaFunction {
-    pub fn create(f: crate::vm::value::Function) -> Self {
+    pub fn create(f: crate::vm::value::types::Function) -> Self {
         Self(Key::new(f))
     }
 

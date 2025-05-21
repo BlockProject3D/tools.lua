@@ -31,6 +31,6 @@ mod core;
 mod function;
 mod interface;
 pub mod util;
+pub mod types;
 
-pub use function::Function;
 pub use interface::*;

@@ -26,38 +26,4 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use crate::decl_lib_func;
-use crate::libs::interface::Lib;
-use crate::util::Namespace;
-use crate::vm::error::Error;
-use crate::vm::function::types::RFunction;
-use crate::vm::value::any::{AnyParam, UncheckedAnyReturn};
-use crate::vm::value::types::Function;
-
-decl_lib_func! {
-    fn pcall(vm: &Vm, func: Function) -> UncheckedAnyReturn {
-        let top = vm.top();
-        true.into_param(vm);
-        let ret = func.call::<AnyParam>(());
-        let new_top = vm.top();
-        match ret {
-            Ok(_) => unsafe { UncheckedAnyReturn::new(vm, (new_top - top) as _) },
-            Err(e) => {
-                match e {
-                    Error::Runtime(e) => unsafe { UncheckedAnyReturn::new(vm, (false, e.backtrace()).into_param(vm)) },
-                    e => unsafe { UncheckedAnyReturn::new(vm, (false, e.to_string()).into_param(vm)) }
-                }
-            }
-        }
-    }
-}
-
-pub struct Call;
-
-impl Lib for Call {
-    const NAMESPACE: &'static str = "bp3d.lua";
-
-    fn load(&self, namespace: &mut Namespace) -> crate::vm::Result<()> {
-        namespace.add([("pcall", RFunction::wrap(pcall))])
-    }
-}
+pub use super::function::Function;

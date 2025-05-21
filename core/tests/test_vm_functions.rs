@@ -30,7 +30,7 @@
 
 use bp3d_lua::util::LuaMethod;
 use bp3d_lua::vm::table::Table;
-use bp3d_lua::vm::value::Function;
+use bp3d_lua::vm::value::types::Function;
 use bp3d_lua::vm::RootVm;
 use std::ffi::CStr;
 

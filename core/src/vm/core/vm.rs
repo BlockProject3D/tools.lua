@@ -36,7 +36,7 @@ use crate::vm::core::{Load, LoadString};
 use crate::vm::error::Error;
 use crate::vm::userdata::core::Registry;
 use crate::vm::userdata::{NameConvert, UserData};
-use crate::vm::value::Function;
+use crate::vm::value::types::Function;
 use crate::vm::value::{FromLua, IntoLua};
 
 #[repr(transparent)]

@@ -31,7 +31,7 @@ use crate::util::Namespace;
 use crate::vm::core::load::{Code, Script};
 use crate::vm::function::types::RFunction;
 use crate::vm::value::any::{AnyParam, UncheckedAnyReturn};
-use crate::vm::value::Function;
+use crate::vm::value::types::Function;
 use crate::{decl_closure, decl_lib_func};
 use bp3d_util::simple_error;
 use std::path::{Path, PathBuf};

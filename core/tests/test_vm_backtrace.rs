@@ -30,7 +30,7 @@
 
 use bp3d_lua::decl_lib_func;
 use bp3d_lua::vm::function::types::RFunction;
-use bp3d_lua::vm::value::Function;
+use bp3d_lua::vm::value::types::Function;
 use bp3d_lua::vm::RootVm;
 use bp3d_util::simple_error;
 
