@@ -75,8 +75,8 @@ pub enum Type {
     Thread = 8,
 }
 
-pub type Number = c_double;
-pub type Integer = isize;
+pub type RawNumber = c_double;
+pub type RawInteger = isize;
 
 //--------------------
 // State manipulation
@@ -119,8 +119,8 @@ extern "C" {
     pub fn lua_rawequal(l: State, idx1: c_int, idx2: c_int) -> c_int;
     pub fn lua_lessthan(l: State, idx1: c_int, idx2: c_int) -> c_int;
 
-    pub fn lua_tonumber(l: State, idx: c_int) -> Number;
-    pub fn lua_tointeger(l: State, idx: c_int) -> Integer;
+    pub fn lua_tonumber(l: State, idx: c_int) -> RawNumber;
+    pub fn lua_tointeger(l: State, idx: c_int) -> RawInteger;
     pub fn lua_toboolean(l: State, idx: c_int) -> c_int;
     pub fn lua_tolstring(l: State, idx: c_int, len: *mut usize) -> *const c_char;
     pub fn lua_objlen(l: State, idx: c_int) -> usize;
@@ -135,8 +135,8 @@ extern "C" {
 //-------------------------------
 extern "C" {
     pub fn lua_pushnil(l: State);
-    pub fn lua_pushnumber(l: State, n: Number);
-    pub fn lua_pushinteger(l: State, n: Integer);
+    pub fn lua_pushnumber(l: State, n: RawNumber);
+    pub fn lua_pushinteger(l: State, n: RawInteger);
     pub fn lua_pushlstring(l: State, s: *const c_char, len: usize);
     pub fn lua_pushstring(l: State, s: *const c_char);
     //LUA_API const char *(lua_pushvfstring) (lua_State *L, const char *fmt, va_list argp);

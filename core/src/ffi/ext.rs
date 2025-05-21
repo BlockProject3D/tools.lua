@@ -26,7 +26,7 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use crate::ffi::lua::{Integer, Number, State};
+use crate::ffi::lua::{RawInteger, RawNumber, State};
 use std::ffi::c_int;
 
 pub type MSize = u32;
@@ -35,8 +35,8 @@ pub type MSize = u32;
 // Value reading
 //---------------
 extern "C" {
-    pub fn lua_ext_fast_checknumber(l: State, numarg: c_int) -> Number;
-    pub fn lua_ext_fast_checkinteger(l: State, numarg: c_int) -> Integer;
+    pub fn lua_ext_fast_checknumber(l: State, numarg: c_int) -> RawNumber;
+    pub fn lua_ext_fast_checkinteger(l: State, numarg: c_int) -> RawInteger;
 }
 
 //-------

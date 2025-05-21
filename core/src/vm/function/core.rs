@@ -30,7 +30,7 @@ use crate::ffi::ext::{lua_ext_fast_checkinteger, lua_ext_fast_checknumber};
 use crate::ffi::laux::{luaL_checklstring, luaL_checkudata, luaL_setmetatable, luaL_testudata};
 use crate::ffi::lua::{
     lua_newuserdata, lua_pushboolean, lua_pushinteger, lua_pushlstring, lua_pushnil,
-    lua_pushnumber, lua_type, Integer, Number, Type,
+    lua_pushnumber, lua_type, RawInteger, RawNumber, Type,
 };
 use crate::util::core::SimpleDrop;
 use crate::vm::function::{FromParam, IntoParam};
@@ -153,7 +153,7 @@ macro_rules! impl_integer {
 
             impl LuaType for $t {
                 fn lua_type() -> Vec<TypeName> {
-                    vec![TypeName::Some(std::any::type_name::<Integer>())]
+                    vec![TypeName::Some(std::any::type_name::<RawInteger>())]
                 }
             }
 
@@ -194,7 +194,7 @@ macro_rules! impl_float {
 
             impl LuaType for $t {
                 fn lua_type() -> Vec<TypeName> {
-                    vec![TypeName::Some(std::any::type_name::<Number>())]
+                    vec![TypeName::Some(std::any::type_name::<RawNumber>())]
                 }
             }
 

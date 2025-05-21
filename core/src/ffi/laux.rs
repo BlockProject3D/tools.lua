@@ -26,7 +26,7 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use crate::ffi::lua::{Integer, Number, State, ThreadStatus, Type};
+use crate::ffi::lua::{RawInteger, RawNumber, State, ThreadStatus, Type};
 use std::ffi::{c_char, c_int, c_void};
 
 //--------------------
@@ -60,11 +60,11 @@ extern "C" {
         len: *mut usize,
     ) -> *const c_char;
 
-    pub fn luaL_checknumber(l: State, numarg: c_int) -> Number;
-    pub fn luaL_optnumber(l: State, narg: c_int, def: Number) -> Number;
+    pub fn luaL_checknumber(l: State, numarg: c_int) -> RawNumber;
+    pub fn luaL_optnumber(l: State, narg: c_int, def: RawNumber) -> RawNumber;
 
-    pub fn luaL_checkinteger(l: State, numarg: c_int) -> Integer;
-    pub fn luaL_optinteger(l: State, narg: c_int, def: Integer) -> Integer;
+    pub fn luaL_checkinteger(l: State, numarg: c_int) -> RawInteger;
+    pub fn luaL_optinteger(l: State, narg: c_int, def: RawInteger) -> RawInteger;
 
     pub fn luaL_checkstack(l: State, sz: c_int, msg: *const c_char);
     pub fn luaL_checktype(l: State, narg: c_int, t: Type);

@@ -28,7 +28,7 @@
 
 #![cfg(feature = "root-vm")]
 
-use bp3d_lua::ffi::lua::Number;
+use bp3d_lua::ffi::lua::RawNumber;
 use bp3d_lua::vm::function::types::RFunction;
 use bp3d_lua::vm::userdata::LuaDrop;
 use bp3d_lua::vm::{RootVm, Vm};
@@ -60,7 +60,7 @@ impl Drop for MyInt {
 
 decl_userdata! {
     impl MyInt {
-        fn tonumber(this: &MyInt) -> Number {
+        fn tonumber(this: &MyInt) -> RawNumber {
             this.0 as _
         }
 
@@ -210,11 +210,11 @@ fn test_vm_userdata_base(vm: &Vm) {
         "579"
     );
     assert_eq!(
-        vm.run_code::<Number>(c"return (a + b):tonumber()").unwrap(),
+        vm.run_code::<RawNumber>(c"return (a + b):tonumber()").unwrap(),
         579.0
     );
     assert_eq!(
-        vm.run_code::<Number>(c"return a.tonumber(b)").unwrap(),
+        vm.run_code::<RawNumber>(c"return a.tonumber(b)").unwrap(),
         456.0
     );
     assert_eq!(top + 8, vm.top());

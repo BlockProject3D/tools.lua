@@ -89,10 +89,10 @@ impl AnyValue<'_> {
         }
     }
 
-    pub fn to_number(&self) -> Result<crate::ffi::lua::Number, Error> {
+    pub fn to_number(&self) -> Result<crate::ffi::lua::RawNumber, Error> {
         match self {
             AnyValue::Number(v) => Ok(*v),
-            AnyValue::String(v) => crate::ffi::lua::Number::from_str(v).map_err(|_| Error::ParseFloat),
+            AnyValue::String(v) => crate::ffi::lua::RawNumber::from_str(v).map_err(|_| Error::ParseFloat),
             _ => Err(Error::Type(TypeError {
                 expected: Type::Number,
                 actual: self.ty()
@@ -100,10 +100,10 @@ impl AnyValue<'_> {
         }
     }
 
-    pub fn to_integer(&self) -> Result<crate::ffi::lua::Integer, Error> {
+    pub fn to_integer(&self) -> Result<crate::ffi::lua::RawInteger, Error> {
         match self {
             AnyValue::Number(v) => Ok(*v as _),
-            AnyValue::String(v) => crate::ffi::lua::Integer::from_str(v).map_err(|_| Error::ParseInt),
+            AnyValue::String(v) => crate::ffi::lua::RawInteger::from_str(v).map_err(|_| Error::ParseInt),
             _ => Err(Error::Type(TypeError {
                 expected: Type::Number,
                 actual: self.ty()
