@@ -54,10 +54,11 @@ impl Build for MacOS {
 
     fn post_build(info: &BuildInfo, runner: &CommandRunner) -> std::io::Result<()> {
         let filename = format!("libbp3d-luajit-{}.dylib", info.version());
+        let filename2 = format!("@rpath/libbp3d-luajit-{}.dylib", info.version());
         let path_to_so = info.build_dir().join("src");
         runner.run(
             Command::new("install_name_tool")
-                .args(["-id", &filename, "libluajit.so"])
+                .args(["-id", &filename2, "libluajit.so"])
                 .current_dir(&path_to_so),
         )?;
         let path_to_dylib = info.build_dir().join(&filename);
