@@ -28,16 +28,17 @@
 
 #![cfg(all(feature = "root-vm", feature = "libs"))]
 
-use bp3d_lua::libs::lua::Lua;
+use bp3d_lua::libs::lua::{Lua, Module};
 use bp3d_lua::libs::util::Util;
 use bp3d_lua::libs::Lib;
 use bp3d_lua::vm::RootVm;
 
 #[test]
 fn test_vm_lib_lua() {
-    let mut vm = RootVm::new();
+    let vm = RootVm::new();
     let top = vm.top();
-    Lua::new().build().register(&mut vm).unwrap();
+    Lua::new().build().register(&vm).unwrap();
+    Module::new(&[]).register(&vm).unwrap();
     vm.run_code::<()>(
         c"
         assert(bp3d.lua.name == 'bp3d-lua')
@@ -71,6 +72,12 @@ fn test_vm_lib_lua() {
     ",
     )
     .unwrap();
+    let err = vm
+        .run_code::<()>(c"MODULES:load('broken', 'broken2')")
+        .unwrap_err()
+        .into_runtime()
+        .unwrap();
+    assert_eq!(err.msg(), "rust error: module error: module not found (broken)");
     assert_eq!(vm.top(), top);
 }
 
