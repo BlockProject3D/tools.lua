@@ -46,41 +46,41 @@ simple_error! {
     }
 }
 
-struct Wrapper(OffsetDateTime);
+struct OffsetDateTimeWrapper(OffsetDateTime);
 
 decl_userdata! {
-    impl Wrapper {
-        fn format(this: &Wrapper, format: &str) -> Result<String, FormatError> {
+    impl OffsetDateTimeWrapper {
+        fn format(this: &OffsetDateTimeWrapper, format: &str) -> Result<String, FormatError> {
             let desc = parse(format)?;
             let str = this.0.format(&desc)?;
             Ok(str)
         }
 
-        fn __add(this: &Wrapper, duration: f64) -> Option<Wrapper> {
-            this.0.checked_add(Duration::seconds_f64(duration)).map(Wrapper)
+        fn __add(this: &OffsetDateTimeWrapper, duration: f64) -> Option<OffsetDateTimeWrapper> {
+            this.0.checked_add(Duration::seconds_f64(duration)).map(OffsetDateTimeWrapper)
         }
 
-        fn __sub(this: &Wrapper, other: &Wrapper) -> f64 {
+        fn __sub(this: &OffsetDateTimeWrapper, other: &OffsetDateTimeWrapper) -> f64 {
             (this.0 - other.0).as_seconds_f64()
         }
 
-        fn __gt(this: &Wrapper, other: &Wrapper) -> bool {
+        fn __gt(this: &OffsetDateTimeWrapper, other: &OffsetDateTimeWrapper) -> bool {
             this.0 > other.0
         }
 
-        fn __ge(this: &Wrapper, other: &Wrapper) -> bool {
+        fn __ge(this: &OffsetDateTimeWrapper, other: &OffsetDateTimeWrapper) -> bool {
             this.0 >= other.0
         }
 
-        fn __lt(this: &Wrapper, other: &Wrapper) -> bool {
+        fn __lt(this: &OffsetDateTimeWrapper, other: &OffsetDateTimeWrapper) -> bool {
             this.0 < other.0
         }
 
-        fn __le(this: &Wrapper, other: &Wrapper) -> bool {
+        fn __le(this: &OffsetDateTimeWrapper, other: &OffsetDateTimeWrapper) -> bool {
             this.0 <= other.0
         }
 
-        fn get_date<'a>(this: &Wrapper, vm: &Vm) -> crate::vm::Result<Table<'a>> {
+        fn get_date<'a>(this: &OffsetDateTimeWrapper, vm: &Vm) -> crate::vm::Result<Table<'a>> {
             let mut table = Table::with_capacity(vm, 0, 3);
             table.set(c"year", this.0.year())?;
             table.set(c"month", this.0.month() as u8)?;
@@ -88,7 +88,7 @@ decl_userdata! {
             Ok(table)
         }
 
-        fn get_time<'a>(this: &Wrapper, vm: &Vm) -> crate::vm::Result<Table<'a>> {
+        fn get_time<'a>(this: &OffsetDateTimeWrapper, vm: &Vm) -> crate::vm::Result<Table<'a>> {
             let mut table = Table::with_capacity(vm, 0, 3);
             table.set(c"hour", this.0.hour())?;
             table.set(c"minute", this.0.minute())?;
@@ -96,7 +96,7 @@ decl_userdata! {
             Ok(table)
         }
 
-        fn get_offset<'a>(this: &Wrapper, vm: &Vm) -> crate::vm::Result<Table<'a>> {
+        fn get_offset<'a>(this: &OffsetDateTimeWrapper, vm: &Vm) -> crate::vm::Result<Table<'a>> {
             let mut table = Table::with_capacity(vm, 0, 3);
             table.set(c"hours", this.0.offset().whole_hours())?;
             table.set(c"minutes", this.0.offset().whole_minutes())?;
@@ -108,7 +108,7 @@ decl_userdata! {
 
 unsafe impl IntoParam for OffsetDateTime {
     fn into_param(self, vm: &Vm) -> u16 {
-        Wrapper(self).into_param(vm)
+        OffsetDateTimeWrapper(self).into_param(vm)
     }
 }
 
@@ -172,7 +172,7 @@ impl Lib for Time {
     fn load(&self, namespace: &mut Namespace) -> crate::vm::Result<()> {
         namespace
             .vm()
-            .register_userdata::<Wrapper>(crate::vm::userdata::case::Camel)?;
+            .register_userdata::<OffsetDateTimeWrapper>(crate::vm::userdata::case::Camel)?;
         namespace.add([
             ("nowUtc", RFunction::wrap(now_utc)),
             ("nowLocal", RFunction::wrap(now_local)),
