@@ -46,8 +46,11 @@ impl Build for Linux {
 
     fn post_build(info: &BuildInfo, _: &CommandRunner) -> std::io::Result<()> {
         let filename = format!("libbp3d-luajit-{}.so", info.version());
+        println!("File name: {}", filename);
         let path_to_so = info.build_dir().join("src").join("libluajit.so");
         let path_to_dylib = info.build_dir().join(&filename);
+        println!("Path to SO: {}", path_to_so.display());
+        println!("Path to DYLIB: {}", path_to_dylib.display());
         std::fs::copy(&path_to_so, path_to_dylib)?;
         let path_to_dylib2 = info.target_dir().join(filename);
         std::fs::copy(&path_to_so, path_to_dylib2)?;
