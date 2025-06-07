@@ -32,7 +32,7 @@ macro_rules! decl_userdata_func {
         $vis: vis fn $fn_name: ident $(<$lifetime: lifetime>)? ($this: ident: &mut $obj_name: ident, $name: ident: &Vm$(, $($arg_name: ident: $arg_ty: ty),*)?) -> $ret_ty: ty $code: block
     ) => {
         impl $obj_name {
-            $vis fn $fn_name() -> Result<$crate::vm::userdata::core::Function, $crate::vm::userdata::Error> {
+            $vis fn $fn_name() -> std::result::Result<$crate::vm::userdata::core::Function, $crate::vm::userdata::Error> {
                 extern "C-unwind" fn _cfunc(l: $crate::ffi::lua::State) -> i32 {
                     fn _func $(<$lifetime>)? ($this: &mut $obj_name, $name: &$($lifetime)? $crate::vm::Vm$(, $($arg_name: $arg_ty),*)?) -> $ret_ty $code
                     use $crate::vm::function::IntoParam;
@@ -58,7 +58,7 @@ macro_rules! decl_userdata_func {
         $vis: vis fn $fn_name: ident $(<$lifetime: lifetime>)? ($this: ident: &mut $obj_name: ident$(, $($arg_name: ident: $arg_ty: ty),*)?) -> $ret_ty: ty $code: block
     ) => {
         impl $obj_name {
-            $vis fn $fn_name() -> Result<$crate::vm::userdata::core::Function, $crate::vm::userdata::Error> {
+            $vis fn $fn_name() -> std::result::Result<$crate::vm::userdata::core::Function, $crate::vm::userdata::Error> {
                 extern "C-unwind" fn _cfunc(l: $crate::ffi::lua::State) -> i32 {
                     fn _func $(<$lifetime>)? ($this: &mut $obj_name$(, $($arg_name: $arg_ty),*)?) -> $ret_ty $code
                     use $crate::vm::function::IntoParam;
@@ -84,7 +84,7 @@ macro_rules! decl_userdata_func {
         $vis: vis fn $fn_name: ident $(<$lifetime: lifetime>)? ($this: ident: &$obj_name: ident, $name: ident: &Vm$(, $($arg_name: ident: $arg_ty: ty),*)?) -> $ret_ty: ty $code: block
     ) => {
         impl $obj_name {
-            $vis fn $fn_name() -> Result<$crate::vm::userdata::core::Function, $crate::vm::userdata::Error> {
+            $vis fn $fn_name() -> std::result::Result<$crate::vm::userdata::core::Function, $crate::vm::userdata::Error> {
                 extern "C-unwind" fn _cfunc(l: $crate::ffi::lua::State) -> i32 {
                     fn _func $(<$lifetime>)? ($this: &$obj_name, $name: &$($lifetime)? $crate::vm::Vm$(, $($arg_name: $arg_ty),*)?) -> $ret_ty $code
                     use $crate::vm::function::IntoParam;
@@ -109,7 +109,7 @@ macro_rules! decl_userdata_func {
         $vis: vis fn $fn_name: ident $(<$lifetime: lifetime>)? ($this: ident: &$obj_name: ident$(, $($arg_name: ident: $arg_ty: ty),*)?) -> $ret_ty: ty $code: block
     ) => {
         impl $obj_name {
-            $vis fn $fn_name() -> Result<$crate::vm::userdata::core::Function, $crate::vm::userdata::Error> {
+            $vis fn $fn_name() -> std::result::Result<$crate::vm::userdata::core::Function, $crate::vm::userdata::Error> {
                 extern "C-unwind" fn _cfunc(l: $crate::ffi::lua::State) -> i32 {
                     fn _func $(<$lifetime>)? ($this: &$obj_name$(, $($arg_name: $arg_ty),*)?) -> $ret_ty $code
                     use $crate::vm::function::IntoParam;

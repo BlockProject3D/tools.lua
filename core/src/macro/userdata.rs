@@ -32,7 +32,7 @@ macro_rules! _impl_userdata {
         impl $crate::vm::userdata::UserData for $obj_name {
             const CLASS_NAME: &'static std::ffi::CStr = $crate::c_stringify!($obj_name);
 
-            fn register<C: $crate::vm::userdata::NameConvert>(registry: &$crate::vm::userdata::core::Registry<Self, C>) -> Result<(), $crate::vm::userdata::Error> {
+            fn register<C: $crate::vm::userdata::NameConvert>(registry: &$crate::vm::userdata::core::Registry<Self, C>) -> std::result::Result<(), $crate::vm::userdata::Error> {
                 $(
                     let f = $obj_name::$fn_name()?;
                     registry.add_method(f);
