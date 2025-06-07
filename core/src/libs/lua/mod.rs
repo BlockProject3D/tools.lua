@@ -32,9 +32,15 @@ mod load;
 mod options;
 pub mod require;
 
+#[cfg(feature = "util-module")]
+mod module;
+
 pub use base::Base;
 pub use call::Call;
 pub use load::Load;
 pub use require::Require;
 
 pub use options::Lua;
+
+#[cfg(feature = "util-module")]
+pub use module::Module;
