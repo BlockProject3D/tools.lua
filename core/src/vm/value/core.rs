@@ -55,7 +55,7 @@ impl<'a> FromLua<'a> for &'a str {
                     let mut len: usize = 0;
                     let s = lua_tolstring(l, index, &mut len as _);
                     let slice = std::slice::from_raw_parts(s as _, len);
-                    std::str::from_utf8(slice).map_err(Error::InvalidUtf8)
+                    std::str::from_utf8(slice).map_err(|e| Error::InvalidUtf8(e.into()))
                 }
                 _ => Err(Error::Type(TypeError {
                     expected: Type::String,

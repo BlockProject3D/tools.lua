@@ -29,7 +29,6 @@
 use crate::ffi::lua::Type;
 use bp3d_util::simple_error;
 use std::fmt::{Display, Formatter};
-use std::str::Utf8Error;
 
 #[derive(Debug, Copy, Clone)]
 pub struct TypeError {
@@ -74,6 +73,49 @@ impl RuntimeError {
 impl Display for RuntimeError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.write_str(self.msg())
+    }
+}
+
+#[derive(Debug, Copy, Clone)]
+pub struct Utf8Error {
+    // A re-usable error type is needed for modules so duplicate the one from std.
+    pub valid_up_to: usize,
+    pub error_len: Option<u8>
+}
+
+impl From<std::str::Utf8Error> for Utf8Error {
+    fn from(value: std::str::Utf8Error) -> Self {
+        Utf8Error {
+            valid_up_to: value.valid_up_to(),
+            error_len: value.error_len().map(|v| v as u8),
+        }
+    }
+}
+
+impl Utf8Error {
+    pub const fn valid_up_to(&self) -> usize {
+        self.valid_up_to
+    }
+
+    pub const fn error_len(&self) -> Option<usize> {
+        match self.error_len {
+            Some(len) => Some(len as usize),
+            None => None,
+        }
+    }
+}
+
+impl Display for Utf8Error {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        if let Some(error_len) = self.error_len {
+            write!(
+                f,
+                "invalid utf-8 sequence of {} bytes from index {}",
+                error_len, self.valid_up_to
+            )
+        } else {
+            write!(f, "incomplete utf-8 byte sequence from index {}", self.valid_up_to)
+        }
     }
 }
 
