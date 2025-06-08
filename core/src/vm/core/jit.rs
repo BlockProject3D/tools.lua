@@ -174,19 +174,14 @@ impl Display for Opts {
     }
 }
 
-#[derive(Copy, Clone, Eq, PartialEq, Debug)]
+#[derive(Copy, Clone, Eq, PartialEq, Debug, Default)]
 pub enum OptLevel {
     O0,
     O1,
     O2,
+    #[default]
     O3,
     Unknown
-}
-
-impl Default for OptLevel {
-    fn default() -> Self {
-        OptLevel::O3
-    }
 }
 
 impl Display for OptLevel {

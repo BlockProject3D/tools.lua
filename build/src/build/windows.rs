@@ -40,7 +40,7 @@ impl Build for Windows {
         let mut cmd = Command::new("cmd");
         cmd.arg("/C").arg("msvcbuild.bat");
         let cl = cc::windows_registry::find_tool(info.target_name(), "cl.exe")
-            .ok_or(Error::new(ErrorKind::Other, "unable to find cl.exe"))?;
+            .ok_or(Error::other("unable to find cl.exe"))?;
         for (k, v) in cl.env() {
             cmd.env(k, v);
         }

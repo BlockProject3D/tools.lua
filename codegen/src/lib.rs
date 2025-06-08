@@ -76,7 +76,7 @@ pub fn decl_lua_plugin(input: TokenStream) -> TokenStream {
     let func_name = format!(
         "bp3d_lua_{}_register_{}",
         crate_name.replace("-", "_"),
-        ident.to_string()
+        ident
     );
     let func = Ident::new(&func_name, ident.span());
     let q = quote! {

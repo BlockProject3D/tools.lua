@@ -52,11 +52,11 @@ impl<'a> BuildInfo<'a> {
         let target_dir = base.build_dir.join("../../../..");
         let start = manifest
             .find(VERSION)
-            .ok_or(Error::new(ErrorKind::Other, "failed to find crate version"))?;
+            .ok_or(Error::other("failed to find crate version"))?;
         let version = &manifest[start + VERSION.len()..];
         let end = version
             .find("\"")
-            .ok_or(Error::new(ErrorKind::Other, "failed to find crate version"))?;
+            .ok_or(Error::other("failed to find crate version"))?;
         Ok(Self {
             base,
             target_dir,
@@ -93,7 +93,7 @@ impl<'a> BuildInfo<'a> {
             Target::MacAmd64 | Target::MacAarch64 => MacOS::run(&self),
             Target::Linux => Linux::run(&self),
             Target::Windows => Windows::run(&self),
-            Target::Unsupported => Err(Error::new(ErrorKind::Other, "unsupported target")),
+            Target::Unsupported => Err(Error::other("unsupported target")),
         }
     }
 }

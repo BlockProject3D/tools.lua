@@ -48,7 +48,7 @@ impl Build for MacOS {
                     .env("MACOSX_DEPLOYMENT_TARGET", "10.11")
                     .current_dir(info.build_dir()),
             ),
-            _ => Err(Error::new(ErrorKind::Other, "unsupported target")),
+            _ => Err(Error::other("unsupported target")),
         }
     }
 

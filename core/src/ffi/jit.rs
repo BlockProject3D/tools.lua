@@ -40,7 +40,7 @@ pub const F_CPU: u32 = 0x00000010;
 mod x86_64 {
     use crate::ffi::jit::F_CPU;
 
-    pub const F_SSE3: u32 = F_CPU << 0;
+    pub const F_SSE3: u32 = F_CPU;
     pub const F_SSE4_1: u32 = F_CPU << 1;
     pub const F_BMI2: u32 = F_CPU << 2;
 }
@@ -49,7 +49,7 @@ mod x86_64 {
 mod arm {
     use crate::ffi::jit::F_CPU;
 
-    pub const F_ARMV6_: u32 = F_CPU << 0;
+    pub const F_ARMV6_: u32 = F_CPU;
     pub const F_ARMV6T2_: u32 = F_CPU << 1;
     pub const F_ARMV7: u32 = F_CPU << 2;
     pub const F_ARMV8: u32 = F_CPU << 3;
@@ -70,7 +70,7 @@ pub use x86_64::*;
 pub const F_OPT: u32 = 0x00010000;
 pub const F_OPT_MASK: u32 = 0x0fff0000;
 
-pub const F_OPT_FOLD: u32 = F_OPT << 0;
+pub const F_OPT_FOLD: u32 = F_OPT;
 pub const F_OPT_CSE: u32 = F_OPT << 1;
 pub const F_OPT_DCE: u32 = F_OPT << 2;
 pub const F_OPT_FWD: u32 = F_OPT << 3;

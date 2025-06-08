@@ -40,6 +40,7 @@ pub struct EnumVariantMulti {
     pub fields: Vec<StructField>,
 }
 
+#[allow(clippy::large_enum_variant)]
 pub enum EnumVariant {
     SingleField(EnumVariantSingle),
     MultiField(EnumVariantMulti),
