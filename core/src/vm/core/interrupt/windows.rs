@@ -27,7 +27,7 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::ffi::lua::{
-    lua_error, lua_pushstring, lua_sethook, Debug, State, MASKCALL, MASKCOUNT, MASKLINE, MASKRET,
+    lua_pushstring, lua_sethook, Debug, State, MASKCALL, MASKCOUNT, MASKLINE, MASKRET,
 };
 use crate::vm::RootVm;
 use bp3d_debug::{error, warning};
@@ -36,7 +36,7 @@ use std::time::Duration;
 use windows_sys::Win32::Foundation::HANDLE;
 use windows_sys::Win32::System::Diagnostics::Debug::{GetThreadContext, CONTEXT};
 use windows_sys::Win32::System::Threading::{GetCurrentThread, ResumeThread, SuspendThread};
-
+use crate::ffi::ext::lua_ext_ccatch_error;
 use super::Error;
 
 static SIG_STATE: Mutex<Option<std::sync::mpsc::Sender<()>>> = Mutex::new(None);
@@ -53,7 +53,7 @@ extern "C-unwind" fn lua_interrupt(l: State, _: Debug) {
     unsafe {
         lua_sethook(l, None, 0, 0);
         lua_pushstring(l, c"interrupted".as_ptr());
-        lua_error(l);
+        lua_ext_ccatch_error(l);
     }
 }
 

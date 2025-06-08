@@ -27,7 +27,7 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::ffi::lua::{
-    lua_error, lua_pushstring, lua_sethook, Debug, State, MASKCALL, MASKCOUNT, MASKLINE, MASKRET,
+    lua_pushstring, lua_sethook, Debug, State, MASKCALL, MASKCOUNT, MASKLINE, MASKRET,
 };
 use crate::vm::core::interrupt::Error;
 use crate::vm::RootVm;
@@ -37,6 +37,7 @@ use std::mem::MaybeUninit;
 use std::sync::{Mutex, Once};
 use std::thread::ThreadId;
 use std::time::Duration;
+use crate::ffi::ext::lua_ext_ccatch_error;
 
 pub struct Signal {
     l: State,
@@ -67,7 +68,7 @@ extern "C-unwind" fn lua_interrupt(l: State, _: Debug) {
     unsafe {
         lua_sethook(l, None, 0, 0);
         lua_pushstring(l, c"interrupted".as_ptr());
-        lua_error(l);
+        lua_ext_ccatch_error(l);
     }
 }
 
