@@ -200,7 +200,7 @@ index fd8e585b..882f4425 100644
 -    return 2;
 -  }
 -  return 0;
-+uint32_t lua_ext_getjitflags(lua_State *L, uint32_t flags) {
++uint32_t lua_ext_getjitflags(lua_State *L) {
 +    return L2J(L)->flags;
  }
  
