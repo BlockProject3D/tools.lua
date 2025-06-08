@@ -50,24 +50,28 @@ impl CpuArm {
 
 impl Display for CpuArm {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "ARM CPU, features:")?;
-        if self.v6 {
-            write!(f, " ARMV6")?;
-        }
-        if self.v6t2 {
-            write!(f, " ARMV6T2")?;
-        }
-        if self.v7 {
-            write!(f, " ARMV7")?;
-        }
-        if self.v8 {
-            write!(f, " ARMV8")?;
-        }
-        if self.vfpv2 {
-            write!(f, " VFPV2")?;
-        }
-        if self.vfpv3 {
-            write!(f, " VFPV3")?;
+        if !self.v6 && !self.v7 && !self.v8 && !self.v6t2 && !self.vfpv2 && !self.vfpv3 {
+            write!(f, "ARM CPU, no features")?;
+        } else {
+            write!(f, "ARM CPU, features:")?;
+            if self.v6 {
+                write!(f, " ARMV6")?;
+            }
+            if self.v6t2 {
+                write!(f, " ARMV6T2")?;
+            }
+            if self.v7 {
+                write!(f, " ARMV7")?;
+            }
+            if self.v8 {
+                write!(f, " ARMV8")?;
+            }
+            if self.vfpv2 {
+                write!(f, " VFPV2")?;
+            }
+            if self.vfpv3 {
+                write!(f, " VFPV3")?;
+            }
         }
         Ok(())
     }
@@ -82,15 +86,19 @@ pub struct CpuX86 {
 
 impl Display for CpuX86 {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "X86 CPU, features:")?;
-        if self.sse3 {
-            write!(f, " SSE3")?;
-        }
-        if self.sse4_1 {
-            write!(f, " SSE4_1")?;
-        }
-        if self.bmi2 {
-            write!(f, " BMI2")?;
+        if !self.sse3 && !self.sse4_1 && !self.bmi2 {
+            write!(f, "X86 CPU, no features")?;
+        } else {
+            write!(f, "X86 CPU, features:")?;
+            if self.sse3 {
+                write!(f, " SSE3")?;
+            }
+            if self.sse4_1 {
+                write!(f, " SSE4_1")?;
+            }
+            if self.bmi2 {
+                write!(f, " BMI2")?;
+            }
         }
         Ok(())
     }
@@ -256,17 +264,17 @@ impl JitOptions {
     }
 
     pub fn opt_level(&self) -> OptLevel {
-        if (self.cur_flag_set & jit::F_OPT_0) == jit::F_OPT_0 {
-            return OptLevel::O0;
-        }
-        if (self.cur_flag_set & jit::F_OPT_1) == jit::F_OPT_1 {
-            return OptLevel::O1;
+        if (self.cur_flag_set & jit::F_OPT_3) == jit::F_OPT_3 {
+            return OptLevel::O3;
         }
         if (self.cur_flag_set & jit::F_OPT_2) == jit::F_OPT_2 {
             return OptLevel::O2;
         }
-        if (self.cur_flag_set & jit::F_OPT_3) == jit::F_OPT_3 {
-            return OptLevel::O3;
+        if (self.cur_flag_set & jit::F_OPT_1) == jit::F_OPT_1 {
+            return OptLevel::O1;
+        }
+        if (self.cur_flag_set & jit::F_OPT_0) == jit::F_OPT_0 {
+            return OptLevel::O0;
         }
         OptLevel::Unknown
     }
