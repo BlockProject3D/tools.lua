@@ -48,7 +48,7 @@ pub enum ThreadStatus {
     ErrSyntax = 3,
     ErrMem = 4,
     ErrErr = 5,
-    ErrCcatch = 6
+    ErrCcatch = 6,
 }
 
 #[repr(transparent)]

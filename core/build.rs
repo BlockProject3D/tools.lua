@@ -42,7 +42,7 @@ const PATCH_LIST: &[&str] = &[
     "lua_ext",               // Ext library such as lua_ext_tab_len, etc.
     "lua_load_no_bc",        // Treat all inputs as strings (no bytecode allowed).
     "windows_set_lib_names", // Allow setting LJLIBNAME and LJDLLNAME from environment variables.
-    "lua_ext_ccatch_error"   // Throw lua errors which cannot be catched from lua standard
+    "lua_ext_ccatch_error",  // Throw lua errors which cannot be catched from lua standard
                              // pcall/xpcall but only from lua_pcall C API.
 ];
 

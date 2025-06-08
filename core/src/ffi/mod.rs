@@ -27,6 +27,6 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 pub mod ext;
+pub mod jit;
 pub mod laux;
 pub mod lua;
-pub mod jit;

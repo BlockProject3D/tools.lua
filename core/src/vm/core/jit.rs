@@ -26,11 +26,11 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::ffi::c_int;
-use std::fmt::{Display, Formatter};
 use crate::ffi::ext::{lua_ext_getjitflags, lua_ext_setjitflags, lua_ext_setjitmode};
 use crate::ffi::jit;
 use crate::vm::{RootVm, Vm};
+use std::ffi::c_int;
+use std::fmt::{Display, Formatter};
 
 #[derive(Copy, Clone, Eq, PartialEq, Debug)]
 pub struct CpuArm {
@@ -131,7 +131,7 @@ pub struct Opts {
     pub abc: bool,
     pub sink: bool,
     pub fuse: bool,
-    pub fma: bool
+    pub fma: bool,
 }
 
 impl Display for Opts {
@@ -180,7 +180,7 @@ pub enum OptLevel {
     O1,
     O2,
     O3,
-    Unknown
+    Unknown,
 }
 
 impl Default for OptLevel {
@@ -196,7 +196,7 @@ impl Display for OptLevel {
             OptLevel::O1 => write!(f, "O1"),
             OptLevel::O2 => write!(f, "O2"),
             OptLevel::O3 => write!(f, "O3"),
-            OptLevel::Unknown => write!(f, "Unknown")
+            OptLevel::Unknown => write!(f, "Unknown"),
         }
     }
 }
@@ -205,7 +205,7 @@ impl Display for OptLevel {
 pub struct JitOptions {
     cur_flag_set: u32,
     mode: c_int,
-    opt_level_changed: bool
+    opt_level_changed: bool,
 }
 
 impl JitOptions {
@@ -301,7 +301,7 @@ impl JitOptions {
             OptLevel::O0 | OptLevel::Unknown => self.cur_flag_set |= jit::F_OPT_0,
             OptLevel::O1 => self.cur_flag_set |= jit::F_OPT_1,
             OptLevel::O2 => self.cur_flag_set |= jit::F_OPT_2,
-            OptLevel::O3 => self.cur_flag_set |= jit::F_OPT_3
+            OptLevel::O3 => self.cur_flag_set |= jit::F_OPT_3,
         }
         self.opt_level_changed = true;
     }
@@ -311,7 +311,10 @@ impl JitOptions {
             assert_eq!(unsafe { lua_ext_setjitmode(vm.as_ptr(), self.mode) }, 0);
         }
         if self.opt_level_changed {
-            assert_eq!(unsafe { lua_ext_setjitflags(vm.as_ptr(), self.cur_flag_set) }, 0);
+            assert_eq!(
+                unsafe { lua_ext_setjitflags(vm.as_ptr(), self.cur_flag_set) },
+                0
+            );
         }
     }
 }
