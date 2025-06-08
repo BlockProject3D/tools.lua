@@ -26,6 +26,7 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use crate::ffi::ext::lua_ext_ccatch_error;
 use crate::ffi::lua::{
     lua_pushstring, lua_sethook, Debug, State, MASKCALL, MASKCOUNT, MASKLINE, MASKRET,
 };
@@ -37,7 +38,6 @@ use std::mem::MaybeUninit;
 use std::sync::{Mutex, Once};
 use std::thread::ThreadId;
 use std::time::Duration;
-use crate::ffi::ext::lua_ext_ccatch_error;
 
 pub struct Signal {
     l: State,

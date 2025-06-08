@@ -41,10 +41,14 @@ pub use bp3d_lua_codegen::decl_lua_plugin;
 /// [Lib](crate::libs::Lib).
 ///
 /// This function automatically translates the Rust result type to the C FFI compatible type.
-pub fn run_lua_register(vm: &crate::vm::Vm, lib: impl crate::libs::Lib, error: &mut error::Error) -> bool {
+pub fn run_lua_register(
+    vm: &crate::vm::Vm,
+    lib: impl crate::libs::Lib,
+    error: &mut error::Error,
+) -> bool {
     use crate::vm::error::Error;
-    use std::fmt::Write;
     use bp3d_util::format::MemBufStr;
+    use std::fmt::Write;
     let res = lib.register(vm);
     match res {
         Ok(()) => true,
@@ -63,12 +67,14 @@ pub fn run_lua_register(vm: &crate::vm::Vm, lib: impl crate::libs::Lib, error: &
                 }
                 Error::Syntax(e) => {
                     error.ty = error::ErrorType::Syntax;
-                    let mut msg = unsafe { MemBufStr::wrap(&mut error.string.len, &mut error.string.data) };
+                    let mut msg =
+                        unsafe { MemBufStr::wrap(&mut error.string.len, &mut error.string.data) };
                     let _ = write!(msg, "{}", e);
                 }
                 Error::Runtime(e) => {
                     error.ty = error::ErrorType::Runtime;
-                    let mut msg = unsafe { MemBufStr::wrap(&mut error.string.len, &mut error.string.data) };
+                    let mut msg =
+                        unsafe { MemBufStr::wrap(&mut error.string.len, &mut error.string.data) };
                     let _ = write!(msg, "{}", e);
                 }
                 Error::Memory => error.ty = error::ErrorType::Memory,
@@ -77,15 +83,21 @@ pub fn run_lua_register(vm: &crate::vm::Vm, lib: impl crate::libs::Lib, error: &
                 Error::Null => error.ty = error::ErrorType::Null,
                 Error::MultiValue => error.ty = error::ErrorType::MultiValue,
                 Error::UserData(e) => match e {
-                    crate::vm::userdata::Error::ArgsEmpty => error.ty = error::ErrorType::UserDataArgsEmpty,
+                    crate::vm::userdata::Error::ArgsEmpty => {
+                        error.ty = error::ErrorType::UserDataArgsEmpty
+                    }
                     crate::vm::userdata::Error::MutViolation(e) => {
                         error.ty = error::ErrorType::UserDataMutViolation;
                         error.static_string.data = e.as_ptr();
                     }
                     crate::vm::userdata::Error::Gc => error.ty = error::ErrorType::UserDataGc,
                     crate::vm::userdata::Error::Index => error.ty = error::ErrorType::UserDataIndex,
-                    crate::vm::userdata::Error::Metatable => error.ty = error::ErrorType::UserDataMetatable,
-                    crate::vm::userdata::Error::MultiValueField => error.ty = error::ErrorType::UserDataMultiValueField,
+                    crate::vm::userdata::Error::Metatable => {
+                        error.ty = error::ErrorType::UserDataMetatable
+                    }
+                    crate::vm::userdata::Error::MultiValueField => {
+                        error.ty = error::ErrorType::UserDataMultiValueField
+                    }
                     crate::vm::userdata::Error::AlreadyRegistered(e) => {
                         error.ty = error::ErrorType::UserDataAlreadyRegistered;
                         error.static_string.data = e.as_ptr();
@@ -94,21 +106,23 @@ pub fn run_lua_register(vm: &crate::vm::Vm, lib: impl crate::libs::Lib, error: &
                         error.ty = error::ErrorType::UserDataAlignment;
                         error.alignment.alignment = e;
                     }
-                }
+                },
                 Error::UnsupportedType(e) => {
                     error.ty = error::ErrorType::UnsupportedType;
                     error.unsupported_type.actual = e;
                 }
                 Error::Loader(e) => {
                     error.ty = error::ErrorType::Loader;
-                    let mut msg = unsafe { MemBufStr::wrap(&mut error.string.len, &mut error.string.data) };
+                    let mut msg =
+                        unsafe { MemBufStr::wrap(&mut error.string.len, &mut error.string.data) };
                     let _ = write!(msg, "{}", e);
                 }
                 Error::ParseInt => error.ty = error::ErrorType::ParseInt,
                 Error::ParseFloat => error.ty = error::ErrorType::ParseFloat,
                 Error::UncatchableRuntime(e) => {
                     error.ty = error::ErrorType::UncatchableRuntime;
-                    let mut msg = unsafe { MemBufStr::wrap(&mut error.string.len, &mut error.string.data) };
+                    let mut msg =
+                        unsafe { MemBufStr::wrap(&mut error.string.len, &mut error.string.data) };
                     let _ = write!(msg, "{}", e);
                 }
             }

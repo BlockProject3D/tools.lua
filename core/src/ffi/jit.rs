@@ -56,9 +56,9 @@ mod arm {
     pub const F_VFPV2: u32 = F_CPU << 4;
     pub const F_VFPV3: u32 = F_CPU << 5;
 
-    pub const F_ARMV6: u32 = F_ARMV6_|F_ARMV6T2_|F_ARMV7|F_ARMV8;
-    pub const F_ARMV6T2: u32 = F_ARMV6T2_|F_ARMV7|F_ARMV8;
-    pub const F_VFP: u32 = F_VFPV2|F_VFPV3;
+    pub const F_ARMV6: u32 = F_ARMV6_ | F_ARMV6T2_ | F_ARMV7 | F_ARMV8;
+    pub const F_ARMV6T2: u32 = F_ARMV6T2_ | F_ARMV7 | F_ARMV8;
+    pub const F_VFP: u32 = F_VFPV2 | F_VFPV3;
 }
 
 #[cfg(any(target_arch = "aarch64", target_arch = "arm"))]
