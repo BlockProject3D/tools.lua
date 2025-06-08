@@ -232,8 +232,8 @@ impl JitOptions {
         #[cfg(target_arch = "x86_64")]
         let cpu = Cpu::X86(CpuX86 {
             sse3: (self.cur_flag_set & jit::F_SSE3) != 0,
-            sse4_1: (self.cur_flag_set & jit::SSE4_1) != 0,
-            bmi2: (self.cur_flag_set & jit::BMI2) != 0,
+            sse4_1: (self.cur_flag_set & jit::F_SSE4_1) != 0,
+            bmi2: (self.cur_flag_set & jit::F_BMI2) != 0,
         });
         #[cfg(any(target_arch = "aarch64", target_arch = "arm"))]
         let cpu = Cpu::Arm(CpuArm {
