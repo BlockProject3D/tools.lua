@@ -80,7 +80,7 @@ impl Display for RuntimeError {
 pub struct Utf8Error {
     // A re-usable error type is needed for modules so duplicate the one from std.
     pub valid_up_to: usize,
-    pub error_len: Option<u8>
+    pub error_len: Option<u8>,
 }
 
 impl From<std::str::Utf8Error> for Utf8Error {
@@ -114,7 +114,11 @@ impl Display for Utf8Error {
                 error_len, self.valid_up_to
             )
         } else {
-            write!(f, "incomplete utf-8 byte sequence from index {}", self.valid_up_to)
+            write!(
+                f,
+                "incomplete utf-8 byte sequence from index {}",
+                self.valid_up_to
+            )
         }
     }
 }

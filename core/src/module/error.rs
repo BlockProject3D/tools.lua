@@ -26,8 +26,8 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::ffi::c_char;
 use crate::ffi::lua::Type;
+use std::ffi::c_char;
 
 pub const STRING_BUF_LEN: usize = 4096;
 
@@ -55,7 +55,7 @@ pub enum ErrorType {
     UserDataMetatable = 5,
     UserDataMultiValueField = 6,
     UserDataAlreadyRegistered = 7,
-    UserDataAlignment = 8
+    UserDataAlignment = 8,
 }
 
 #[derive(Copy, Clone)]
@@ -86,7 +86,7 @@ pub struct UnsupportedType {
 pub struct String {
     pub ty: ErrorType,
     pub data: [u8; STRING_BUF_LEN],
-    pub len: usize
+    pub len: usize,
 }
 
 #[derive(Copy, Clone)]
@@ -111,5 +111,5 @@ pub union Error {
     pub utf8: Utf8Error,
     pub unsupported_type: UnsupportedType,
     pub static_string: StaticString,
-    pub alignment: Alignment
+    pub alignment: Alignment,
 }

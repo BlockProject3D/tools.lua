@@ -26,25 +26,25 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::path::PathBuf;
-use bp3d_os::module::library::types::VirtualLibrary;
 use crate::decl_userdata_mut;
 use crate::libs::Lib;
 use crate::util::module::ModuleManager;
 use crate::util::module::Result;
 use crate::util::Namespace;
 use crate::vm::Vm;
+use bp3d_os::module::library::types::VirtualLibrary;
+use std::path::PathBuf;
 
 pub struct Module {
     builtins: &'static [&'static VirtualLibrary],
-    search_paths: Vec<PathBuf>
+    search_paths: Vec<PathBuf>,
 }
 
 impl Module {
     pub fn new(builtins: &'static [&'static VirtualLibrary]) -> Self {
         Self {
             builtins,
-            search_paths: Vec::new()
+            search_paths: Vec::new(),
         }
     }
 

@@ -210,7 +210,8 @@ fn test_vm_userdata_base(vm: &Vm) {
         "579"
     );
     assert_eq!(
-        vm.run_code::<RawNumber>(c"return (a + b):tonumber()").unwrap(),
+        vm.run_code::<RawNumber>(c"return (a + b):tonumber()")
+            .unwrap(),
         579.0
     );
     assert_eq!(

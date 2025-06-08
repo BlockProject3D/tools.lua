@@ -73,7 +73,11 @@ pub fn lua_type(input: TokenStream) -> TokenStream {
 pub fn decl_lua_plugin(input: TokenStream) -> TokenStream {
     let ident = parse_macro_input!(input as Ident);
     let crate_name = std::env::var("CARGO_PKG_NAME").unwrap();
-    let func_name = format!("bp3d_lua_{}_register_{}", crate_name.replace("-", "_"), ident.to_string());
+    let func_name = format!(
+        "bp3d_lua_{}_register_{}",
+        crate_name.replace("-", "_"),
+        ident.to_string()
+    );
     let func = Ident::new(&func_name, ident.span());
     let q = quote! {
         #[no_mangle]

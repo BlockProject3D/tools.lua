@@ -91,6 +91,9 @@ fn main() {
     } else {
         println!("cargo:rustc-link-lib=static={}", lib.name);
     }
-    #[cfg(feature="module")]
-    println!("cargo:rustc-env=RUSTC_VERSION={}", rustc_version::version().unwrap());
+    #[cfg(feature = "module")]
+    println!(
+        "cargo:rustc-env=RUSTC_VERSION={}",
+        rustc_version::version().unwrap()
+    );
 }

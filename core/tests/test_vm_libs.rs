@@ -77,7 +77,10 @@ fn test_vm_lib_lua() {
         .unwrap_err()
         .into_runtime()
         .unwrap();
-    assert_eq!(err.msg(), "rust error: module error: module not found (broken)");
+    assert_eq!(
+        err.msg(),
+        "rust error: module error: module not found (broken)"
+    );
     assert_eq!(vm.top(), top);
 }
 
