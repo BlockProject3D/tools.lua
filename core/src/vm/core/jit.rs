@@ -273,7 +273,7 @@ impl JitOptions {
         if (self.cur_flag_set & jit::F_OPT_1) == jit::F_OPT_1 {
             return OptLevel::O1;
         }
-        if (self.cur_flag_set & jit::F_OPT_0) == jit::F_OPT_0 {
+        if (self.cur_flag_set & jit::F_OPT_MASK) == jit::F_OPT_0 {
             return OptLevel::O0;
         }
         OptLevel::Unknown
