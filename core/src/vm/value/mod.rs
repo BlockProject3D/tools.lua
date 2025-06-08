@@ -30,7 +30,7 @@ pub mod any;
 mod core;
 mod function;
 mod interface;
-pub mod util;
 pub mod types;
+pub mod util;
 
 pub use interface::*;

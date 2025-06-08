@@ -27,7 +27,9 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::ffi::laux::{luaL_checkinteger, luaL_checknumber};
-use crate::ffi::lua::{lua_isnumber, lua_tointeger, lua_tonumber, lua_type, RawInteger, RawNumber, Type};
+use crate::ffi::lua::{
+    lua_isnumber, lua_tointeger, lua_tonumber, lua_type, RawInteger, RawNumber, Type,
+};
 use crate::util::core::SimpleDrop;
 use crate::vm::error::{Error, TypeError};
 use crate::vm::function::FromParam;
