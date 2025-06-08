@@ -29,3 +29,4 @@
 pub mod ext;
 pub mod laux;
 pub mod lua;
+pub mod jit;

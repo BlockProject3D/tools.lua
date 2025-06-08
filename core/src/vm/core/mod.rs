@@ -35,6 +35,9 @@ mod root_vm;
 pub mod util;
 mod vm;
 
+#[cfg(feature = "root-vm")]
+pub mod jit;
+
 #[cfg(feature = "interrupt")]
 pub mod interrupt;
 
