@@ -26,8 +26,8 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use std::ffi::c_int;
 use std::fmt::{Display, Formatter};
-use libc::c_int;
 use crate::ffi::ext::{lua_ext_getjitflags, lua_ext_setjitflags, lua_ext_setjitmode};
 use crate::ffi::jit;
 use crate::vm::{RootVm, Vm};
