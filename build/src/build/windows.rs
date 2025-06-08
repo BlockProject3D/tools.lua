@@ -44,6 +44,10 @@ impl Build for Windows {
         for (k, v) in cl.env() {
             cmd.env(k, v);
         }
+        if info.target_name().contains("aarch64") {
+            cmd.env("VSCMD_ARG_HOST_ARCH", "arm64");
+            cmd.env("VSCMD_ARG_TGT_ARCH", "arm64");
+        }
         if !info.dynamic() {
             cmd.arg("static");
         }

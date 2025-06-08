@@ -200,7 +200,7 @@ index fd8e585b..882f4425 100644
 -    return 2;
 -  }
 -  return 0;
-+uint32_t lua_ext_getjitflags(lua_State *L) {
++LUA_API uint32_t lua_ext_getjitflags(lua_State *L) {
 +    return L2J(L)->flags;
  }
  
@@ -213,7 +213,7 @@ index fd8e585b..882f4425 100644
 -    if (idx < (ptrdiff_t)pt->sizekn) {
 -      copyTV(L, L->top-1, proto_knumtv(pt, idx));
 -      return 1;
-+int lua_ext_setjitflags(lua_State *L, uint32_t flags) {
++LUA_API int lua_ext_setjitflags(lua_State *L, uint32_t flags) {
 +    jit_State *J = L2J(L);
 +    uint32_t current = J->flags;
 +    if ((current & JIT_F_ON) != (flags & JIT_F_ON)) {
@@ -636,7 +636,7 @@ index 78608316..94f0077e 100644
  }
  #endif
  
-+int lua_ext_setjitmode(lua_State *L, int mode) {
++LUA_API int lua_ext_setjitmode(lua_State *L, int mode) {
 +    global_State *g = G(L);
 +    lj_trace_abort(g);  /* Abort recording on any state change. */
 +    /* Avoid pulling the rug from under our own feet. */

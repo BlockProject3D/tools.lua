@@ -42,6 +42,7 @@ static TARGET_MAP: phf::Map<&'static str, Target> = phf_map! {
     "aarch64-unknown-linux-gnu" => Target::Linux,
     "i686-pc-windows-msvc" => Target::Windows,
     "x86_64-pc-windows-msvc" => Target::Windows,
+    "aarch64-pc-windows-msvc" => Target::Windows,
     "x86_64-apple-darwin" => Target::MacAmd64,
     "x86_64-unknown-linux-gnu" => Target::Linux
 };
