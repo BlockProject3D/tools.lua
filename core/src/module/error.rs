@@ -26,7 +26,7 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use libc::c_char;
+use std::ffi::c_char;
 use crate::ffi::lua::Type;
 
 pub const STRING_BUF_LEN: usize = 4096;
