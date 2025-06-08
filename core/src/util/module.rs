@@ -72,6 +72,7 @@ unsafe fn convert_module_error_to_vm_error(err: crate::module::error::Error) -> 
         }),
         ErrorType::Syntax => get_string(&err, crate::vm::error::Error::Syntax),
         ErrorType::Runtime => get_string(&err, |v| crate::vm::error::Error::Runtime(RuntimeError::new(v))),
+        ErrorType::UncatchableRuntime => get_string(&err, |v| crate::vm::error::Error::UncatchableRuntime(RuntimeError::new(v))),
         ErrorType::Memory => crate::vm::error::Error::Memory,
         ErrorType::Unknown => crate::vm::error::Error::Unknown,
         ErrorType::Error => crate::vm::error::Error::Error,
@@ -89,7 +90,7 @@ unsafe fn convert_module_error_to_vm_error(err: crate::module::error::Error) -> 
         ErrorType::UserDataMultiValueField => crate::vm::error::Error::UserData(crate::vm::userdata::Error::MultiValueField),
         ErrorType::UserDataAlreadyRegistered => crate::vm::error::Error::UserData(crate::vm::userdata::Error::AlreadyRegistered(CStr::from_ptr(err.static_string.data))),
         ErrorType::UserDataAlignment => crate::vm::error::Error::UserData(crate::vm::userdata::Error::Alignment(err.alignment.alignment)),
-        _ => std::hint::unreachable_unchecked()
+        ErrorType::None => std::hint::unreachable_unchecked()
     }
 }
 

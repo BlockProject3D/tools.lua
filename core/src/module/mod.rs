@@ -105,7 +105,12 @@ pub fn run_lua_register(vm: &crate::vm::Vm, lib: impl crate::libs::Lib, error: &
                     let _ = write!(msg, "{}", e);
                 }
                 Error::ParseInt => error.ty = error::ErrorType::ParseInt,
-                Error::ParseFloat => error.ty = error::ErrorType::ParseFloat
+                Error::ParseFloat => error.ty = error::ErrorType::ParseFloat,
+                Error::UncatchableRuntime(e) => {
+                    error.ty = error::ErrorType::UncatchableRuntime;
+                    let mut msg = unsafe { MemBufStr::wrap(&mut error.string.len, &mut error.string.data) };
+                    let _ = write!(msg, "{}", e);
+                }
             }
             false
         }

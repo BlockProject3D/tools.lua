@@ -125,6 +125,7 @@ simple_error! {
         Type(TypeError) => "type error: {}",
         Syntax(String) => "syntax error: {}",
         Runtime(RuntimeError) => "runtime error: {}",
+        UncatchableRuntime(RuntimeError) => "uncatchable runtime error: {}",
         Memory => "memory allocation error",
         Unknown => "unknown error",
         Error => "error in error handler",

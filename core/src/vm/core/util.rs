@@ -131,6 +131,13 @@ pub unsafe fn pcall(
             }
             ThreadStatus::ErrMem => Err(Error::Memory),
             ThreadStatus::ErrErr => Err(Error::Error),
+            ThreadStatus::ErrCcatch => {
+                // We've got a runtime error when executing the function so read the full stack
+                // trace produced by luaL_traceback and remove it from the stack.
+                let full_traceback: &str = FromLua::from_lua(vm, -1)?;
+                lua_remove(l, -1);
+                Err(Error::UncatchableRuntime(RuntimeError::new(full_traceback.into())))
+            }
             _ => Err(Error::Unknown),
         }
     }
