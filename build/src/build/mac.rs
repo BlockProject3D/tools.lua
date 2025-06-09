@@ -30,7 +30,7 @@ use crate::build::Build;
 use crate::build::interface::Lib;
 use crate::util::CommandRunner;
 use crate::{BuildInfo, Target};
-use std::io::{Error, ErrorKind};
+use std::io::Error;
 use std::process::Command;
 
 pub struct MacOS;

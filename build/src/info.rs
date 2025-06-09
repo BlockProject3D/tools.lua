@@ -28,7 +28,7 @@
 
 use crate::Target;
 use crate::build::{Build, Lib, Linux, MacOS, Windows};
-use std::io::{Error, ErrorKind};
+use std::io::Error;
 use std::path::{Path, PathBuf};
 
 pub struct BuildInfoBase<'a> {
