@@ -43,6 +43,9 @@ pub trait FromIndex {
     ///
     /// This function removes the value at index `index` and so assumes no more references exists
     /// to it, failure to ensure this is UB.
+    ///
+    /// When using [Key](crate::vm::registry::core::Key), the type of the lua value at index `index`
+    /// must be the same as the type of key, if not this is UB.
     unsafe fn from_index(vm: &Vm, index: i32) -> Self;
 }
 
@@ -63,6 +66,9 @@ pub trait Set {
     /// to it, failure to ensure this is UB. The function also assumes this generic key still
     /// exists in the registry table. Finally, this assumes this key does not conflict with a
     /// different one.
+    ///
+    /// When using [Key](crate::vm::registry::core::Key), the type of the lua value at index `index`
+    /// must be the same as the type of key, if not this is UB.
     unsafe fn set(&self, vm: &Vm, index: i32);
 }
 

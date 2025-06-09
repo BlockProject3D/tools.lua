@@ -85,22 +85,6 @@ impl RawKey {
         luaL_unref(vm.as_ptr(), REGISTRYINDEX, self.0);
     }
 
-    /// Sets the content of this key with the value on top of the stack.
-    ///
-    /// # Arguments
-    ///
-    /// * `vm`: the vm associated with this key.
-    ///
-    /// returns: ()
-    ///
-    /// # Safety
-    ///
-    /// This is UB to call if the key has already been deleted.
-    #[inline(always)]
-    pub unsafe fn set(&self, vm: &Vm) {
-        lua_rawseti(vm.as_ptr(), REGISTRYINDEX, self.0);
-    }
-
     /// Creates a new [RawKey] from the top of the lua stack.
     ///
     /// # Arguments
@@ -129,7 +113,7 @@ impl FromIndex for RawKey {
 impl Set for RawKey {
     unsafe fn set(&self, vm: &Vm, index: i32) {
         ensure_value_top(vm, index);
-        self.set(vm);
+        lua_rawseti(vm.as_ptr(), REGISTRYINDEX, self.0);
     }
 }
 
@@ -176,25 +160,6 @@ impl<T: Value> Key<T> {
     #[inline(always)]
     pub fn delete(self, vm: &Vm) {
         unsafe { self.raw.delete(vm) };
-    }
-
-    /// Creates a new [Key] from the top of the lua stack.
-    ///
-    /// # Arguments
-    ///
-    /// * `vm`: the [Vm] instance representing the lua stack.
-    ///
-    /// returns: RegistryKey<T>
-    ///
-    /// # Safety
-    ///
-    /// The type T must match the type of the value at the top of the stack. Additionally, the value
-    /// at the top of the stack must not be referenced as it will be popped.
-    pub unsafe fn from_top(vm: &Vm) -> Key<T> {
-        Key {
-            raw: RawKey::from_top(vm),
-            useless: PhantomData,
-        }
     }
 
     #[inline(always)]

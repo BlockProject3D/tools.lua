@@ -27,15 +27,13 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::ffi::lua::{
-    lua_createtable, lua_insert, lua_pushboolean, lua_pushlightuserdata, lua_pushnil, lua_rawget,
+    lua_createtable, lua_insert, lua_pushboolean, lua_pushlightuserdata, lua_rawget,
     lua_rawset, lua_settop, lua_type, State, Type, REGISTRYINDEX,
 };
-use crate::vm::registry::{Set, Value};
+use crate::vm::registry::Set;
 use crate::vm::value::util::ensure_value_top;
 use crate::vm::Vm;
-use std::cell::Cell;
 use std::ffi::c_void;
-use std::marker::PhantomData;
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub struct RawKey(*const c_void);
@@ -107,8 +105,6 @@ impl Set for RawKey {
     }
 }
 
-struct InitKey(*const c_void);
-
 const USED_KEYS: RawKey = RawKey::new("__used_keys__");
 
 unsafe fn check_key_already_used(vm: &Vm, key: *const c_void) {
@@ -136,107 +132,4 @@ unsafe fn check_key_already_used(vm: &Vm, key: *const c_void) {
     lua_rawset(l, -3); // Table is now at -3 on the stack because we've just pushed a key and a
                        // value.
     lua_settop(l, -2); // Clear the used keys table from the stack.
-}
-
-impl Set for InitKey {
-    unsafe fn set(&self, vm: &Vm, index: i32) {
-        check_key_already_used(vm, self.0);
-        let l = vm.as_ptr();
-        ensure_value_top(vm, index);
-        rawsetp(l, REGISTRYINDEX, self.0);
-    }
-}
-
-#[derive(Clone)]
-pub struct Key<T> {
-    raw: RawKey,
-    registered: Cell<bool>,
-    useless: PhantomData<*const T>,
-}
-
-impl<T> PartialEq for Key<T> {
-    fn eq(&self, other: &Self) -> bool {
-        self.raw.eq(&other.raw)
-    }
-}
-
-impl<T> Eq for Key<T> {}
-
-impl<T: Value> Key<T> {
-    #[inline(always)]
-    fn ensure_registered(&self, vm: &Vm) {
-        if !self.registered.get() {
-            unsafe { check_key_already_used(vm, self.raw.0) };
-            self.registered.set(true);
-        }
-    }
-
-    /// Pushes the lua value associated to this registry key on the lua stack.
-    ///
-    /// # Arguments
-    ///
-    /// * `vm`: the [Vm] to attach the produced lua value to.
-    ///
-    /// returns: <T as RegistryValue>::Value
-    pub fn push<'a>(&self, vm: &'a Vm) -> Option<T::Value<'a>> {
-        self.ensure_registered(vm);
-        unsafe {
-            self.raw.push(vm);
-            if lua_type(vm.as_ptr(), -1) == Type::Nil {
-                lua_settop(vm.as_ptr(), -2);
-                return None;
-            }
-            Some(T::from_registry(vm, -1))
-        }
-    }
-
-    /// Pushes the lua value associated to this registry key on the lua stack.
-    ///
-    /// # Arguments
-    ///
-    /// * `vm`: the [Vm] to attach the produced lua value to.
-    ///
-    /// returns: <T as RegistryValue>::Value
-    #[inline(always)]
-    pub fn as_raw(&self) -> RawKey {
-        self.raw
-    }
-
-    /// Resets the value pointed to by this registry key from the specified [Vm].
-    ///
-    /// # Arguments
-    ///
-    /// * `vm`: the [Vm] to unregister from.
-    ///
-    /// returns: ()
-    #[inline(always)]
-    pub fn reset(&self, vm: &Vm) {
-        unsafe {
-            lua_pushnil(vm.as_ptr());
-            self.raw.set(vm, -1);
-        }
-    }
-
-    /// Sets the value for this key.
-    ///
-    /// # Arguments
-    ///
-    /// * `value`: the value to replace with.
-    ///
-    /// returns: ()
-    pub fn set(&self, value: T::Value<'_>) {
-        if self.registered.get() {
-            unsafe { T::set_registry(&InitKey(self.raw.0), value) };
-        } else {
-            unsafe { T::set_registry(&self.raw, value) };
-        }
-    }
-
-    pub const fn new(name: &str) -> Self {
-        Key {
-            raw: RawKey::new(name),
-            registered: Cell::new(false),
-            useless: PhantomData,
-        }
-    }
 }
