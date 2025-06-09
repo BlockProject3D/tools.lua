@@ -144,6 +144,10 @@ simple_error! {
 }
 
 impl Error {
+    pub fn is_uncatchable(&self) -> bool {
+        matches!(self, Error::UncatchableRuntime(_))
+    }
+
     pub fn into_runtime(self) -> Option<RuntimeError> {
         match self {
             Error::Runtime(e) => Some(e),
