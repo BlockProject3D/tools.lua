@@ -33,6 +33,8 @@ use crate::vm::Vm;
 use bp3d_debug::debug;
 use std::cell::Cell;
 use std::ops::{Deref, DerefMut};
+use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 
 thread_local! {
     // WTF?! The compiler should be smart enough to do this on its own! Another compiler defect!
@@ -41,6 +43,7 @@ thread_local! {
 
 pub struct RootVm {
     vm: Vm,
+    alive: Arc<AtomicBool>
 }
 
 impl Default for RootVm {
@@ -59,9 +62,14 @@ impl RootVm {
         HAS_VM.set(true);
         let mut vm = RootVm {
             vm: unsafe { Vm::from_raw(l) },
+            alive: Arc::new(AtomicBool::new(true)),
         };
         unsafe { Pool::new_in_vm(&mut vm) };
         vm
+    }
+
+    pub fn get_alive(this: &Self) -> &Arc<AtomicBool> {
+        &this.alive
     }
 }
 
@@ -91,6 +99,7 @@ impl Drop for RootVm {
             debug!("Closing Lua VM...");
             lua_close(self.vm.as_ptr());
         }
+        self.alive.store(false, Ordering::SeqCst);
         HAS_VM.set(false);
     }
 }

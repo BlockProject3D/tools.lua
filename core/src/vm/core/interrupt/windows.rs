@@ -33,7 +33,8 @@ use crate::ffi::lua::{
 };
 use crate::vm::RootVm;
 use bp3d_debug::{error, warning};
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
+use std::sync::atomic::AtomicBool;
 use std::time::Duration;
 use windows_sys::Win32::Foundation::HANDLE;
 use windows_sys::Win32::System::Diagnostics::Debug::{GetThreadContext, CONTEXT};
@@ -60,16 +61,21 @@ extern "C-unwind" fn lua_interrupt(l: State, _: Debug) {
 pub struct Signal {
     l: State,
     th: HANDLE,
+    alive: Arc<AtomicBool>,
 }
 
 impl Signal {
     pub fn create(vm: &mut RootVm) -> Self {
+        let alive = RootVm::get_alive(vm).clone();
         let th = unsafe { GetCurrentThread() };
         let l = vm.as_ptr();
-        Self { l, th }
+        Self { l, th, alive }
     }
 
     pub fn send(&self, duration: Duration) -> Result<(), Error> {
+        if !self.alive.load(std::sync::atomic::Ordering::SeqCst) {
+            return Ok(());
+        }
         let (send2, recv2) = std::sync::mpsc::channel();
         {
             let mut lock = SIG_STATE

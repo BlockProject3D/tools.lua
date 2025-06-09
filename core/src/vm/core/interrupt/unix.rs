@@ -35,7 +35,8 @@ use crate::vm::RootVm;
 use bp3d_debug::{error, warning};
 use libc::{c_int, pthread_kill, pthread_self, pthread_t, SIGUSR1};
 use std::mem::MaybeUninit;
-use std::sync::{Mutex, Once};
+use std::sync::{Arc, Mutex, Once};
+use std::sync::atomic::AtomicBool;
 use std::thread::ThreadId;
 use std::time::Duration;
 
@@ -43,6 +44,7 @@ pub struct Signal {
     l: State,
     thread: ThreadId,
     th: pthread_t,
+    alive: Arc<AtomicBool>
 }
 
 struct SigState {
@@ -104,6 +106,7 @@ static SIG_BOUND: Once = Once::new();
 
 impl Signal {
     pub fn create(vm: &mut RootVm) -> Self {
+        let alive = RootVm::get_alive(vm).clone();
         let th = unsafe { pthread_self() };
         let l = vm.as_ptr();
         let thread = std::thread::current().id();
@@ -113,10 +116,13 @@ impl Signal {
             let ret = unsafe { libc::sigaction(SIGUSR1, &sig as _, std::ptr::null_mut()) };
             assert_eq!(ret, 0);
         });
-        Self { l, thread, th }
+        Self { l, thread, th, alive }
     }
 
     pub fn send(&self, duration: Duration) -> Result<(), Error> {
+        if !self.alive.load(std::sync::atomic::Ordering::SeqCst) {
+            return Ok(());
+        }
         let (send, recv) = std::sync::mpsc::channel();
         let (send2, recv2) = std::sync::mpsc::channel();
         {
