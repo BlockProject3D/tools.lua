@@ -45,6 +45,23 @@
                     }
                 }
             ]
+        },
+        {
+            name: "Main",
+            fields: [
+                {
+                    name: "hdr",
+                    item_type: "Header"
+                },
+                {
+                    name: "msg",
+                    header: "hdr",
+                    value: {
+                        type: "union",
+                        name: "Message"
+                    }
+                }
+            ]
         }
     ],
     unions: [

@@ -3,9 +3,7 @@ name = ""
 path = "src"
 
 [recv]
-write-async = true
 union-set-discriminant = true
 
 [send]
-write-async = true
 union-set-discriminant = true
