@@ -1,0 +1,15 @@
+[package]
+name = "bp3d-lua-shell"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[dependencies]
+bp3d-lua = { version = "1.0.0-rc.2.1.0", path = "../../core", features = ["root-vm", "util-module", "libs", "dynamic", "interrupt"] }
+bp3d-debug = "1.0.0-rc.6.2.0"
+bp3d-net = { version = "1.0.0-rc.2.1.1", features = ["ipc"] }
+tokio = { version = "1.45.1", features = ["full"] }
+bp3d-util = { version = "2.2.0", features = ["result"] }
+bp3d-lua-shell-proto = { version = "0.1.0", path = "../proto" }
+bp3d-proto = "1.0.0-rc.5.0.1"
+clap = { version = "4.5.4", features = ["derive"] }
