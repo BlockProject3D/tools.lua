@@ -1,0 +1,60 @@
+{
+    name: "send",
+    enums: [
+        {
+            name: "Type",
+            variants: {
+                "Terminate": 0,
+                "RunCode": 1
+            }
+        }
+    ],
+    structs: [
+        {
+            name: "Header",
+            fields: [
+                {
+                    name: "type",
+                    raw: {
+                        type: "unsigned",
+                        bits: 8
+                    },
+                    view: {
+                        type: "enum",
+                        name: "Type"
+                    }
+                }
+            ]
+        }
+    ],
+    messages: [
+        {
+            name: "RunCode",
+            fields: [
+                {
+                    name: "name",
+                    optional: true,
+                    value: {
+                        type: "string"
+                    }
+                },
+                {
+                    name: "code",
+                    value: {
+                        type: "string"
+                    }
+                }
+            ]
+        }
+    ],
+    unions: [
+        {
+            name: "Message",
+            discriminant: "Header.type",
+            cases: [
+                { name: "Terminate", case: "Terminate" },
+                { name: "RunCode", case: "RunCode", item_type: "RunCode" }
+            ]
+        }
+    ]
+}
