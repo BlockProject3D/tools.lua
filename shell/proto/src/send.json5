@@ -5,7 +5,8 @@
             name: "Type",
             variants: {
                 "Terminate": 0,
-                "RunCode": 1
+                "RunCode": 1,
+                "RunFile": 2
             }
         }
     ],
@@ -28,6 +29,17 @@
         }
     ],
     messages: [
+        {
+            name: "RunFile",
+            fields: [
+                {
+                    name: "path",
+                    value: {
+                        type: "string"
+                    }
+                }
+            ]
+        },
         {
             name: "RunCode",
             fields: [
@@ -70,7 +82,8 @@
             discriminant: "Header.type",
             cases: [
                 { name: "Terminate", case: "Terminate" },
-                { name: "RunCode", case: "RunCode", item_type: "RunCode" }
+                { name: "RunCode", case: "RunCode", item_type: "RunCode" },
+                { name: "RunFile", case: "RunFile", item_type: "RunFile" }
             ]
         }
     ]
