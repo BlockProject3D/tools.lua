@@ -59,10 +59,12 @@ async fn client_task(lua: &mut Lua, client: Client) -> bp3d_proto::message::Resu
                 }
             },
             Some((source, m)) = lua.next_log() => {
+                msg.set_size(0);
                 recv::Main {
-                    hdr: recv::Header::new().to_ref(),
+                    hdr: recv::Header::new().set_type(recv::Type::Log).to_ref(),
                     msg: recv::Log { source, msg: &m }
                 }.write_self(&mut msg)?;
+                client.send(&msg).await?;
             }
         }
     }
