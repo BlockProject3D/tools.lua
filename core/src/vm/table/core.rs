@@ -27,13 +27,10 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::ffi::ext::{lua_ext_tab_len, MSize};
-use crate::ffi::lua::{
-    lua_createtable, lua_gettable, lua_gettop, lua_objlen, lua_pushvalue, lua_rawseti,
-    lua_setmetatable, lua_settable, lua_topointer,
-};
+use crate::ffi::lua::{lua_createtable, lua_gettable, lua_gettop, lua_objlen, lua_pushvalue, lua_rawseti, lua_setmetatable, lua_settable, lua_topointer};
 use crate::vm::table::iter::Iter;
 use crate::vm::table::traits::{GetTable, SetTable};
-use crate::vm::value::util::ensure_single_into_lua;
+use crate::vm::value::util::{checked_get_metatable, ensure_single_into_lua};
 use crate::vm::value::{FromLua, IntoLua};
 use crate::vm::Vm;
 use std::fmt::{Debug, Display};
@@ -55,9 +52,7 @@ impl Clone for Table<'_> {
 
 impl PartialEq for Table<'_> {
     fn eq(&self, other: &Self) -> bool {
-        let a = unsafe { lua_topointer(self.vm.as_ptr(), self.index) };
-        let b = unsafe { lua_topointer(other.vm.as_ptr(), other.index) };
-        a == b
+        self.uid() == other.uid()
     }
 }
 
@@ -68,7 +63,7 @@ impl Display for Table<'_> {
         write!(
             f,
             "table@{:X}",
-            unsafe { lua_topointer(self.vm.as_ptr(), self.index) } as usize
+            self.uid()
         )
     }
 }
@@ -99,6 +94,11 @@ impl<'a> Table<'a> {
         Self { vm, index }
     }
 
+    /// Returns a unique identifier to that table across the Vm it is attached to.
+    pub fn uid(&self) -> usize {
+        unsafe { lua_topointer(self.vm.as_ptr(), self.index) as _ }
+    }
+
     pub fn new(vm: &'a Vm) -> Self {
         unsafe { lua_createtable(vm.as_ptr(), 0, 0) };
         let index = unsafe { lua_gettop(vm.as_ptr()) };
@@ -123,6 +123,10 @@ impl<'a> Table<'a> {
     pub fn set_metatable(&mut self, other: Table) {
         other.into_lua(self.vm);
         unsafe { lua_setmetatable(self.vm.as_ptr(), self.index) };
+    }
+
+    pub fn get_metatable(&self) -> Option<Table> {
+        checked_get_metatable(self.vm, self.index)
     }
 
     /// Returns the absolute index of this table on the Lua stack.

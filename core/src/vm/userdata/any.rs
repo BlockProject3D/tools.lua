@@ -33,6 +33,8 @@ use crate::vm::userdata::{UserData, UserDataImmutable};
 use crate::vm::value::FromLua;
 use crate::vm::Vm;
 use std::fmt::{Debug, Display};
+use crate::vm::table::Table;
+use crate::vm::value::util::checked_get_metatable;
 
 pub struct AnyUserData<'a> {
     vm: &'a Vm,
@@ -51,9 +53,7 @@ impl Clone for AnyUserData<'_> {
 
 impl PartialEq for AnyUserData<'_> {
     fn eq(&self, other: &Self) -> bool {
-        let a = unsafe { lua_topointer(self.vm.as_ptr(), self.index) };
-        let b = unsafe { lua_topointer(other.vm.as_ptr(), other.index) };
-        a == b
+        self.uid() == other.uid()
     }
 }
 
@@ -95,6 +95,11 @@ impl<'a> AnyUserData<'a> {
         Self { vm, index }
     }
 
+    /// Returns a unique identifier to that table across the Vm it is attached to.
+    pub fn uid(&self) -> usize {
+        unsafe { lua_topointer(self.vm.as_ptr(), self.index) as _ }
+    }
+
     /// Returns a reference to this UserData value cast to `T`.
     #[inline(always)]
     pub fn get<T: UserData + UserDataImmutable>(&self) -> crate::vm::Result<&T> {
@@ -119,6 +124,10 @@ impl<'a> AnyUserData<'a> {
             }));
         }
         Ok(unsafe { &mut *this_ptr })
+    }
+
+    pub fn get_metatable(&self) -> Option<Table> {
+        checked_get_metatable(self.vm, self.index)
     }
 }
 

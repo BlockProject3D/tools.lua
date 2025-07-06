@@ -26,8 +26,9 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use crate::ffi::lua::{lua_pushnil, lua_pushvalue, lua_replace, lua_settop, Type};
+use crate::ffi::lua::{lua_getmetatable, lua_pushnil, lua_pushvalue, lua_replace, lua_settop, lua_type, Type};
 use crate::vm::error::{Error, TypeError};
+use crate::vm::table::Table;
 use crate::vm::value::IntoLua;
 use crate::vm::Vm;
 
@@ -77,4 +78,28 @@ pub fn ensure_single_into_lua(vm: &Vm, value: impl IntoLua) -> crate::vm::Result
         return Err(Error::MultiValue);
     }
     Ok(())
+}
+
+/// Attempts to retrieve the metatable attached to the object at index `index`.
+///
+/// If no metatable is found, this function automatically pops the value if needed and returns
+/// [None].
+///
+/// # Arguments
+///
+/// * `vm`: the [Vm] instance to extract the metatable from.
+/// * `index`: the object index inside the `vm` [Vm].
+///
+/// returns: Option<Table>
+pub fn checked_get_metatable(vm: &Vm, index: i32) -> Option<Table> {
+    unsafe { lua_getmetatable(vm.as_ptr(), index) };
+    let ty = unsafe { lua_type(vm.as_ptr(), -1) };
+    if ty == Type::Table {
+        return Some(unsafe { Table::from_raw(vm, vm.top()) });
+    }
+    if ty != Type::None {
+        // A none type is special and implies no value was pushed on the stack.
+        unsafe { lua_settop(vm.as_ptr(), -2) }; // Pops the value from the stack.
+    }
+    None
 }
