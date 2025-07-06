@@ -27,11 +27,8 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::ffi::ext::{lua_ext_fast_checkinteger, lua_ext_fast_checknumber};
-use crate::ffi::laux::{luaL_checklstring, luaL_checkudata, luaL_setmetatable, luaL_testudata};
-use crate::ffi::lua::{
-    lua_newuserdata, lua_pushboolean, lua_pushinteger, lua_pushlstring, lua_pushnil,
-    lua_pushnumber, lua_type, RawInteger, RawNumber, Type,
-};
+use crate::ffi::laux::{luaL_checklstring, luaL_checktype, luaL_checkudata, luaL_setmetatable, luaL_testudata};
+use crate::ffi::lua::{lua_newuserdata, lua_pushboolean, lua_pushinteger, lua_pushlstring, lua_pushnil, lua_pushnumber, lua_toboolean, lua_type, RawInteger, RawNumber, Type};
 use crate::util::core::SimpleDrop;
 use crate::vm::function::{FromParam, IntoParam};
 use crate::vm::userdata::UserData;
@@ -224,6 +221,19 @@ macro_rules! impl_float {
 }
 
 impl_float!(f32, f64);
+
+impl LuaType for bool { }
+
+impl FromParam<'_> for bool {
+    unsafe fn from_param(vm: &'_ Vm, index: i32) -> Self {
+        luaL_checktype(vm.as_ptr(), index, Type::Boolean);
+        lua_toboolean(vm.as_ptr(), index) != 0
+    }
+
+    fn try_from_param(vm: &'_ Vm, index: i32) -> Option<Self> {
+        FromLua::from_lua(vm, index).ok()
+    }
+}
 
 unsafe impl IntoParam for bool {
     #[inline(always)]
