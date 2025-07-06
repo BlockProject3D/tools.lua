@@ -2,5 +2,7 @@
 members = [
     "build",
     "codegen",
-    "core"
+    "core",
+    "shell/core",
+    "shell/proto"
 ]
