@@ -2,8 +2,11 @@
 name = ""
 path = "src"
 
-[recv]
+[options.recv]
 union-set-discriminant = true
 
-[send]
+[options.send]
 union-set-discriminant = true
+
+[options.completion]
+list-wrappers = true

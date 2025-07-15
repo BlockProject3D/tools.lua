@@ -26,41 +26,18 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::path::PathBuf;
-use clap::Parser;
+use tokio::sync::mpsc;
+use crate::data_out::OutData;
 
-mod lua;
-mod core;
-mod autocomplete;
-mod data_out;
-mod data_in;
-mod data;
+#[derive(Clone)]
+pub struct DataOut(mpsc::Sender<Box<dyn OutData>>);
 
-#[derive(Parser, Debug)]
-#[command(version, about, long_about = None)]
-struct Cli {
-    #[arg(short = 'n', long = "name", help = "Name of IPC server.")]
-    pub name: Option<String>,
-
-    #[arg(short = 'r', long = "root", help = "Path to lua root directory.")]
-    pub root: Option<PathBuf>,
-
-    #[arg(short = 'm', long = "modules", help = "Path to modules directory.")]
-    pub modules: Option<PathBuf>
-}
-
-#[tokio::main]
-async fn main() {
-    let args = Cli::parse();
-    let root = args.root.unwrap_or(PathBuf::from("./"));
-    let mut modules = Vec::new();
-    if let Some(path) = args.modules {
-        modules.push(path);
+impl DataOut {
+    pub fn new(sender: mpsc::Sender<Box<dyn OutData>>) -> Self {
+        Self(sender)
     }
-    modules.push(PathBuf::from("./target/debug"));
-    core::run(lua::Args {
-        data: root.join("data"),
-        lua: root.join("src"),
-        modules,
-    }, args.name.as_ref().map(|v| &**v).unwrap_or("bp3d-lua-shell")).await;
+
+    pub fn send<T: OutData + Send + 'static>(&self, data: T) {
+        self.0.blocking_send(Box::new(data)).unwrap();
+    }
 }

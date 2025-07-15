@@ -31,10 +31,9 @@ const MAX_SIZE: usize = 4096;
 use bp3d_debug::{debug, error, info};
 use bp3d_net::ipc::{Client, Server};
 use bp3d_net::ipc::util::Message;
-use bp3d_proto::message::{FromBytes, WriteSelf};
+use bp3d_proto::message::FromBytes;
 use crate::lua::{Args, Lua};
 use bp3d_util::result::ResultExt;
-use bp3d_lua_shell_proto::recv;
 use bp3d_lua_shell_proto::send;
 
 async fn client_task(lua: &mut Lua, client: Client) -> bp3d_proto::message::Result<bool> {
@@ -47,23 +46,17 @@ async fn client_task(lua: &mut Lua, client: Client) -> bp3d_proto::message::Resu
                     break;
                 }
                 let data: &[u8] = &msg;
-                //Nice weird broken syntax because Rust type inference is even more broken as ever.
+                //Nice weird broken syntax because Rust type inference is even more broken than ever.
                 let msg = <send::Main>::from_bytes(data)?.into_inner();
                 match msg.msg {
                     send::Message::Terminate => return Ok(true),
-                    send::Message::RunCode(v) => match v.name {
-                        Some(name) => lua.exec_with_name(name.into(), v.code.into()).await,
-                        None => lua.exec(v.code.into()).await
-                    },
-                    send::Message::RunFile(v) => lua.exec_file(v.path.into()).await
+                    send::Message::RunCode(v) => lua.send(v).await,
+                    send::Message::RunFile(v) => lua.send(v).await
                 }
             },
-            Some((source, m)) = lua.next_log() => {
+            Some(b) = lua.next_msg() => {
                 msg.set_size(0);
-                recv::Main {
-                    hdr: recv::Header::new().set_type(recv::Type::Log).to_ref(),
-                    msg: recv::Log { source, msg: &m }
-                }.write_self(&mut msg)?;
+                b.write(&mut msg)?;
                 client.send(&msg).await?;
             }
         }

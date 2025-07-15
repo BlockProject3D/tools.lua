@@ -26,41 +26,48 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::path::PathBuf;
-use clap::Parser;
+use bp3d_lua::vm::Vm;
+use crate::data::DataOut;
+use crate::lua::Args;
 
-mod lua;
-mod core;
-mod autocomplete;
-mod data_out;
-mod data_in;
-mod data;
-
-#[derive(Parser, Debug)]
-#[command(version, about, long_about = None)]
-struct Cli {
-    #[arg(short = 'n', long = "name", help = "Name of IPC server.")]
-    pub name: Option<String>,
-
-    #[arg(short = 'r', long = "root", help = "Path to lua root directory.")]
-    pub root: Option<PathBuf>,
-
-    #[arg(short = 'm', long = "modules", help = "Path to modules directory.")]
-    pub modules: Option<PathBuf>
+pub trait InData: Send {
+    fn handle(&mut self, args: &Args, vm: &Vm, out: &DataOut) -> bool;
 }
 
-#[tokio::main]
-async fn main() {
-    let args = Cli::parse();
-    let root = args.root.unwrap_or(PathBuf::from("./"));
-    let mut modules = Vec::new();
-    if let Some(path) = args.modules {
-        modules.push(path);
+pub trait NetInData {
+    fn to_in_data(self) -> Box<dyn InData>;
+}
+
+pub struct RunCode {
+    pub name: Option<String>,
+    pub code: String,
+}
+
+pub struct RunFile {
+    pub path: String,
+}
+
+impl<'a> NetInData for bp3d_lua_shell_proto::send::RunFile<'a> {
+    fn to_in_data(self) -> Box<dyn InData> {
+        Box::new(RunFile {
+            path: self.path.into()
+        })
     }
-    modules.push(PathBuf::from("./target/debug"));
-    core::run(lua::Args {
-        data: root.join("data"),
-        lua: root.join("src"),
-        modules,
-    }, args.name.as_ref().map(|v| &**v).unwrap_or("bp3d-lua-shell")).await;
+}
+
+impl<'a> NetInData for bp3d_lua_shell_proto::send::RunCode<'a> {
+    fn to_in_data(self) -> Box<dyn InData> {
+        Box::new(RunCode {
+            name: self.name.map(|v| v.into()),
+            code: self.code.into()
+        })
+    }
+}
+
+pub struct Exit;
+
+impl InData for Exit {
+    fn handle(&mut self, _: &Args, _: &Vm, _: &DataOut) -> bool {
+        true
+    }
 }

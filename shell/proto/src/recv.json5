@@ -1,11 +1,17 @@
 {
     name: "recv",
+    imports: [
+        { protocol: "completion", type: "AddUpdate" },
+        { protocol: "completion", type: "Delete" }
+    ],
     enums: [
         {
             name: "Type",
             variants: {
                 "End": 0,
-                "Log": 1
+                "Log": 1,
+                "AutocompleteAddUpdate": 2,
+                "AutocompleteDelete": 3
             }
         }
     ],
@@ -69,7 +75,9 @@
             discriminant: "Header.type",
             cases: [
                 { name: "End", case: "End" },
-                { name: "Log", case: "Log", item_type: "Log" }
+                { name: "Log", case: "Log", item_type: "Log" },
+                { name: "AutocompleteAddUpdate", case: "AutocompleteAddUpdate", item_type: "AddUpdate" },
+                { name: "AutocompleteDelete", case: "AutocompleteDelete", item_type: "Delete" }
             ]
         }
     ]

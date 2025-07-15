@@ -37,6 +37,11 @@ use bp3d_debug::{debug, error, info};
 use bp3d_lua::vm::core::jit::JitOptions;
 use bp3d_lua::vm::core::load::{Code, Script};
 use bp3d_lua::vm::value::any::AnyValue;
+use bp3d_lua::vm::Vm;
+use crate::autocomplete::Autocomplete;
+use crate::data::DataOut;
+use crate::data_in::{Exit, InData, NetInData, RunCode, RunFile};
+use crate::data_out::{Log, OutData};
 
 const CHANNEL_BUFFER: usize = 32;
 
@@ -46,35 +51,21 @@ pub struct Args {
     pub modules: Vec<PathBuf>
 }
 
-pub enum Command {
-    Exit,
-    RunCode(String),
-    RunCodeWithName(String, String),
-    RunFile(String)
-}
-
 pub struct Lua {
     signal: Signal,
     handle: JoinHandle<()>,
-    exec_queue: mpsc::Sender<Command>,
-    log_queue: mpsc::Receiver<(&'static str, String)>,
+    exec_queue: mpsc::Sender<Box<dyn InData>>,
+    out_queue: mpsc::Receiver<Box<dyn OutData>>,
 }
 
 impl Lua {
-    pub async fn exec(&self, code: String) {
-        self.exec_queue.send(Command::RunCode(code)).await.unwrap();
-    }
-
-    pub async fn exec_file(&self, name: String) {
-        self.exec_queue.send(Command::RunFile(name)).await.unwrap();
-    }
-
-    pub async fn exec_with_name(&self, name: String, code: String) {
-        self.exec_queue.send(Command::RunCodeWithName(name, code)).await.unwrap();
+    pub async fn send<T: NetInData>(&self, net_data: T) {
+        let data = net_data.to_in_data();
+        self.exec_queue.send(data).await.unwrap();
     }
 
     pub async fn exit(self) {
-        self.exec_queue.send(Command::Exit).await.unwrap();
+        self.exec_queue.send(Box::new(Exit)).await.unwrap();
         // Leave 50ms for the thread to terminate nominally before killing the VM.
         tokio::time::sleep(Duration::from_millis(50)).await;
         // This call will either immediately return because the thread is already dead (expected),
@@ -87,23 +78,23 @@ impl Lua {
         }
     }
 
-    pub async fn next_log(&mut self) -> Option<(&'static str, String)> {
-        self.log_queue.recv().await
+    pub async fn next_msg(&mut self) -> Option<Box<dyn OutData>> {
+        self.out_queue.recv().await
     }
 
-    fn handle_value(res: bp3d_lua::vm::Result<AnyValue>, logger: &mpsc::Sender<(&'static str, String)>) -> bool {
+    fn handle_value(res: bp3d_lua::vm::Result<AnyValue>, logger: &DataOut) -> bool {
         match res {
             Ok(v) => {
-                logger.blocking_send(("output", v.to_string())).unwrap();
+                logger.send(Log("output", v.to_string()));
                 false
             },
             Err(e) => {
                 if e.is_uncatchable() {
-                    logger.blocking_send(("kill", e.to_string())).unwrap();
+                    logger.send(Log("kill", e.to_string()));
                     error!("Received VM termination error: {}", e);
                     true
                 } else {
-                    logger.blocking_send(("error", e.to_string())).unwrap();
+                    logger.send(Log("error", e.to_string()));
                     error!("Failed to run code: {}", e);
                     false
                 }
@@ -113,8 +104,9 @@ impl Lua {
 
     pub fn new(args: Args) -> Self {
         let (exec_queue, mut receiver) = mpsc::channel(CHANNEL_BUFFER);
-        let (logger, log_queue) = mpsc::channel(CHANNEL_BUFFER);
+        let (logger, out_queue) = mpsc::channel(CHANNEL_BUFFER);
         let (signal, handle) = spawn_interruptible(move |vm| {
+            let logger = DataOut::new(logger);
             debug!("Loading VM libraries...");
             if let Err(e) = (libs::os::Compat, libs::os::Instant, libs::os::Time).register(vm) {
                 error!("Failed to load OS library: {}", e);
@@ -125,9 +117,12 @@ impl Lua {
             if let Err(e) = libs::lua::Lua::new().load_chroot_path(&args.data).build().register(vm) {
                 error!("Failed to load base library: {}", e);
             }
+            if let Err(e) = Autocomplete::new(logger.clone()).register(vm) {
+                error!("Failed to register autocomplete library: {}", e);
+            }
             let mut modules = libs::lua::Module::new(&[]);
-            for path in args.modules {
-                modules.add_search_path(path);
+            for path in &args.modules {
+                modules.add_search_path(path.clone());
             }
             if let Err(e) = modules.register(vm) {
                 error!("Failed to load module manager: {}", e);
@@ -141,35 +136,10 @@ impl Lua {
                 info!("JIT: OFF")
             }
             while let Some(command) = receiver.blocking_recv() {
-                match command {
-                    Command::Exit => break,
-                    Command::RunCode(code) => {
-                        let ret = vm.scope(|vm| Ok(Self::handle_value(vm.run_code(&*code), &logger))).unwrap();
-                        if ret {
-                            break;
-                        }
-                    },
-                    Command::RunCodeWithName(name, code) => {
-                        let ret = vm.scope(|vm| Ok(Self::handle_value(vm.run(Code::new(&name, code.as_bytes())), &logger))).unwrap();
-                        if ret {
-                            break;
-                        }
-                    },
-                    Command::RunFile(name) => {
-                        let path = args.lua.join(name);
-                        let script = match Script::from_path(path) {
-                            Ok(script) => script,
-                            Err(e) => {
-                                error!("Error loading lua script: {}", e);
-                                logger.blocking_send(("file", e.to_string())).unwrap();
-                                continue;
-                            }
-                        };
-                        let ret = vm.scope(|vm| Ok(Self::handle_value(vm.run(script), &logger))).unwrap();
-                        if ret {
-                            break;
-                        }
-                    }
+                // Nice type-inference breakage with this box.
+                let ret = vm.scope(|vm| Ok((command as Box<dyn InData>).handle(&args, vm, &logger))).unwrap();
+                if ret {
+                    break;
                 }
             }
         });
@@ -177,7 +147,31 @@ impl Lua {
             signal,
             handle,
             exec_queue,
-            log_queue
+            out_queue
         }
+    }
+}
+
+impl InData for RunCode {
+    fn handle(&mut self, _: &Args, vm: &Vm, out: &DataOut) -> bool {
+        match &self.name {
+            Some(name) => Lua::handle_value(vm.run(Code::new(name, self.code.as_bytes())), out),
+            None => Lua::handle_value(vm.run_code(&*self.code), out)
+        }
+    }
+}
+
+impl InData for RunFile {
+    fn handle(&mut self, args: &Args, vm: &Vm, out: &DataOut) -> bool {
+        let path = args.lua.join(&self.path);
+        let script = match Script::from_path(path) {
+            Ok(script) => script,
+            Err(e) => {
+                error!("Error loading lua script: {}", e);
+                out.send(Log("file", e.to_string()));
+                return false;
+            }
+        };
+        Lua::handle_value(vm.run(script), out)
     }
 }

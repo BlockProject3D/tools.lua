@@ -28,3 +28,4 @@
 
 include!(env!("BP3D_PROTOC_SEND"));
 include!(env!("BP3D_PROTOC_RECV"));
+include!(env!("BP3D_PROTOC_COMPLETION"));
