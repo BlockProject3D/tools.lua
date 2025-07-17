@@ -26,34 +26,30 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use crate::vm::core::util::{pcall, push_error_handler};
 use crate::vm::registry::core::Key;
-use crate::vm::registry::types::Function;
-use crate::vm::value::{FromLua, IntoLua};
 use crate::vm::Vm;
 
-/// This represents a Lua callback.
-pub struct LuaFunction(Key<Function>);
+pub struct LuaThread {
+    key: Key<crate::vm::registry::types::Thread>,
+    thread: crate::vm::thread::core::Thread<'static>
+}
 
-impl LuaFunction {
-    pub fn create(f: crate::vm::value::types::Function) -> Self {
-        Self(Key::new(f))
+impl LuaThread {
+    pub fn create(value: crate::vm::thread::value::Value) -> Self {
+        let thread = unsafe { crate::vm::thread::core::Thread::from_raw(value.as_thread().as_ptr()) };
+        Self {
+            key: Key::new(value),
+            thread
+        }
     }
 
-    pub fn call<'a, R: FromLua<'a>>(
-        &self,
-        vm: &'a Vm,
-        value: impl IntoLua,
-    ) -> crate::vm::Result<R> {
-        let pos = unsafe { push_error_handler(vm.as_ptr()) };
-        unsafe { self.0.as_raw().push(vm) };
-        let num_values = value.into_lua(vm);
-        unsafe { pcall(vm, num_values as _, R::num_values() as _, pos)? };
-        R::from_lua(vm, -(R::num_values() as i32))
+    #[inline(always)]
+    pub fn as_thread(&self) -> &crate::vm::thread::core::Thread {
+        &self.thread
     }
 
     #[inline(always)]
     pub fn delete(self, vm: &Vm) {
-        self.0.delete(vm)
+        self.key.delete(vm)
     }
 }

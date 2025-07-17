@@ -35,6 +35,8 @@ mod method;
 pub mod module;
 #[cfg(feature = "util-namespace")]
 mod namespace;
+#[cfg(feature = "util-thread")]
+pub mod thread;
 
 #[cfg(feature = "util-function")]
 pub use function::LuaFunction;
@@ -42,3 +44,5 @@ pub use function::LuaFunction;
 pub use method::LuaMethod;
 #[cfg(feature = "util-namespace")]
 pub use namespace::Namespace;
+#[cfg(feature = "util-thread")]
+pub use thread::LuaThread;

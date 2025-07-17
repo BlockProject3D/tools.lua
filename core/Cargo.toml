@@ -1,8 +1,8 @@
 [package]
 name = "bp3d-lua"
-version = "1.0.0-rc.2.1.0"
+version = "1.0.0-rc.3.0.0"
 authors = ["Yuri Edward <yuri6037@outlook.com>"]
-edition = "2021"
+edition = "2021" # Possible very-little performance improvement with 2024 (2.35 vs 2.37/2.4)
 description = "Lua wrapper and base library for BP3D."
 license = "BSD-3-Clause"
 repository = "https://gitlab.com/bp3d/lua"
@@ -42,6 +42,7 @@ root-vm = []
 util-method = []
 util-function = []
 util-namespace = []
+util-thread = []
 util-module = ["module", "bp3d-os/module"]
 libs-core = ["util-namespace"]
 libs = ["libs-core", "time", "bp3d-os/time"]
