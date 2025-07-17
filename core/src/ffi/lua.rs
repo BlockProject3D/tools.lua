@@ -195,6 +195,7 @@ extern "C" {
 // Coroutine functions
 //---------------------
 extern "C" {
+    pub fn lua_isyieldable(l: State) -> c_int;
     pub fn lua_yield(l: State, nresults: c_int) -> c_int;
     pub fn lua_resume(l: State, narg: c_int) -> ThreadStatus;
     pub fn lua_status(l: State) -> ThreadStatus;

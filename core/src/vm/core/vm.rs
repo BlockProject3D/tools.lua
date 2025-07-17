@@ -26,14 +26,12 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use crate::ffi::lua::{
-    lua_getfield, lua_gettop, lua_pushnil, lua_remove, lua_setfield, lua_settop, State,
-    ThreadStatus, GLOBALSINDEX, REGISTRYINDEX,
-};
+use crate::ffi::lua::{lua_getfield, lua_gettop, lua_isyieldable, lua_pushnil, lua_remove, lua_setfield, lua_settop, State, ThreadStatus, GLOBALSINDEX, REGISTRYINDEX};
 use crate::util::core::AnyStr;
 use crate::vm::core::util::{handle_syntax_error, pcall, push_error_handler};
 use crate::vm::core::{Load, LoadString};
 use crate::vm::error::Error;
+use crate::vm::thread::core::Thread;
 use crate::vm::userdata::core::Registry;
 use crate::vm::userdata::{NameConvert, UserData};
 use crate::vm::value::types::Function;
@@ -178,6 +176,16 @@ impl Vm {
         unsafe {
             handle_syntax_error(self, res)?;
             Ok(FromLua::from_lua_unchecked(self, -1))
+        }
+    }
+
+    /// Attempts to turn this Vm into a lua [Thread] if it is yieldable, otherwise returns None.
+    pub fn as_thread(&self) -> Option<Thread<'_>> {
+        let yieldable = unsafe { lua_isyieldable(self.as_ptr()) };
+        if yieldable == 1 {
+            Some(unsafe { Thread::from_raw(self.as_ptr()) })
+        } else {
+            None
         }
     }
 }

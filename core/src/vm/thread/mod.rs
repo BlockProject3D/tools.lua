@@ -26,6 +26,6 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-pub struct Table;
-pub struct Function;
-pub struct Thread;
+pub mod core;
+pub mod value;
+mod interface;

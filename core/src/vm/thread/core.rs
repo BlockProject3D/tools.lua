@@ -26,19 +26,16 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use crate::ffi::laux::luaL_checktype;
-use crate::ffi::lua::{lua_remove, lua_resume, lua_status, lua_tothread, ThreadStatus, Type};
-use crate::util::core::SimpleDrop;
-use crate::vm::core::LoadString;
-use crate::vm::error::{Error, RuntimeError};
-use crate::vm::function::FromParam;
-use crate::vm::util::LuaType;
-use crate::vm::value::util::ensure_type_equals;
-use crate::vm::value::{FromLua, IntoLua};
-use crate::vm::Vm;
 use std::fmt::{Debug, Display};
 use std::marker::PhantomData;
+use crate::ffi::lua::{lua_remove, lua_resume, lua_status, ThreadStatus};
+use crate::vm::error::{Error, RuntimeError};
+use crate::vm::value::{FromLua, IntoLua};
+use crate::vm::Vm;
 
+//TODO: Support lua_yield through a custom IntoParam which yields (may cause additional stack unwind).
+
+#[derive(Copy, Clone, Eq, PartialEq, Debug)]
 pub enum State {
     Yielded,
     Finished,
@@ -46,32 +43,20 @@ pub enum State {
 
 pub struct Thread<'a> {
     vm: Vm,
-    useless: PhantomData<&'a ()>,
-}
-
-impl Clone for Thread<'_> {
-    fn clone(&self) -> Self {
-        Self {
-            vm: unsafe { Vm::from_raw(self.vm.as_ptr()) },
-            useless: PhantomData,
-        }
-    }
+    useless: PhantomData<&'a ()>
 }
 
 impl PartialEq for Thread<'_> {
     fn eq(&self, other: &Self) -> bool {
-        self.vm.as_ptr() == other.vm.as_ptr()
+        self.uid() == other.uid()
     }
 }
 
 impl Eq for Thread<'_> {}
 
 impl Display for Thread<'_> {
-    #[allow(clippy::missing_transmute_annotations)]
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "thread@{:X}", unsafe {
-            std::mem::transmute::<_, usize>(self.vm.as_ptr())
-        })
+        write!(f, "thread@{:X}", self.uid())
     }
 }
 
@@ -81,10 +66,36 @@ impl Debug for Thread<'_> {
     }
 }
 
-impl Thread<'_> {
+impl<'a> Thread<'a> {
+    /// Creates a thread object from an existing lua thread stack.
+    ///
+    /// # Arguments
+    ///
+    /// * `l`: the existing raw lua [State](crate::ffi::lua::State).
+    ///
+    /// returns: Thread
+    ///
+    /// # Safety
+    ///
+    /// Must ensure that l is a valid lua thread stack. If not, the resulting object is UB.
     #[inline(always)]
-    pub fn run_code<'b, R: FromLua<'b>>(&'b self, code: impl LoadString) -> crate::vm::Result<R> {
-        self.vm.run_code(code)
+    pub unsafe fn from_raw(l: crate::ffi::lua::State) -> Self {
+        Self {
+            vm: Vm::from_raw(l),
+            useless: PhantomData
+        }
+    }
+
+    #[inline(always)]
+    pub fn as_ptr(&self) -> crate::ffi::lua::State {
+        self.vm.as_ptr()
+    }
+
+    /// Returns a unique identifier to that table across the Vm it is attached to.
+    #[allow(clippy::missing_transmute_annotations)]
+    #[inline(always)]
+    pub fn uid(&self) -> usize {
+        unsafe { std::mem::transmute(self.vm.as_ptr()) }
     }
 
     #[inline(always)]
@@ -99,8 +110,8 @@ impl Thread<'_> {
             ThreadStatus::Ok => Ok(State::Finished),
             ThreadStatus::Yield => Ok(State::Yielded),
             ThreadStatus::ErrRun => {
-                // We've got a runtime error when executing the function so read the full stack
-                // trace produced by luaL_traceback and remove it from the stack.
+                // We've got a runtime error when executing the function.
+                // TODO: In the future, might be great to traceback the thread as well.
                 let error_message: &str = FromLua::from_lua(&self.vm, -1)?;
                 unsafe { lua_remove(self.vm.as_ptr(), -1) };
                 Err(Error::Runtime(RuntimeError::new(
@@ -111,42 +122,5 @@ impl Thread<'_> {
             ThreadStatus::ErrErr => Err(Error::Error),
             _ => std::unreachable!(),
         }
-    }
-}
-
-impl<'a> FromLua<'a> for Thread<'a> {
-    #[inline(always)]
-    unsafe fn from_lua_unchecked(vm: &'a Vm, index: i32) -> Self {
-        Thread {
-            vm: Vm::from_raw(lua_tothread(vm.as_ptr(), index)),
-            useless: PhantomData,
-        }
-    }
-
-    fn from_lua(vm: &'a Vm, index: i32) -> crate::vm::Result<Self> {
-        ensure_type_equals(vm, index, Type::Thread)?;
-        Ok(Thread {
-            vm: unsafe { Vm::from_raw(lua_tothread(vm.as_ptr(), index)) },
-            useless: PhantomData,
-        })
-    }
-}
-
-unsafe impl SimpleDrop for Thread<'_> {}
-
-impl LuaType for Thread<'_> {}
-
-impl<'a> FromParam<'a> for Thread<'a> {
-    unsafe fn from_param(vm: &'a Vm, index: i32) -> Self {
-        luaL_checktype(vm.as_ptr(), index, Type::Thread);
-        Thread {
-            vm: unsafe { Vm::from_raw(lua_tothread(vm.as_ptr(), index)) },
-            useless: PhantomData,
-        }
-    }
-
-    #[inline(always)]
-    fn try_from_param(vm: &'a Vm, index: i32) -> Option<Self> {
-        FromLua::from_lua(vm, index).ok()
     }
 }
