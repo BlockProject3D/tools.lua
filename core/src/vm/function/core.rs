@@ -27,13 +27,13 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::ffi::ext::{lua_ext_fast_checkinteger, lua_ext_fast_checknumber};
-use crate::ffi::laux::{luaL_checklstring, luaL_checktype, luaL_checkudata, luaL_setmetatable, luaL_testudata};
-use crate::ffi::lua::{lua_newuserdata, lua_pushboolean, lua_pushinteger, lua_pushlstring, lua_pushnil, lua_pushnumber, lua_toboolean, lua_type, RawInteger, RawNumber, Type};
+use crate::ffi::laux::{luaL_checklstring, luaL_checktype, luaL_checkudata, luaL_testudata};
+use crate::ffi::lua::{lua_pushboolean, lua_pushinteger, lua_pushnil, lua_pushnumber, lua_toboolean, lua_type, RawInteger, RawNumber, Type};
 use crate::util::core::SimpleDrop;
 use crate::vm::function::{FromParam, IntoParam};
 use crate::vm::userdata::UserData;
 use crate::vm::util::{lua_rust_error, LuaType, TypeName};
-use crate::vm::value::FromLua;
+use crate::vm::value::{FromLua, IntoLua};
 use crate::vm::Vm;
 use std::borrow::Cow;
 use std::error::Error;
@@ -101,20 +101,14 @@ impl<'a> FromParam<'a> for &'a [u8] {
 unsafe impl IntoParam for &str {
     #[inline(always)]
     fn into_param(self, vm: &Vm) -> u16 {
-        unsafe {
-            lua_pushlstring(vm.as_ptr(), self.as_ptr() as _, self.len());
-        }
-        1
+        IntoLua::into_lua(self, vm)
     }
 }
 
 unsafe impl IntoParam for &[u8] {
     #[inline(always)]
     fn into_param(self, vm: &Vm) -> u16 {
-        unsafe {
-            lua_pushlstring(vm.as_ptr(), self.as_ptr() as _, self.len());
-        }
-        1
+        IntoLua::into_lua(self, vm)
     }
 }
 
@@ -126,6 +120,7 @@ unsafe impl IntoParam for String {
 }
 
 unsafe impl IntoParam for Vec<u8> {
+    #[inline(always)]
     fn into_param(self, vm: &Vm) -> u16 {
         self.as_slice().into_param(vm)
     }
@@ -301,10 +296,7 @@ impl<'a, T: UserData> FromParam<'a> for &'a T {
 
 unsafe impl<T: UserData> IntoParam for T {
     fn into_param(self, vm: &Vm) -> u16 {
-        let userdata = unsafe { lua_newuserdata(vm.as_ptr(), size_of::<T>()) } as *mut T;
-        unsafe { userdata.write(self) };
-        unsafe { luaL_setmetatable(vm.as_ptr(), T::CLASS_NAME.as_ptr()) };
-        1
+        IntoLua::into_lua(self, vm)
     }
 }
 

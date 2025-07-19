@@ -28,12 +28,12 @@
 
 use std::fmt::{Debug, Display};
 use std::marker::PhantomData;
-use crate::ffi::lua::{lua_remove, lua_resume, lua_status, ThreadStatus};
+use crate::ffi::laux::luaL_error;
+use crate::ffi::lua::{lua_isyieldable, lua_remove, lua_resume, lua_status, lua_yield, ThreadStatus};
 use crate::vm::error::{Error, RuntimeError};
+use crate::vm::function::IntoParam;
 use crate::vm::value::{FromLua, IntoLua};
 use crate::vm::Vm;
-
-//TODO: Support lua_yield through a custom IntoParam which yields (may cause additional stack unwind).
 
 #[derive(Copy, Clone, Eq, PartialEq, Debug)]
 pub enum State {
@@ -121,6 +121,21 @@ impl<'a> Thread<'a> {
             ThreadStatus::ErrMem => Err(Error::Memory),
             ThreadStatus::ErrErr => Err(Error::Error),
             _ => std::unreachable!(),
+        }
+    }
+}
+
+pub struct Yield;
+
+unsafe impl IntoParam for Yield {
+    #[inline(always)]
+    fn into_param(self, vm: &Vm) -> u16 {
+        unsafe {
+            if lua_isyieldable(vm.as_ptr()) != 1 {
+                luaL_error(vm.as_ptr(), c"attempt to yield a non-thread stack object".as_ptr());
+            }
+            lua_yield(vm.as_ptr(), 0);
+            0
         }
     }
 }

@@ -29,7 +29,7 @@
 mod gen;
 mod parser;
 
-use crate::gen::{FromParam, IntoParam, LuaType};
+use crate::gen::{FromParam, IntoParam, IntoLua, LuaType};
 use crate::parser::Parser;
 use proc_macro::TokenStream;
 use proc_macro2::Ident;
@@ -56,6 +56,17 @@ pub fn into_param(input: TokenStream) -> TokenStream {
         ..
     } = parse_macro_input!(input);
     IntoParam::new(ident, generics).parse(data).into()
+}
+
+#[proc_macro_derive(IntoLua)]
+pub fn into_lua(input: TokenStream) -> TokenStream {
+    let DeriveInput {
+        ident,
+        data,
+        generics,
+        ..
+    } = parse_macro_input!(input);
+    IntoLua::new(ident, generics).parse(data).into()
 }
 
 #[proc_macro_derive(LuaType)]

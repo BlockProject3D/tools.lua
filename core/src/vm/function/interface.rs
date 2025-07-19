@@ -41,13 +41,14 @@ use crate::vm::Vm;
 pub unsafe trait IntoParam: Sized {
     /// Turns self into a function return parameter.
     ///
-    /// This function returns the number of parameters pushed onto the lua stack.
+    /// This function returns the number of parameters pushed onto the lua stack. Returns -1 in
+    /// case of a lua_yield.
     ///
     /// # Arguments
     ///
     /// * `vm`: the [Vm] to push this value to.
     ///
-    /// returns: u16
+    /// returns: i32
     fn into_param(self, vm: &Vm) -> u16;
 }
 

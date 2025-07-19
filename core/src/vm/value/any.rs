@@ -116,8 +116,8 @@ impl AnyValue<'_> {
     }
 }
 
-unsafe impl IntoParam for AnyValue<'_> {
-    fn into_param(self, vm: &Vm) -> u16 {
+unsafe impl IntoLua for AnyValue<'_> {
+    fn into_lua(self, vm: &Vm) -> u16 {
         match self {
             AnyValue::None => 0,
             AnyValue::Nil => {
@@ -133,6 +133,13 @@ unsafe impl IntoParam for AnyValue<'_> {
             AnyValue::UserData(_) => 0,
             AnyValue::Thread(_) => 0,
         }
+    }
+}
+
+unsafe impl IntoParam for AnyValue<'_> {
+    #[inline(always)]
+    fn into_param(self, vm: &Vm) -> u16 {
+        IntoLua::into_lua(self, vm)
     }
 }
 

@@ -38,7 +38,7 @@ use crate::vm::table::traits::{GetTable, SetTable};
 use crate::vm::table::Table;
 use crate::vm::util::LuaType;
 use crate::vm::value::util::ensure_type_equals;
-use crate::vm::value::FromLua;
+use crate::vm::value::{FromLua, IntoLua};
 use crate::vm::Vm;
 
 unsafe impl SimpleDrop for Table<'_> {}
@@ -71,7 +71,14 @@ impl<'a> FromLua<'a> for Table<'a> {
 }
 
 unsafe impl IntoParam for Table<'_> {
+    #[inline(always)]
     fn into_param(self, vm: &Vm) -> u16 {
+        IntoLua::into_lua(self, vm)
+    }
+}
+
+unsafe impl IntoLua for Table<'_> {
+    fn into_lua(self, vm: &Vm) -> u16 {
         let top = unsafe { lua_gettop(vm.as_ptr()) };
         if top != self.index() {
             unsafe { lua_pushvalue(vm.as_ptr(), self.index()) };

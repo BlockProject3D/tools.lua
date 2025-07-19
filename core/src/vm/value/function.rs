@@ -95,7 +95,15 @@ impl<'a> FromParam<'a> for Function<'a> {
 }
 
 unsafe impl IntoParam for Function<'_> {
+    #[inline(always)]
     fn into_param(self, vm: &Vm) -> u16 {
+        IntoLua::into_lua(self, vm)
+    }
+}
+
+unsafe impl IntoLua for Function<'_> {
+    #[inline(always)]
+    fn into_lua(self, vm: &Vm) -> u16 {
         unsafe { lua_pushvalue(vm.as_ptr(), self.index) };
         1
     }

@@ -33,7 +33,7 @@ use crate::vm::function::{FromParam, IntoParam};
 use crate::vm::registry::{FromIndex, Set};
 use crate::vm::thread::value::Value;
 use crate::vm::util::LuaType;
-use crate::vm::value::FromLua;
+use crate::vm::value::{FromLua, IntoLua};
 use crate::vm::value::util::ensure_type_equals;
 use crate::vm::Vm;
 
@@ -65,7 +65,14 @@ impl<'a> FromParam<'a> for Value<'a> {
 }
 
 unsafe impl IntoParam for Value<'_> {
+    #[inline(always)]
     fn into_param(self, vm: &Vm) -> u16 {
+        IntoLua::into_lua(self, vm)
+    }
+}
+
+unsafe impl IntoLua for Value<'_> {
+    fn into_lua(self, vm: &Vm) -> u16 {
         let top = unsafe { lua_gettop(vm.as_ptr()) };
         if top != self.index() {
             unsafe { lua_pushvalue(vm.as_ptr(), self.index()) };

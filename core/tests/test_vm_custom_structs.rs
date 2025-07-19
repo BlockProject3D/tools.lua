@@ -31,13 +31,13 @@
 use bp3d_lua::decl_lib_func;
 use bp3d_lua::vm::function::types::RFunction;
 use bp3d_lua::vm::RootVm;
-use bp3d_lua_codegen::LuaType;
+use bp3d_lua_codegen::{IntoLua, LuaType};
 use bp3d_lua_codegen::{FromParam, IntoParam};
 
 #[derive(FromParam, LuaType, IntoParam)]
 struct Test1<'a>(&'a str, i32);
 
-#[derive(FromParam, LuaType, IntoParam)]
+#[derive(FromParam, LuaType, IntoParam, IntoLua)]
 struct Test2<'a> {
     name: &'a str,
     value: i32,
@@ -69,7 +69,7 @@ decl_lib_func! {
 }
 
 #[test]
-fn basic() {
+fn test_custom_structs_basic() {
     let vm = RootVm::new();
     let top = vm.top();
     vm.set_global(c"test", RFunction::wrap(test)).unwrap();

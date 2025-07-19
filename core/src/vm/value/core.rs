@@ -26,14 +26,11 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use crate::ffi::laux::luaL_testudata;
-use crate::ffi::lua::{
-    lua_settop, lua_toboolean, lua_tointeger, lua_tolstring, lua_tonumber, lua_touserdata,
-    lua_type, Type,
-};
+use std::borrow::Cow;
+use crate::ffi::laux::{luaL_setmetatable, luaL_testudata};
+use crate::ffi::lua::{lua_newuserdata, lua_pushboolean, lua_pushinteger, lua_pushlstring, lua_pushnil, lua_pushnumber, lua_settop, lua_toboolean, lua_tointeger, lua_tolstring, lua_tonumber, lua_touserdata, lua_type, Type};
 use crate::vm::error::{Error, TypeError};
-use crate::vm::function::IntoParam;
-use crate::vm::userdata::UserDataImmutable;
+use crate::vm::userdata::{UserData, UserDataImmutable};
 use crate::vm::value::util::ensure_type_equals;
 use crate::vm::value::{FromLua, IntoLua};
 use crate::vm::Vm;
@@ -95,7 +92,7 @@ impl<'a> FromLua<'a> for &'a [u8] {
 }
 
 macro_rules! impl_from_lua {
-    ($t: ty, $expected: ident, $func: ident, $($ret: tt)*) => {
+    ($t: ty, $expected: ident, $func: ident, $push_func: ident, $($ret: tt)*) => {
         impl FromLua<'_> for $t {
             #[inline(always)]
             unsafe fn from_lua_unchecked(vm: &Vm, index: i32) -> Self {
@@ -107,33 +104,36 @@ macro_rules! impl_from_lua {
                 Ok(unsafe { $func(vm.as_ptr(), index) $($ret)* })
             }
         }
+
+        unsafe impl IntoLua for $t {
+            #[inline(always)]
+            fn into_lua(self, vm: &Vm) -> u16 {
+                unsafe {
+                    $push_func(vm.as_ptr(), self as _);
+                    1
+                }
+            }
+        }
     };
 }
 
 #[cfg(target_pointer_width = "64")]
-impl_from_lua!(i64, Number, lua_tointeger, as _);
+impl_from_lua!(i64, Number, lua_tointeger, lua_pushinteger, as _);
 
 #[cfg(target_pointer_width = "64")]
-impl_from_lua!(u64, Number, lua_tointeger, as _);
+impl_from_lua!(u64, Number, lua_tointeger, lua_pushinteger, as _);
 
-impl_from_lua!(i8, Number, lua_tointeger, as _);
-impl_from_lua!(u8, Number, lua_tointeger, as _);
-impl_from_lua!(i16, Number, lua_tointeger, as _);
-impl_from_lua!(u16, Number, lua_tointeger, as _);
-impl_from_lua!(i32, Number, lua_tointeger, as _);
-impl_from_lua!(u32, Number, lua_tointeger, as _);
+impl_from_lua!(i8, Number, lua_tointeger, lua_pushinteger, as _);
+impl_from_lua!(u8, Number, lua_tointeger, lua_pushinteger, as _);
+impl_from_lua!(i16, Number, lua_tointeger, lua_pushinteger, as _);
+impl_from_lua!(u16, Number, lua_tointeger, lua_pushinteger, as _);
+impl_from_lua!(i32, Number, lua_tointeger, lua_pushinteger, as _);
+impl_from_lua!(u32, Number, lua_tointeger, lua_pushinteger, as _);
 
-impl_from_lua!(f32, Number, lua_tonumber, as _);
-impl_from_lua!(f64, Number, lua_tonumber, as _);
+impl_from_lua!(f32, Number, lua_tonumber, lua_pushnumber, as _);
+impl_from_lua!(f64, Number, lua_tonumber, lua_pushnumber, as _);
 
-impl_from_lua!(bool, Boolean, lua_toboolean, == 1);
-
-unsafe impl<T: IntoParam> IntoLua for T {
-    #[inline(always)]
-    fn into_lua(self, vm: &Vm) -> u16 {
-        self.into_param(vm)
-    }
-}
+impl_from_lua!(bool, Boolean, lua_toboolean, lua_pushboolean, == 1);
 
 impl FromLua<'_> for () {
     #[inline(always)]
@@ -175,7 +175,7 @@ macro_rules! count_tts {
 }
 
 macro_rules! impl_from_lua_tuple {
-    ($($name: ident: $name2: ident),*) => {
+    ($($name: ident: $name2: ident ($name3: tt)),*) => {
         impl<'a, $($name: FromLua<'a>),*> FromLua<'a> for ($($name),*) {
             #[inline(always)]
             fn num_values() -> i16 {
@@ -190,6 +190,15 @@ macro_rules! impl_from_lua_tuple {
             fn from_lua(vm: &'a Vm, mut index: i32) -> crate::vm::Result<($($name),*)> {
                 impl_from_lua_tuple!(_from_lua vm, index, $($name2: $name),*);
                 Ok(($($name2),*))
+            }
+        }
+
+        unsafe impl<$($name: IntoLua),*> IntoLua for ($($name),*) {
+            fn into_lua(self, vm: &Vm) -> u16 {
+                $(
+                    self.$name3.into_lua(vm);
+                )*
+                count_tts!($($name)*)
             }
         }
     };
@@ -215,15 +224,15 @@ macro_rules! impl_from_lua_tuple {
     };
 }
 
-impl_from_lua_tuple!(T: t, T1: t1);
-impl_from_lua_tuple!(T: t, T1: t1, T2: t2);
-impl_from_lua_tuple!(T: t, T1: t1, T2: t2, T3: t3);
-impl_from_lua_tuple!(T: t, T1: t1, T2: t2, T3: t3, T4: t4);
-impl_from_lua_tuple!(T: t, T1: t1, T2: t2, T3: t3, T4: t4, T5: t5);
-impl_from_lua_tuple!(T: t, T1: t1, T2: t2, T3: t3, T4: t4, T5: t5, T6: t6);
-impl_from_lua_tuple!(T: t, T1: t1, T2: t2, T3: t3, T4: t4, T5: t5, T6: t6, T7: t7);
-impl_from_lua_tuple!(T: t, T1: t1, T2: t2, T3: t3, T4: t4, T5: t5, T6: t6, T7: t7, T8: t8);
-impl_from_lua_tuple!(T: t, T1: t1, T2: t2, T3: t3, T4: t4, T5: t5, T6: t6, T7: t7, T8: t8, T9: t9);
+impl_from_lua_tuple!(T: t (0), T1: t1 (1));
+impl_from_lua_tuple!(T: t (0), T1: t1 (1), T2: t2 (2));
+impl_from_lua_tuple!(T: t (0), T1: t1 (1), T2: t2 (2), T3: t3 (3));
+impl_from_lua_tuple!(T: t (0), T1: t1 (1), T2: t2 (2), T3: t3 (3), T4: t4 (4));
+impl_from_lua_tuple!(T: t (0), T1: t1 (1), T2: t2 (2), T3: t3 (3), T4: t4 (4), T5: t5 (5));
+impl_from_lua_tuple!(T: t (0), T1: t1 (1), T2: t2 (2), T3: t3 (3), T4: t4 (4), T5: t5 (5), T6: t6 (6));
+impl_from_lua_tuple!(T: t (0), T1: t1 (1), T2: t2 (2), T3: t3 (3), T4: t4 (4), T5: t5 (5), T6: t6 (6), T7: t7 (7));
+impl_from_lua_tuple!(T: t (0), T1: t1 (1), T2: t2 (2), T3: t3 (3), T4: t4 (4), T5: t5 (5), T6: t6 (6), T7: t7 (7), T8: t8 (8));
+impl_from_lua_tuple!(T: t (0), T1: t1 (1), T2: t2 (2), T3: t3 (3), T4: t4 (4), T5: t5 (5), T6: t6 (6), T7: t7 (7), T8: t8 (8), T9: t9 (9));
 
 impl<'a, T: FromLua<'a>> FromLua<'a> for Option<T> {
     unsafe fn from_lua_unchecked(vm: &'a Vm, index: i32) -> Self {
@@ -249,6 +258,75 @@ impl<'a, T: FromLua<'a>> FromLua<'a> for Option<T> {
             Ok(None)
         } else {
             Ok(Some(FromLua::from_lua(vm, index)?))
+        }
+    }
+}
+
+unsafe impl<T: UserData> IntoLua for T {
+    fn into_lua(self, vm: &Vm) -> u16 {
+        let userdata = unsafe { lua_newuserdata(vm.as_ptr(), size_of::<T>()) } as *mut T;
+        unsafe { userdata.write(self) };
+        unsafe { luaL_setmetatable(vm.as_ptr(), T::CLASS_NAME.as_ptr()) };
+        1
+    }
+}
+
+unsafe impl IntoLua for () {
+    #[inline(always)]
+    fn into_lua(self, _: &Vm) -> u16 {
+        0
+    }
+}
+
+unsafe impl<T: IntoLua> IntoLua for Option<T> {
+    fn into_lua(self, vm: &Vm) -> u16 {
+        match self {
+            None => unsafe {
+                lua_pushnil(vm.as_ptr());
+                1
+            },
+            Some(v) => v.into_lua(vm),
+        }
+    }
+}
+
+unsafe impl IntoLua for &str {
+    #[inline(always)]
+    fn into_lua(self, vm: &Vm) -> u16 {
+        self.as_bytes().into_lua(vm)
+    }
+}
+
+unsafe impl IntoLua for &[u8] {
+    #[inline(always)]
+    fn into_lua(self, vm: &Vm) -> u16 {
+        unsafe { lua_pushlstring(vm.as_ptr(), self.as_ptr() as _, self.len()) };
+        1
+    }
+}
+
+unsafe impl IntoLua for String {
+    #[inline(always)]
+    fn into_lua(self, vm: &Vm) -> u16 {
+        (&*self).into_lua(vm)
+    }
+}
+
+unsafe impl IntoLua for Vec<u8> {
+    #[inline(always)]
+    fn into_lua(self, vm: &Vm) -> u16 {
+        self.as_slice().into_lua(vm)
+    }
+}
+
+unsafe impl<'a, T: IntoLua + Clone> IntoLua for Cow<'a, T>
+where
+    &'a T: IntoLua,
+{
+    fn into_lua(self, vm: &Vm) -> u16 {
+        match self {
+            Cow::Borrowed(v) => v.into_lua(vm),
+            Cow::Owned(v) => v.into_lua(vm),
         }
     }
 }
