@@ -19,7 +19,7 @@ bp3d-debug = "1.0.0-rc.6.2.0"
 bp3d-os = { version = "1.0.0-rc.4.4.0", features = [], optional = true }
 time = { version = "0.3.41", features = ["formatting"], optional = true }
 itertools = { version = "0.14.0" }
-bp3d-lua-codegen = { version = "0.1.0", path = "../codegen", optional = true }
+bp3d-lua-codegen = { version = "1.0.0-rc.1.0.0", path = "../codegen", optional = true }
 
 [target.'cfg(windows)'.dependencies]
 windows-sys = { version = "0.59.0", features = ["Win32_System_Threading", "Win32_System_Kernel", "Win32_System_Diagnostics", "Win32_System_Diagnostics_Debug"], optional = true }
@@ -28,7 +28,7 @@ windows-sys = { version = "0.59.0", features = ["Win32_System_Threading", "Win32
 libc = { version = "0.2.170", optional = true }
 
 [dev-dependencies]
-bp3d-lua-codegen = { version = "0.1.0", path = "../codegen" }
+bp3d-lua-codegen = { version = "1.0.0-rc.1.0.0", path = "../codegen" }
 
 [build-dependencies]
 bp3d-lua-build = { version = "1.0.0-rc.1.0.0", path = "../build" }
