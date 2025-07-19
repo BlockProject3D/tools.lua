@@ -32,7 +32,7 @@ use bp3d_lua::vm::table::Table;
 use bp3d_lua::vm::RootVm;
 
 #[test]
-fn tables() {
+fn test_tables() {
     let mut vm = RootVm::new();
     let top = vm.top();
     vm.scope(|vm| {

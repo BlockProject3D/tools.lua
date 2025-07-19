@@ -49,7 +49,7 @@ pub unsafe trait IntoParam: Sized {
     /// * `vm`: the [Vm] to push this value to.
     ///
     /// returns: i32
-    fn into_param(self, vm: &Vm) -> u16;
+    fn into_param(self, vm: &Vm) -> i32;
 }
 
 /// This trait represents a function parameter.

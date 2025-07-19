@@ -66,8 +66,8 @@ impl<'a> FromParam<'a> for Value<'a> {
 
 unsafe impl IntoParam for Value<'_> {
     #[inline(always)]
-    fn into_param(self, vm: &Vm) -> u16 {
-        IntoLua::into_lua(self, vm)
+    fn into_param(self, vm: &Vm) -> i32 {
+        IntoLua::into_lua(self, vm) as _
     }
 }
 

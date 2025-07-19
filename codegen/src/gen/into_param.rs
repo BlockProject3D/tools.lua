@@ -88,7 +88,7 @@ impl Parser for IntoParam {
         let generics = self.generics;
         quote! {
             unsafe impl #generics bp3d_lua::vm::function::IntoParam for #name #generics {
-                fn into_param(self, vm: &bp3d_lua::vm::Vm) -> u16 {
+                fn into_param(self, vm: &bp3d_lua::vm::Vm) -> i32 {
                     let mut tbl = bp3d_lua::vm::table::Table::new(vm);
                     #(#parsed)*
                     1
@@ -102,7 +102,7 @@ impl Parser for IntoParam {
         let generics = self.generics;
         quote! {
             unsafe impl #generics bp3d_lua::vm::function::IntoParam for #name #generics {
-                fn into_param(self, vm: &bp3d_lua::vm::Vm) -> u16 {
+                fn into_param(self, vm: &bp3d_lua::vm::Vm) -> i32 {
                     match self {
                         #(#parsed)*
                     }

@@ -100,28 +100,28 @@ impl<'a> FromParam<'a> for &'a [u8] {
 
 unsafe impl IntoParam for &str {
     #[inline(always)]
-    fn into_param(self, vm: &Vm) -> u16 {
-        IntoLua::into_lua(self, vm)
+    fn into_param(self, vm: &Vm) -> i32 {
+        IntoLua::into_lua(self, vm) as _
     }
 }
 
 unsafe impl IntoParam for &[u8] {
     #[inline(always)]
-    fn into_param(self, vm: &Vm) -> u16 {
-        IntoLua::into_lua(self, vm)
+    fn into_param(self, vm: &Vm) -> i32 {
+        IntoLua::into_lua(self, vm) as _
     }
 }
 
 unsafe impl IntoParam for String {
     #[inline(always)]
-    fn into_param(self, vm: &Vm) -> u16 {
+    fn into_param(self, vm: &Vm) -> i32 {
         (&*self).into_param(vm)
     }
 }
 
 unsafe impl IntoParam for Vec<u8> {
     #[inline(always)]
-    fn into_param(self, vm: &Vm) -> u16 {
+    fn into_param(self, vm: &Vm) -> i32 {
         self.as_slice().into_param(vm)
     }
 }
@@ -130,7 +130,7 @@ unsafe impl<'a, T: IntoParam + Clone> IntoParam for Cow<'a, T>
 where
     &'a T: IntoParam,
 {
-    fn into_param(self, vm: &Vm) -> u16 {
+    fn into_param(self, vm: &Vm) -> i32 {
         match self {
             Cow::Borrowed(v) => v.into_param(vm),
             Cow::Owned(v) => v.into_param(vm),
@@ -163,7 +163,7 @@ macro_rules! impl_integer {
 
             unsafe impl IntoParam for $t {
                 #[inline(always)]
-                fn into_param(self, vm: &Vm) -> u16 {
+                fn into_param(self, vm: &Vm) -> i32 {
                     unsafe {
                         lua_pushinteger(vm.as_ptr(), self as _);
                         1
@@ -204,7 +204,7 @@ macro_rules! impl_float {
 
             unsafe impl IntoParam for $t {
                 #[inline(always)]
-                fn into_param(self, vm: &Vm) -> u16 {
+                fn into_param(self, vm: &Vm) -> i32 {
                     unsafe {
                         lua_pushnumber(vm.as_ptr(), self as _);
                         1
@@ -232,14 +232,14 @@ impl FromParam<'_> for bool {
 
 unsafe impl IntoParam for bool {
     #[inline(always)]
-    fn into_param(self, vm: &Vm) -> u16 {
+    fn into_param(self, vm: &Vm) -> i32 {
         unsafe { lua_pushboolean(vm.as_ptr(), if self { 1 } else { 0 }) };
         1
     }
 }
 
 unsafe impl<T: IntoParam, E: Error> IntoParam for Result<T, E> {
-    fn into_param(self, vm: &Vm) -> u16 {
+    fn into_param(self, vm: &Vm) -> i32 {
         match self {
             Ok(v) => v.into_param(vm),
             Err(e) => unsafe {
@@ -250,7 +250,7 @@ unsafe impl<T: IntoParam, E: Error> IntoParam for Result<T, E> {
 }
 
 unsafe impl<T: IntoParam> IntoParam for Option<T> {
-    fn into_param(self, vm: &Vm) -> u16 {
+    fn into_param(self, vm: &Vm) -> i32 {
         match self {
             None => unsafe {
                 lua_pushnil(vm.as_ptr());
@@ -263,7 +263,7 @@ unsafe impl<T: IntoParam> IntoParam for Option<T> {
 
 unsafe impl IntoParam for () {
     #[inline(always)]
-    fn into_param(self, _: &Vm) -> u16 {
+    fn into_param(self, _: &Vm) -> i32 {
         0
     }
 }
@@ -295,8 +295,8 @@ impl<'a, T: UserData> FromParam<'a> for &'a T {
 }
 
 unsafe impl<T: UserData> IntoParam for T {
-    fn into_param(self, vm: &Vm) -> u16 {
-        IntoLua::into_lua(self, vm)
+    fn into_param(self, vm: &Vm) -> i32 {
+        IntoLua::into_lua(self, vm) as _
     }
 }
 
@@ -308,7 +308,7 @@ macro_rules! count_tts {
 macro_rules! impl_into_param_tuple {
     ($($name: ident: $name2: tt),*) => {
         unsafe impl<$($name: IntoParam),*> IntoParam for ($($name),*) {
-            fn into_param(self, vm: &Vm) -> u16 {
+            fn into_param(self, vm: &Vm) -> i32 {
                 $(
                     self.$name2.into_param(vm);
                 )*

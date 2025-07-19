@@ -129,13 +129,13 @@ pub struct Yield;
 
 unsafe impl IntoParam for Yield {
     #[inline(always)]
-    fn into_param(self, vm: &Vm) -> u16 {
+    fn into_param(self, vm: &Vm) -> i32 {
         unsafe {
             if lua_isyieldable(vm.as_ptr()) != 1 {
                 luaL_error(vm.as_ptr(), c"attempt to yield a non-thread stack object".as_ptr());
             }
             lua_yield(vm.as_ptr(), 0);
-            0
+            -1
         }
     }
 }

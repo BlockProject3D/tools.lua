@@ -72,8 +72,8 @@ impl<'a> FromLua<'a> for Table<'a> {
 
 unsafe impl IntoParam for Table<'_> {
     #[inline(always)]
-    fn into_param(self, vm: &Vm) -> u16 {
-        IntoLua::into_lua(self, vm)
+    fn into_param(self, vm: &Vm) -> i32 {
+        IntoLua::into_lua(self, vm) as _
     }
 }
 

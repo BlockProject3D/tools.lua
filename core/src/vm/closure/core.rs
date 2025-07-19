@@ -95,7 +95,7 @@ impl<T> FromUpvalue<'_> for *const T {
 impl<T: IntoParam + Upvalue> IntoUpvalue for T {
     #[inline(always)]
     fn into_upvalue(self, vm: &Vm) -> u16 {
-        self.into_param(vm)
+        self.into_param(vm) as _
     }
 }
 

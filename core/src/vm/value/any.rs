@@ -138,8 +138,8 @@ unsafe impl IntoLua for AnyValue<'_> {
 
 unsafe impl IntoParam for AnyValue<'_> {
     #[inline(always)]
-    fn into_param(self, vm: &Vm) -> u16 {
-        IntoLua::into_lua(self, vm)
+    fn into_param(self, vm: &Vm) -> i32 {
+        IntoLua::into_lua(self, vm) as _
     }
 }
 
@@ -222,7 +222,7 @@ impl FromLua<'_> for AnyParam {
 }
 
 /// A raw primitive to return arbitrary count of values from a C function.
-pub struct UncheckedAnyReturn(u16);
+pub struct UncheckedAnyReturn(i32);
 
 impl UncheckedAnyReturn {
     /// Construct a [UncheckedAnyReturn].
@@ -235,7 +235,7 @@ impl UncheckedAnyReturn {
     ///
     /// It is UB to run any operation which may alter the lua stack after constructing this
     /// primitive.
-    pub unsafe fn new(vm: &Vm, count: u16) -> Self {
+    pub unsafe fn new(vm: &Vm, count: i32) -> Self {
         let top = vm.top();
         if count > top as _ {
             panic!()
@@ -246,7 +246,7 @@ impl UncheckedAnyReturn {
 
 unsafe impl IntoParam for UncheckedAnyReturn {
     #[inline(always)]
-    fn into_param(self, _: &Vm) -> u16 {
-        self.0
+    fn into_param(self, _: &Vm) -> i32 {
+        self.0 as _
     }
 }

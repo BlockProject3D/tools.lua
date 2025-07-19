@@ -45,7 +45,7 @@ enum TableOrString<'a> {
 }
 
 unsafe impl IntoParam for TableOrString<'_> {
-    fn into_param(self, vm: &Vm) -> u16 {
+    fn into_param(self, vm: &Vm) -> i32 {
         match self {
             TableOrString::Table(t) => t.into_param(vm),
             TableOrString::String(s) => s.into_param(vm),

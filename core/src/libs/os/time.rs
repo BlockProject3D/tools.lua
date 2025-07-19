@@ -107,7 +107,7 @@ decl_userdata! {
 }
 
 unsafe impl IntoParam for OffsetDateTime {
-    fn into_param(self, vm: &Vm) -> u16 {
+    fn into_param(self, vm: &Vm) -> i32 {
         OffsetDateTimeWrapper(self).into_param(vm)
     }
 }
