@@ -57,14 +57,14 @@ fn test_threads_yield_lua() {
     ").unwrap();
     let thread: Value = vm.get_global(c"CO").unwrap();
     assert_eq!(obj.get(), 0);
-    assert_eq!(thread.as_thread().resume(()).unwrap(), State::Yielded);
+    assert_eq!(thread.as_thread().resume::<()>(()).unwrap().state, State::Yielded);
     assert_eq!(obj.get(), 1);
-    assert_eq!(thread.as_thread().resume(42).unwrap(), State::Finished);
+    assert_eq!(thread.as_thread().resume::<()>(42).unwrap().state, State::Finished);
     assert_eq!(obj.get(), 2);
     // A finished thread will fail to resume.
-    assert!(thread.as_thread().resume(()).is_err());
-    assert!(thread.as_thread().resume(true).is_err());
-    assert!(thread.as_thread().resume(()).is_err());
+    assert!(thread.as_thread().resume::<()>(()).is_err());
+    assert!(thread.as_thread().resume::<()>(true).is_err());
+    assert!(thread.as_thread().resume::<()>(()).is_err());
 }
 
 decl_lib_func! {
@@ -100,12 +100,73 @@ fn test_threads_yield_rust() {
     ").unwrap();
     let thread: Value = vm.get_global(c"CO").unwrap();
     assert_eq!(obj.get(), 0);
-    assert_eq!(thread.as_thread().resume(()).unwrap(), State::Yielded);
+    assert_eq!(thread.as_thread().resume::<()>(()).unwrap().state, State::Yielded);
     assert_eq!(obj.get(), 1);
-    assert_eq!(thread.as_thread().resume(42).unwrap(), State::Finished);
+    assert_eq!(thread.as_thread().resume::<()>(42).unwrap().state, State::Finished);
     assert_eq!(obj.get(), 2);
     // A finished thread will fail to resume.
-    assert!(thread.as_thread().resume(()).is_err());
-    assert!(thread.as_thread().resume(()).is_err());
-    assert!(thread.as_thread().resume(()).is_err());
+    assert!(thread.as_thread().resume::<()>(()).is_err());
+    assert!(thread.as_thread().resume::<()>(()).is_err());
+    assert!(thread.as_thread().resume::<()>(()).is_err());
+}
+
+#[test]
+fn test_threads_with_yield_value() {
+    let vm = RootVm::new();
+    assert!(vm.as_thread().is_none());
+    let obj = std::rc::Rc::new(Cell::new(0));
+    vm.set_global(c"increment", increment(Rc::from_rust(&vm, obj.clone()))).unwrap();
+    vm.run_code::<()>(c"
+        CO = coroutine.create(function()
+            increment()
+            coroutine.yield(1)
+            increment()
+            return 42
+        end)
+    ").unwrap();
+    let thread: Value = vm.get_global(c"CO").unwrap();
+    assert_eq!(obj.get(), 0);
+    assert_eq!(thread.as_thread().resume::<i32>(()).unwrap().data, 1);
+    assert_eq!(thread.as_thread().resume::<i32>(()).unwrap().data, 42);
+    assert_eq!(obj.get(), 2);
+}
+
+#[test]
+fn test_threads_with_yield_value_unsafe() {
+    let vm = RootVm::new();
+    assert!(vm.as_thread().is_none());
+    let obj = std::rc::Rc::new(Cell::new(0));
+    vm.set_global(c"increment", increment(Rc::from_rust(&vm, obj.clone()))).unwrap();
+    vm.run_code::<()>(c"
+        CO = coroutine.create(function()
+            increment()
+            coroutine.yield(\"test\")
+            increment()
+            coroutine.yield(\"test2\")
+            increment()
+            collectgarbage()
+            return \"test3\"
+        end)
+    ").unwrap();
+    let thread: Value = vm.get_global(c"CO").unwrap();
+    assert_eq!(obj.get(), 0);
+    let s: String = thread.as_thread().resume(()).unwrap().data;
+    let s2: String = thread.as_thread().resume(()).unwrap().data;
+    let s3: String = thread.as_thread().resume(()).unwrap().data;
+    vm.run_code::<()>(c"CO = nil; collectgarbage()").unwrap();
+    vm.run_code::<()>(c"
+        CO = coroutine.create(function()
+            increment()
+            coroutine.yield(\"test\")
+            increment()
+            coroutine.yield(\"test2\")
+            increment()
+            collectgarbage()
+            return \"test3\"
+        end)
+    ").unwrap();
+    assert_eq!(s, "test");
+    assert_eq!(s2, "test2");
+    assert_eq!(s3, "test3");
+    assert_eq!(obj.get(), 3);
 }

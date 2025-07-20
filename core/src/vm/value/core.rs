@@ -43,7 +43,7 @@ impl<'a> FromLua<'a> for &'a str {
         std::str::from_utf8_unchecked(slice)
     }
 
-    fn from_lua(vm: &Vm, index: i32) -> crate::vm::Result<Self> {
+    fn from_lua(vm: &'a Vm, index: i32) -> crate::vm::Result<Self> {
         let l = vm.as_ptr();
         unsafe {
             let ty = lua_type(l, index);
@@ -88,6 +88,30 @@ impl<'a> FromLua<'a> for &'a [u8] {
                 })),
             }
         }
+    }
+}
+
+impl FromLua<'_> for String {
+    unsafe fn from_lua_unchecked(vm: &'_ Vm, index: i32) -> Self {
+        let s: &str = FromLua::from_lua_unchecked(vm, index);
+        s.into()
+    }
+
+    fn from_lua(vm: &'_ Vm, index: i32) -> crate::vm::Result<Self> {
+        let s: &str = FromLua::from_lua(vm, index)?;
+        Ok(s.into())
+    }
+}
+
+impl FromLua<'_> for Vec<u8> {
+    unsafe fn from_lua_unchecked(vm: &'_ Vm, index: i32) -> Self {
+        let bytes: &[u8] = FromLua::from_lua_unchecked(vm, index);
+        bytes.into()
+    }
+
+    fn from_lua(vm: &'_ Vm, index: i32) -> crate::vm::Result<Self> {
+        let bytes: &[u8] = FromLua::from_lua(vm, index)?;
+        Ok(bytes.into())
     }
 }
 

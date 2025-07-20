@@ -41,6 +41,11 @@ pub enum State {
     Finished,
 }
 
+pub struct Output<T> {
+    pub state: State,
+    pub data: T
+}
+
 pub struct Thread<'a> {
     vm: Vm,
     useless: PhantomData<&'a ()>
@@ -103,12 +108,26 @@ impl<'a> Thread<'a> {
         unsafe { lua_status(self.vm.as_ptr()) }
     }
 
-    pub fn resume(&self, args: impl IntoLua) -> crate::vm::Result<State> {
+    pub fn resume<'b, T: FromLua<'b>>(&'b self, args: impl IntoLua) -> crate::vm::Result<Output<T>>
+        where T: 'static {
         let num = args.into_lua(&self.vm);
+        let top = self.vm.top();
         let res = unsafe { lua_resume(self.vm.as_ptr(), num as _) };
         match res {
-            ThreadStatus::Ok => Ok(State::Finished),
-            ThreadStatus::Yield => Ok(State::Yielded),
+            ThreadStatus::Ok => {
+                let data = T::from_lua(&self.vm, top)?;
+                Ok(Output {
+                    state: State::Finished,
+                    data
+                })
+            },
+            ThreadStatus::Yield => {
+                let data = T::from_lua(&self.vm, top)?;
+                Ok(Output {
+                    state: State::Yielded,
+                    data
+                })
+            },
             ThreadStatus::ErrRun => {
                 // We've got a runtime error when executing the function.
                 // TODO: In the future, might be great to traceback the thread as well.
@@ -125,6 +144,7 @@ impl<'a> Thread<'a> {
     }
 }
 
+//TODO: Support nreturns
 pub struct Yield;
 
 unsafe impl IntoParam for Yield {
