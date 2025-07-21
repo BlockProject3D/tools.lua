@@ -109,7 +109,8 @@ impl<'a> Thread<'a> {
     }
 
     pub fn resume<'b, T: FromLua<'b>>(&'b self, args: impl IntoLua) -> crate::vm::Result<Output<T>>
-        where T: 'static {
+        where T: 'static /* This clause ensures that a future call to collectgarbage or resume does
+        not free a lua value which would be borrowed by a previous call to resume */ {
         let num = args.into_lua(&self.vm);
         let top = self.vm.top();
         let res = unsafe { lua_resume(self.vm.as_ptr(), num as _) };
@@ -144,17 +145,17 @@ impl<'a> Thread<'a> {
     }
 }
 
-//TODO: Support nreturns
-pub struct Yield;
+pub struct Yield<T>(pub T);
 
-unsafe impl IntoParam for Yield {
+unsafe impl<T: IntoParam> IntoParam for Yield<T> {
     #[inline(always)]
     fn into_param(self, vm: &Vm) -> i32 {
         unsafe {
             if lua_isyieldable(vm.as_ptr()) != 1 {
                 luaL_error(vm.as_ptr(), c"attempt to yield a non-thread stack object".as_ptr());
             }
-            lua_yield(vm.as_ptr(), 0);
+            let num = self.0.into_param(vm);
+            lua_yield(vm.as_ptr(), num);
             -1
         }
     }

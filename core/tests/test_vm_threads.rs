@@ -68,8 +68,14 @@ fn test_threads_yield_lua() {
 }
 
 decl_lib_func! {
-    fn my_yield() -> Yield {
-        Yield
+    fn my_yield() -> Yield<()> {
+        Yield(())
+    }
+}
+
+decl_lib_func! {
+    fn my_yield2(v: i32) -> Yield<i32> {
+        Yield(v)
     }
 }
 
@@ -111,7 +117,7 @@ fn test_threads_yield_rust() {
 }
 
 #[test]
-fn test_threads_with_yield_value() {
+fn test_threads_with_yield_value_lua() {
     let vm = RootVm::new();
     assert!(vm.as_thread().is_none());
     let obj = std::rc::Rc::new(Cell::new(0));
@@ -127,6 +133,28 @@ fn test_threads_with_yield_value() {
     let thread: Value = vm.get_global(c"CO").unwrap();
     assert_eq!(obj.get(), 0);
     assert_eq!(thread.as_thread().resume::<i32>(()).unwrap().data, 1);
+    assert_eq!(thread.as_thread().resume::<i32>(()).unwrap().data, 42);
+    assert_eq!(obj.get(), 2);
+}
+
+#[test]
+fn test_threads_with_yield_value_rust() {
+    let vm = RootVm::new();
+    assert!(vm.as_thread().is_none());
+    let obj = std::rc::Rc::new(Cell::new(0));
+    vm.set_global(c"increment", increment(Rc::from_rust(&vm, obj.clone()))).unwrap();
+    vm.set_global(c"my_yield", RFunction::wrap(my_yield2)).unwrap();
+    vm.run_code::<()>(c"
+        CO = coroutine.create(function()
+            increment()
+            my_yield(5)
+            increment()
+            return 42
+        end)
+    ").unwrap();
+    let thread: Value = vm.get_global(c"CO").unwrap();
+    assert_eq!(obj.get(), 0);
+    assert_eq!(thread.as_thread().resume::<i32>(()).unwrap().data, 5);
     assert_eq!(thread.as_thread().resume::<i32>(()).unwrap().data, 42);
     assert_eq!(obj.get(), 2);
 }
