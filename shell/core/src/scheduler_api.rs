@@ -26,47 +26,42 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::path::PathBuf;
-use clap::Parser;
+use bp3d_lua::decl_closure;
+use bp3d_lua::libs::Lib;
+use bp3d_lua::util::Namespace;
+use bp3d_lua::vm::closure::rc::Rc;
+use bp3d_lua::vm::thread::value::Value;
+use crate::scheduler::SchedulerPtr;
 
-mod lua;
-mod core;
-mod autocomplete;
-mod data_out;
-mod data_in;
-mod data;
-mod scheduler;
-mod scheduler_api;
-
-#[derive(Parser, Debug)]
-#[command(version, about, long_about = None)]
-struct Cli {
-    #[arg(short = 'n', long = "name", help = "Name of IPC server.")]
-    pub name: Option<String>,
-
-    #[arg(short = 'r', long = "root", help = "Path to lua root directory.")]
-    pub root: Option<PathBuf>,
-
-    #[arg(short = 'm', long = "modules", help = "Path to modules directory.")]
-    pub modules: Option<PathBuf>,
-
-    #[arg(help = "Path to main script to start at Vm startup in the root directory.")]
-    pub main_script: Option<String>
+decl_closure! {
+    fn schedule_in |scheduler: Rc<SchedulerPtr>| (thread: Value, after_ms: u32) -> () {
+        scheduler.schedule_in(thread, after_ms);
+    }
 }
 
-#[tokio::main]
-async fn main() {
-    let args = Cli::parse();
-    let root = args.root.unwrap_or(PathBuf::from("./"));
-    let mut modules = Vec::new();
-    if let Some(path) = args.modules {
-        modules.push(path);
+decl_closure! {
+    fn schedule_periodically |scheduler: Rc<SchedulerPtr>| (thread: Value, period_ms: u32) -> () {
+        scheduler.schedule_periodically(thread, period_ms);
     }
-    modules.push(PathBuf::from("./target/debug"));
-    core::run(lua::Args {
-        data: root.join("data"),
-        lua: root.join("src"),
-        modules,
-        main_script: args.main_script,
-    }, args.name.as_ref().map(|v| &**v).unwrap_or("bp3d-lua-shell")).await;
+}
+
+pub struct SchedulerApi(std::rc::Rc<SchedulerPtr>);
+
+impl SchedulerApi {
+    pub fn new(ptr: std::rc::Rc<SchedulerPtr>) -> Self {
+        Self(ptr)
+    }
+}
+
+impl Lib for SchedulerApi {
+    const NAMESPACE: &'static str = "bp3d.lua.shell";
+
+    fn load(&self, namespace: &mut Namespace) -> bp3d_lua::vm::Result<()> {
+        let r1 = Rc::from_rust(namespace.vm(), self.0.clone());
+        let r2 = Rc::from_rust(namespace.vm(), self.0.clone());
+        namespace.add([
+            ("scheduleIn", schedule_in(r1)),
+            ("schedulePeriodically", schedule_periodically(r2))
+        ])
+    }
 }

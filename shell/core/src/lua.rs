@@ -27,6 +27,7 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use std::path::PathBuf;
+use std::rc::Rc;
 use tokio::sync::mpsc;
 use std::thread::JoinHandle;
 use std::time::Duration;
@@ -42,13 +43,16 @@ use crate::autocomplete::Autocomplete;
 use crate::data::DataOut;
 use crate::data_in::{Exit, InData, NetInData, RunCode, RunFile};
 use crate::data_out::{Log, OutData};
+use crate::scheduler::SchedulerPtr;
+use crate::scheduler_api::SchedulerApi;
 
 const CHANNEL_BUFFER: usize = 32;
 
 pub struct Args {
     pub data: PathBuf,
     pub lua: PathBuf,
-    pub modules: Vec<PathBuf>
+    pub modules: Vec<PathBuf>,
+    pub main_script: Option<String>
 }
 
 pub struct Lua {
@@ -107,18 +111,27 @@ impl Lua {
         let (logger, out_queue) = mpsc::channel(CHANNEL_BUFFER);
         let (signal, handle) = spawn_interruptible(move |vm| {
             let logger = DataOut::new(logger);
+            let scheduler = Rc::new(SchedulerPtr::new());
             debug!("Loading VM libraries...");
+            debug!("Loading OS library...");
             if let Err(e) = (libs::os::Compat, libs::os::Instant, libs::os::Time).register(vm) {
                 error!("Failed to load OS library: {}", e);
             }
+            debug!("Loading string library...");
             if let Err(e) = (libs::util::String, libs::util::Table, libs::util::Utf8).register(vm) {
                 error!("Failed to load util library: {}", e);
             }
+            debug!("Loading lua library...");
             if let Err(e) = libs::lua::Lua::new().load_chroot_path(&args.data).build().register(vm) {
                 error!("Failed to load base library: {}", e);
             }
+            debug!("Loading bp3d-lua-shell::autocomplete library...");
             if let Err(e) = Autocomplete::new(logger.clone()).register(vm) {
                 error!("Failed to register autocomplete library: {}", e);
+            }
+            debug!("Loading bp3d-lua-shell::scheduler library...");
+            if let Err(e) = SchedulerApi::new(scheduler.clone()).register(vm) {
+                error!("Failed to register scheduler library: {}", e);
             }
             let mut modules = libs::lua::Module::new(&[]);
             for path in &args.modules {
@@ -135,12 +148,22 @@ impl Lua {
             } else {
                 info!("JIT: OFF")
             }
-            while let Some(command) = receiver.blocking_recv() {
-                // Nice type-inference breakage with this box.
-                let ret = vm.scope(|vm| Ok((command as Box<dyn InData>).handle(&args, vm, &logger))).unwrap();
-                if ret {
-                    break;
+            if let Some(main_script) = &args.main_script {
+                vm.scope(|vm| Ok(RunFile { path: main_script.clone() }.handle(&args, vm, &logger))).unwrap();
+            }
+            loop {
+                // First handle IPC events
+                while let Some(command) = receiver.try_recv().ok() {
+                    // Nice type-inference breakage with this box.
+                    let ret = vm.scope(|vm| Ok((command as Box<dyn InData>).handle(&args, vm, &logger))).unwrap();
+                    if ret {
+                        break;
+                    }
                 }
+                // Now run the scheduler
+                scheduler.step(vm, &logger);
+                // Wait for next cycle
+                std::thread::sleep(Duration::from_millis(1));
             }
         });
         Self {
@@ -164,7 +187,8 @@ impl InData for RunCode {
 impl InData for RunFile {
     fn handle(&mut self, args: &Args, vm: &Vm, out: &DataOut) -> bool {
         let path = args.lua.join(&self.path);
-        let script = match Script::from_path(path) {
+        debug!("Loading script file: {:?}...", path);
+        let script = match Script::from_path(&path) {
             Ok(script) => script,
             Err(e) => {
                 error!("Error loading lua script: {}", e);
@@ -172,6 +196,7 @@ impl InData for RunFile {
                 return false;
             }
         };
+        debug!("Running script file: {:?}...", path);
         Lua::handle_value(vm.run(script), out)
     }
 }
