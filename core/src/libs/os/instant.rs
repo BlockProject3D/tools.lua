@@ -31,19 +31,19 @@ use crate::util::Namespace;
 use crate::vm::function::types::RFunction;
 use crate::{decl_lib_func, decl_userdata};
 
-struct Wrapper(bp3d_os::time::Instant);
+struct InstantWrapper(bp3d_os::time::Instant);
 
 decl_userdata! {
-    impl Wrapper {
-        fn elapsed(this: &Wrapper) -> f64 {
+    impl InstantWrapper {
+        fn elapsed(this: &InstantWrapper) -> f64 {
             this.0.elapsed().as_secs_f64()
         }
     }
 }
 
 decl_lib_func! {
-    fn now() -> Wrapper {
-        Wrapper(bp3d_os::time::Instant::now())
+    fn now() -> InstantWrapper {
+        InstantWrapper(bp3d_os::time::Instant::now())
     }
 }
 
@@ -55,7 +55,7 @@ impl Lib for Instant {
     fn load(&self, namespace: &mut Namespace) -> crate::vm::Result<()> {
         namespace
             .vm()
-            .register_userdata::<Wrapper>(crate::vm::userdata::case::Camel)?;
+            .register_userdata::<InstantWrapper>(crate::vm::userdata::case::Camel)?;
         namespace.add([("now", RFunction::wrap(now))])
     }
 }

@@ -38,6 +38,7 @@ use bp3d_util::simple_error;
 use time::error::{ComponentRange, Format, InvalidFormatDescription};
 use time::format_description::parse;
 use time::{Date, Duration, Month, OffsetDateTime, PrimitiveDateTime, UtcOffset};
+use crate::vm::value::IntoLua;
 
 simple_error! {
     FormatError {
@@ -109,6 +110,12 @@ decl_userdata! {
 unsafe impl IntoParam for OffsetDateTime {
     fn into_param(self, vm: &Vm) -> i32 {
         OffsetDateTimeWrapper(self).into_param(vm)
+    }
+}
+
+unsafe impl IntoLua for OffsetDateTime {
+    fn into_lua(self, vm: &Vm) -> u16 {
+        OffsetDateTimeWrapper(self).into_lua(vm)
     }
 }
 
