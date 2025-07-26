@@ -1,5 +1,5 @@
 --- @param name string
---- @param parent table
+--- @param parent table?
 function AbstractClass(name, parent)
     local class = {}
     if not class.init then
@@ -14,7 +14,7 @@ function AbstractClass(name, parent)
 end
 
 --- @param name string
---- @param parent table
+--- @param parent table?
 function Class(name, parent)
     local class = {}
     if not class.init then
@@ -35,13 +35,15 @@ function Class(name, parent)
 end
 
 --- @class Parent
+--- @field init function
 local Parent = AbstractClass("Parent")
 
 function Parent:value()
     return 42
 end
 
---- @class Child
+--- @class Child: Parent
+--- @field new function
 local Child = Class("Child", Parent)
 
 function Child:init(a)
