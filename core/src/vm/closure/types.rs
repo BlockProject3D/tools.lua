@@ -31,7 +31,7 @@ use crate::vm::closure::{FromUpvalue, IntoUpvalue};
 use crate::vm::function::{FromParam, IntoParam};
 use crate::vm::value::IntoLua;
 use crate::vm::Vm;
-use std::ffi::c_void;
+use crate::vm::value::types::RawPtr;
 
 pub struct RClosure<T> {
     func: CFunction,
@@ -60,7 +60,7 @@ unsafe impl<T: IntoUpvalue> IntoLua for RClosure<T> {
     }
 }
 
-impl RClosure<*const c_void> {
+impl RClosure<RawPtr<()>> {
     pub fn from_rust<T, R, F: Fn(T) -> R + 'static>(vm: &Vm, fun: F) -> Self
     where
         for<'a> T: FromParam<'a>,
@@ -73,11 +73,11 @@ impl RClosure<*const c_void> {
             R: IntoParam,
         {
             let vm = unsafe { Vm::from_raw(l) };
-            let upvalue: *const F = unsafe { FromUpvalue::from_upvalue(&vm, 1) };
+            let upvalue: RawPtr<F> = unsafe { FromUpvalue::from_upvalue(&vm, 1) };
             let args: T = unsafe { FromParam::from_param(&vm, 1) };
-            let res = unsafe { (*upvalue)(args) };
+            let res = unsafe { (*upvalue.as_ptr())(args) };
             res.into_param(&vm) as _
         }
-        RClosure::new(_cfunc::<T, R, F>, ptr as *const _)
+        RClosure::new(_cfunc::<T, R, F>, RawPtr::new(ptr as _))
     }
 }

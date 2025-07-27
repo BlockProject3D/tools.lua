@@ -38,6 +38,7 @@ use crate::vm::value::FromLua;
 use crate::vm::Vm;
 
 pub use super::function::Function;
+pub use super::raw_ptr::{RawPtr, RawPtrRef};
 
 #[derive(Copy, Clone, PartialOrd, PartialEq, Debug)]
 pub struct Number(pub RawNumber);

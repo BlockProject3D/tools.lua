@@ -26,12 +26,13 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use crate::ffi::lua::{lua_pushlightuserdata, lua_settop, lua_touserdata};
-use crate::vm::registry::named::RawKey;
-use crate::vm::registry::Set;
+use crate::ffi::lua::lua_settop;
+use crate::vm::registry::named::Key;
 use crate::vm::Vm;
 use bp3d_debug::debug;
 use std::rc::Rc;
+use crate::vm::registry::types::RawPtr;
+use crate::vm::value::types::RawPtrRef;
 
 /// This trait represents a value which can be attached to a [Pool](Pool).
 pub trait Raw {
@@ -72,7 +73,7 @@ impl<T> Raw for Rc<T> {
     }
 }
 
-const DESTRUCTOR_POOL: RawKey = RawKey::new("__destructor_pool__");
+static DESTRUCTOR_POOL: Key<RawPtr<Pool>> = Key::new("__destructor_pool__");
 
 #[derive(Default)]
 pub struct Pool {
@@ -90,12 +91,9 @@ impl Pool {
     ///
     /// This is only safe to be called on [RootVm](crate::vm::RootVm) construction.
     pub unsafe fn new_in_vm(vm: &mut Vm) {
-        DESTRUCTOR_POOL.register(vm);
-        let l = vm.as_ptr();
         let b = Box::leak(Box::new(Pool::new()));
-        let ptr = b as *mut Pool as _;
-        lua_pushlightuserdata(l, ptr);
-        DESTRUCTOR_POOL.set(vm, -1);
+        let ptr = crate::vm::value::types::RawPtr::new(b as *mut Pool);
+        DESTRUCTOR_POOL.set(RawPtrRef::from_ptr(vm, ptr));
     }
 
     /// Extracts a destructor pool from the given [Vm].
@@ -103,17 +101,15 @@ impl Pool {
     /// # Safety
     ///
     /// The returned reference must not be aliased.
-    unsafe fn _from_vm(vm: &Vm) -> *mut Self {
+    unsafe fn _from_vm(vm: &Vm) -> crate::vm::value::types::RawPtr<Self> {
         let l = vm.as_ptr();
-        DESTRUCTOR_POOL.push(vm);
-        let ptr = lua_touserdata(l, -1) as *mut Pool;
-        assert!(!ptr.is_null());
+        let ptr = DESTRUCTOR_POOL.push(vm).unwrap();
         lua_settop(l, -2); // Remove the pointer from the lua stack.
-        ptr
+        ptr.as_ptr()
     }
 
     pub fn from_vm(vm: &mut Vm) -> &mut Self {
-        unsafe { &mut *Self::_from_vm(vm) }
+        unsafe { &mut *Self::_from_vm(vm).as_mut_ptr() }
     }
 
     pub fn attach<R: Raw>(vm: &Vm, raw: R) -> R::Ptr
@@ -121,7 +117,7 @@ impl Pool {
         R::Ptr: 'static,
     {
         let ptr = unsafe { Self::_from_vm(vm) };
-        unsafe { (*ptr).attach_mut(raw) }
+        unsafe { (*ptr.as_mut_ptr()).attach_mut(raw) }
     }
 
     pub fn attach_mut<R: Raw>(&mut self, raw: R) -> R::Ptr

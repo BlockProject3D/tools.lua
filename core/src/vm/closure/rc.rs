@@ -30,6 +30,7 @@ use crate::util::core::SimpleDrop;
 use crate::vm::closure::{FromUpvalue, IntoUpvalue, Upvalue};
 use crate::vm::Vm;
 use std::ops::Deref;
+use crate::vm::value::types::RawPtr;
 
 #[repr(transparent)]
 pub struct Rc<T>(*const T);
@@ -50,8 +51,8 @@ impl<T> Deref for Ref<'_, T> {
 impl<'a, T> FromUpvalue<'a> for Ref<'a, T> {
     #[inline(always)]
     unsafe fn from_upvalue(vm: &'a Vm, index: i32) -> Self {
-        let ptr: *const T = FromUpvalue::from_upvalue(vm, index);
-        Ref(&*ptr)
+        let ptr: RawPtr<T> = FromUpvalue::from_upvalue(vm, index);
+        Ref(&*ptr.as_ptr())
     }
 }
 
@@ -62,7 +63,7 @@ impl<T: 'static> Upvalue for Rc<T> {
 impl<T: 'static> IntoUpvalue for Rc<T> {
     #[inline(always)]
     fn into_upvalue(self, vm: &Vm) -> u16 {
-        self.0.into_upvalue(vm)
+        RawPtr::new(self.0 as *mut T).into_upvalue(vm)
     }
 }
 

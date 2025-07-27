@@ -32,5 +32,6 @@ mod function;
 mod interface;
 pub mod types;
 pub mod util;
+mod raw_ptr;
 
 pub use interface::*;

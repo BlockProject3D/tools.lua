@@ -36,6 +36,7 @@ use crate::vm::registry::core::RawKey;
 use crate::vm::Vm;
 use std::marker::PhantomData;
 use std::ops::{Deref, DerefMut};
+use crate::vm::value::types::RawPtr;
 
 pub struct Cell<T> {
     ptr: *mut *const T,
@@ -167,8 +168,8 @@ unsafe impl<T: 'static> SimpleDrop for Mut<'_, T> {}
 
 impl<'a, T: 'static> FromUpvalue<'a> for Ref<'a, T> {
     unsafe fn from_upvalue(vm: &'a Vm, index: i32) -> Self {
-        let ptr: *mut *const T = FromUpvalue::from_upvalue(vm, index);
-        if (*ptr).is_null() {
+        let ptr: RawPtr<*const T> = FromUpvalue::from_upvalue(vm, index);
+        if (*ptr.as_ptr()).is_null() {
             luaL_error(
                 vm.as_ptr(),
                 c"Context is not available in this function.".as_ptr(),
@@ -176,14 +177,14 @@ impl<'a, T: 'static> FromUpvalue<'a> for Ref<'a, T> {
             // luaL_error raises a lua exception and unwinds, so this cannot be reached.
             std::hint::unreachable_unchecked();
         }
-        Ref(unsafe { &**ptr })
+        Ref(unsafe { &**ptr.as_ptr() })
     }
 }
 
 impl<'a, T: 'static> FromUpvalue<'a> for Mut<'a, T> {
     unsafe fn from_upvalue(vm: &'a Vm, index: i32) -> Self {
-        let ptr: *mut *mut T = FromUpvalue::from_upvalue(vm, index);
-        if (*ptr).is_null() {
+        let ptr: RawPtr<*mut T> = FromUpvalue::from_upvalue(vm, index);
+        if (*ptr.as_ptr()).is_null() {
             luaL_error(
                 vm.as_ptr(),
                 c"Context is not available in this function.".as_ptr(),
@@ -191,7 +192,7 @@ impl<'a, T: 'static> FromUpvalue<'a> for Mut<'a, T> {
             // luaL_error raises a lua exception and unwinds, so this cannot be reached.
             std::hint::unreachable_unchecked();
         }
-        Mut(unsafe { &mut **ptr })
+        Mut(unsafe { &mut **ptr.as_ptr() })
     }
 }
 

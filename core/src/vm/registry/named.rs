@@ -26,17 +26,22 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use crate::ffi::lua::{
-    lua_createtable, lua_insert, lua_pushboolean, lua_pushlightuserdata, lua_rawget,
-    lua_rawset, lua_settop, lua_type, State, Type, REGISTRYINDEX,
-};
-use crate::vm::registry::Set;
-use crate::vm::value::util::ensure_value_top;
+use std::collections::BTreeSet;
+use crate::ffi::lua::{lua_insert, lua_pushlightuserdata, lua_rawget, lua_rawset, State, Type, REGISTRYINDEX};
+use crate::vm::registry::{Set, Value};
+use crate::vm::value::util::{ensure_type_equals, ensure_value_top};
 use crate::vm::Vm;
 use std::ffi::c_void;
+use std::marker::PhantomData;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Mutex;
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq)]
-pub struct RawKey(*const c_void);
+#[derive(Debug)]
+pub struct RawKey {
+    ptr: *const c_void,
+    registered: AtomicBool,
+    register_lock: Mutex<bool>
+}
 
 unsafe impl Send for RawKey {}
 unsafe impl Sync for RawKey {}
@@ -54,23 +59,13 @@ impl RawKey {
     ///
     /// This is UB to call if the key was not registered in the given [Vm] using
     /// [register](RawKey::register).
-    pub unsafe fn push(&self, vm: &Vm) {
+    pub fn push(&self, vm: &Vm) {
+        check_register_key_unique(self);
         let l = vm.as_ptr();
         unsafe {
-            lua_pushlightuserdata(l, self.0 as _);
+            lua_pushlightuserdata(l, self.ptr as _);
             lua_rawget(l, REGISTRYINDEX);
         }
-    }
-
-    /// Attempts to register this key with the given [Vm] instance. This function ensures the key
-    /// does not collide.
-    ///
-    /// # Panic
-    ///
-    /// This function panics if this key is already registered in the given [Vm].
-    #[inline(always)]
-    pub fn register(&self, vm: &Vm) {
-        unsafe { check_key_already_used(vm, self.0) };
     }
 
     pub const fn new(name: &str) -> Self {
@@ -87,7 +82,11 @@ impl RawKey {
             i += 1;
         }
         // And now a hack to turn u64 into ptr (btw, do NOT dereference it).
-        Self(val as usize as *const c_void)
+        Self {
+            ptr: val as usize as *const c_void,
+            registered: AtomicBool::new(false),
+            register_lock: Mutex::new(false)
+        }
     }
 }
 
@@ -99,37 +98,82 @@ unsafe fn rawsetp(l: State, idx: i32, key: *const c_void) {
 
 impl Set for RawKey {
     unsafe fn set(&self, vm: &Vm, index: i32) {
+        check_register_key_unique(self);
         let l = vm.as_ptr();
         ensure_value_top(vm, index);
-        rawsetp(l, REGISTRYINDEX, self.0);
+        rawsetp(l, REGISTRYINDEX, self.ptr);
     }
 }
 
-const USED_KEYS: RawKey = RawKey::new("__used_keys__");
+// Ideally this should be a HashSet, however Rust has decided otherwise; then give Rust whatever it
+// wants. In call cases this not going to be used in a hot path.
+//FIXME: This does not work across modules.
+static KEY_REGISTRY: Mutex<BTreeSet<usize>> = Mutex::new(BTreeSet::new());
 
-unsafe fn check_key_already_used(vm: &Vm, key: *const c_void) {
-    if key == USED_KEYS.0 {
-        panic!("Attempt to use reserved named key __used_keys__");
+fn check_register_key_unique(key: &RawKey) {
+    if key.registered.load(Ordering::Relaxed) {
+        return;
     }
-    let l = vm.as_ptr();
-    USED_KEYS.push(vm);
-    if lua_type(l, -1) != Type::Table {
-        lua_settop(l, -2); // Clear nil from the top of the stack.
-        lua_createtable(l, 0, 0);
-        USED_KEYS.set(vm, -1); // Pop the table and set it in the registry.
-        USED_KEYS.push(vm); // Re-push the table so that following code can use it.
+    let mut registered = key.register_lock.lock().unwrap();
+    if *registered {
+        return;
     }
-    lua_pushlightuserdata(l, key as _);
-    lua_rawget(l, -2); // Table is now at index -2 on the stack.
-    let ty = lua_type(l, -1);
-    lua_settop(l, -2); // Remove value from stack.
-    if ty == Type::Boolean {
-        // Key is already taken, this is bad.
-        panic!("Attempt to register an already used named key");
+    let mut lock = KEY_REGISTRY.lock().unwrap();
+    if lock.contains(&(key.ptr as _)) {
+        panic!("Attempt to register a duplicate key");
+    } else {
+        lock.insert(key.ptr as _);
+        *registered = true;
+        key.registered.store(true, Ordering::Relaxed);
     }
-    lua_pushlightuserdata(l, key as _);
-    lua_pushboolean(l, 1);
-    lua_rawset(l, -3); // Table is now at -3 on the stack because we've just pushed a key and a
-                       // value.
-    lua_settop(l, -2); // Clear the used keys table from the stack.
+}
+
+pub struct Key<T> {
+    raw: RawKey,
+    useless: PhantomData<*const T>
+}
+
+unsafe impl<T> Send for Key<T> {}
+unsafe impl<T> Sync for Key<T> {}
+
+impl<T: Value> Key<T> {
+    /// Pushes the lua value associated to this registry key on the lua stack.
+    ///
+    /// # Arguments
+    ///
+    /// * `vm`: the [Vm] to attach the produced lua value to.
+    ///
+    /// returns: <T as RegistryValue>::Value
+    pub fn push<'a>(&self, vm: &'a Vm) -> Option<T::Value<'a>> {
+        unsafe {
+            self.raw.push(vm);
+            ensure_type_equals(vm, -1, Type::LightUserdata)
+                .map(|_| T::from_registry(vm, -1)).ok()
+        }
+    }
+
+    /// Pushes the lua value associated to this registry key on the lua stack.
+    ///
+    /// # Arguments
+    ///
+    /// * `vm`: the [Vm] to attach the produced lua value to.
+    ///
+    /// returns: <T as RegistryValue>::Value
+    #[inline(always)]
+    pub fn as_raw(&self) -> &RawKey {
+        &self.raw
+    }
+
+    #[inline(always)]
+    pub const fn new(name: &str) -> Key<T> {
+        Key {
+            raw: RawKey::new(name),
+            useless: PhantomData,
+        }
+    }
+
+    #[inline(always)]
+    pub fn set(&self, value: T::Value<'_>) {
+        unsafe { T::set_registry(&self.raw, value) }
+    }
 }

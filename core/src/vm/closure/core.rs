@@ -26,13 +26,14 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use crate::ffi::lua::{lua_pushlightuserdata, lua_topointer, GLOBALSINDEX};
+use crate::ffi::lua::{lua_topointer, GLOBALSINDEX};
 use crate::vm::closure::{FromUpvalue, IntoUpvalue, Upvalue};
 use crate::vm::function::IntoParam;
-use crate::vm::value::FromLua;
+use crate::vm::value::{FromLua, IntoLua};
 use crate::vm::Vm;
 use std::ffi::OsStr;
 use std::path::Path;
+use crate::vm::value::types::RawPtr;
 
 macro_rules! impl_from_upvalue_using_from_lua_unchecked {
     ($($t: ty),*) => {
@@ -78,17 +79,12 @@ impl_from_upvalue_using_from_lua_unchecked!(i64, u64);
 
 impl_from_upvalue_using_from_lua_unchecked!(i8, u8, i16, u16, i32, u32, f32, f64, bool);
 
-impl<T> FromUpvalue<'_> for *mut T {
+// Wrap this in a new RawPtr type...
+
+impl<T> FromUpvalue<'_> for RawPtr<T> {
     #[inline(always)]
     unsafe fn from_upvalue(vm: &Vm, index: i32) -> Self {
-        lua_topointer(vm.as_ptr(), GLOBALSINDEX - index) as _
-    }
-}
-
-impl<T> FromUpvalue<'_> for *const T {
-    #[inline(always)]
-    unsafe fn from_upvalue(vm: &'_ Vm, index: i32) -> Self {
-        lua_topointer(vm.as_ptr(), GLOBALSINDEX - index) as _
+        RawPtr::new(lua_topointer(vm.as_ptr(), GLOBALSINDEX - index) as _)
     }
 }
 
@@ -99,26 +95,15 @@ impl<T: IntoParam + Upvalue> IntoUpvalue for T {
     }
 }
 
-impl<T> IntoUpvalue for *mut T {
+impl<T> IntoUpvalue for RawPtr<T> {
     fn into_upvalue(self, vm: &Vm) -> u16 {
-        unsafe { lua_pushlightuserdata(vm.as_ptr(), self as _) };
+        self.into_lua(vm);
         1
     }
 }
 
-impl<T> IntoUpvalue for *const T {
-    fn into_upvalue(self, vm: &Vm) -> u16 {
-        unsafe { lua_pushlightuserdata(vm.as_ptr(), self as _) };
-        1
-    }
-}
-
-impl<T> Upvalue for *mut T {
-    type From<'a> = *mut T;
-}
-
-impl<T> Upvalue for *const T {
-    type From<'a> = *const T;
+impl<T> Upvalue for RawPtr<T> {
+    type From<'a> = RawPtr<T>;
 }
 
 impl<'a> FromUpvalue<'a> for &'a OsStr {
