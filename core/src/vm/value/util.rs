@@ -35,7 +35,7 @@ use crate::vm::Vm;
 /// Ensures the given lua value at index is of a specified type.
 #[inline(always)]
 pub fn ensure_type_equals(vm: &Vm, index: i32, expected: Type) -> crate::vm::Result<()> {
-    let ty = unsafe { crate::ffi::lua::lua_type(vm.as_ptr(), index) };
+    let ty = unsafe { lua_type(vm.as_ptr(), index) };
     if ty == expected {
         //FIXME: likely branch
         Ok(())

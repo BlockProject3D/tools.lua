@@ -26,14 +26,24 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use crate::ffi::lua::Type;
+use crate::ffi::lua::{lua_type, Type};
 use bp3d_util::simple_error;
 use std::fmt::{Display, Formatter};
+use crate::vm::Vm;
 
 #[derive(Debug, Copy, Clone)]
 pub struct TypeError {
     pub expected: Type,
     pub actual: Type,
+}
+
+impl TypeError {
+    pub fn from_stack(expected: Type, vm: &Vm, index: i32) -> Error {
+        Error::Type(Self {
+            expected,
+            actual: unsafe { lua_type(vm.as_ptr(), index) },
+        })
+    }
 }
 
 impl Display for TypeError {

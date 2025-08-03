@@ -27,8 +27,8 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::ffi::ext::{lua_ext_fast_checkboolean, lua_ext_fast_checkinteger, lua_ext_fast_checknumber};
-use crate::ffi::laux::{luaL_checklstring, luaL_checkudata, luaL_testudata};
-use crate::ffi::lua::{lua_pushboolean, lua_pushinteger, lua_pushnil, lua_pushnumber, lua_type, RawInteger, RawNumber, Type};
+use crate::ffi::laux::{luaL_checkinteger, luaL_checklstring, luaL_checknumber, luaL_checkudata, luaL_testudata};
+use crate::ffi::lua::{lua_isnumber, lua_pushboolean, lua_pushinteger, lua_pushnil, lua_pushnumber, lua_toboolean, lua_tointeger, lua_tonumber, lua_type, RawInteger, RawNumber, Type};
 use crate::util::core::SimpleDrop;
 use crate::vm::function::{FromParam, IntoParam};
 use crate::vm::userdata::UserData;
@@ -38,6 +38,7 @@ use crate::vm::Vm;
 use std::borrow::Cow;
 use std::error::Error;
 use std::slice;
+use crate::vm::value::types::{Boolean, Integer, Number};
 
 impl<'a, T: FromParam<'a> + SimpleDrop> FromParam<'a> for Option<T> {
     unsafe fn from_param(vm: &'a Vm, index: i32) -> Self {
@@ -328,3 +329,74 @@ impl_into_param_tuple!(T: 0, T1: 1, T2: 2, T3: 3, T4: 4, T5: 5, T6: 6);
 impl_into_param_tuple!(T: 0, T1: 1, T2: 2, T3: 3, T4: 4, T5: 5, T6: 6, T7: 7);
 impl_into_param_tuple!(T: 0, T1: 1, T2: 2, T3: 3, T4: 4, T5: 5, T6: 6, T7: 7, T8: 8);
 impl_into_param_tuple!(T: 0, T1: 1, T2: 2, T3: 3, T4: 4, T5: 5, T6: 6, T7: 7, T8: 8, T9: 9);
+
+impl<'a> FromParam<'a> for Number {
+    #[inline(always)]
+    unsafe fn from_param(vm: &'a Vm, index: i32) -> Self {
+        Self(luaL_checknumber(vm.as_ptr(), index))
+    }
+
+    fn try_from_param(vm: &'a Vm, index: i32) -> Option<Self> {
+        let l = vm.as_ptr();
+        unsafe {
+            if lua_isnumber(l, index) == 1 {
+                Some(Self(lua_tonumber(l, index)))
+            } else {
+                None
+            }
+        }
+    }
+}
+
+impl<'a> FromParam<'a> for Integer {
+    #[inline(always)]
+    unsafe fn from_param(vm: &'a Vm, index: i32) -> Self {
+        Self(luaL_checkinteger(vm.as_ptr(), index))
+    }
+
+    fn try_from_param(vm: &'a Vm, index: i32) -> Option<Self> {
+        let l = vm.as_ptr();
+        unsafe {
+            if lua_isnumber(l, index) == 1 {
+                Some(Self(lua_tointeger(l, index)))
+            } else {
+                None
+            }
+        }
+    }
+}
+
+impl<'a> FromParam<'a> for Boolean {
+    #[inline(always)]
+    unsafe fn from_param(vm: &'a Vm, index: i32) -> Self {
+        Self(lua_toboolean(vm.as_ptr(), index) == 1)
+    }
+
+    #[inline(always)]
+    fn try_from_param(vm: &'a Vm, index: i32) -> Option<Self> {
+        unsafe { Some(Self::from_param(vm, index)) }
+    }
+}
+
+unsafe impl IntoParam for Number {
+    #[inline(always)]
+    fn into_param(self, vm: &Vm) -> i32 {
+        unsafe { lua_pushnumber(vm.as_ptr(), self.0) }
+        1
+    }
+}
+
+unsafe impl IntoParam for Integer {
+    #[inline(always)]
+    fn into_param(self, vm: &Vm) -> i32 {
+        unsafe { lua_pushinteger(vm.as_ptr(), self.0) }
+        1
+    }
+}
+
+unsafe impl IntoParam for Boolean {
+    fn into_param(self, vm: &Vm) -> i32 {
+        unsafe { lua_pushboolean(vm.as_ptr(), if self.0 { 1 } else { 0 }) }
+        1
+    }
+}

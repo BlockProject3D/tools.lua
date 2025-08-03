@@ -121,7 +121,9 @@ extern "C" {
     pub fn lua_lessthan(l: State, idx1: c_int, idx2: c_int) -> c_int;
 
     pub fn lua_tonumber(l: State, idx: c_int) -> RawNumber;
+    pub fn lua_tonumberx(l: State, idx: c_int, ok: *mut c_int) -> RawNumber;
     pub fn lua_tointeger(l: State, idx: c_int) -> RawInteger;
+    pub fn lua_tointegerx(l: State, idx: c_int, ok: *mut c_int) -> RawInteger;
     pub fn lua_toboolean(l: State, idx: c_int) -> c_int;
     pub fn lua_tolstring(l: State, idx: c_int, len: *mut usize) -> *const c_char;
     pub fn lua_objlen(l: State, idx: c_int) -> usize;

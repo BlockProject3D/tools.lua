@@ -26,8 +26,6 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-// TODO: Support coercible boolean types (through dedicated type like Integer/Number)
-// TODO: lua_ext_checkboolean
 // TODO: Attempt to make Vm Send behind a cargo feature
 //       - Add checks to registry when the cargo feature is enabled
 //       - Remove the single Vm per thread rule when send feature is enabled.

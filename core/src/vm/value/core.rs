@@ -28,11 +28,12 @@
 
 use std::borrow::Cow;
 use crate::ffi::laux::{luaL_setmetatable, luaL_testudata};
-use crate::ffi::lua::{lua_newuserdata, lua_pushboolean, lua_pushinteger, lua_pushlstring, lua_pushnil, lua_pushnumber, lua_settop, lua_toboolean, lua_tointeger, lua_tolstring, lua_tonumber, lua_touserdata, lua_type, Type};
+use crate::ffi::lua::{lua_newuserdata, lua_pushboolean, lua_pushinteger, lua_pushlstring, lua_pushnil, lua_pushnumber, lua_settop, lua_toboolean, lua_tointeger, lua_tointegerx, lua_tolstring, lua_tonumber, lua_tonumberx, lua_touserdata, lua_type, Type};
 use crate::vm::error::{Error, TypeError};
 use crate::vm::userdata::{UserData, UserDataImmutable};
 use crate::vm::value::util::ensure_type_equals;
 use crate::vm::value::{FromLua, IntoLua};
+use crate::vm::value::types::{Boolean, Integer, Number};
 use crate::vm::Vm;
 
 impl<'a> FromLua<'a> for &'a str {
@@ -352,5 +353,72 @@ where
             Cow::Borrowed(v) => v.into_lua(vm),
             Cow::Owned(v) => v.into_lua(vm),
         }
+    }
+}
+
+impl FromLua<'_> for Integer {
+    #[inline(always)]
+    unsafe fn from_lua_unchecked(vm: &'_ Vm, index: i32) -> Self {
+        Integer(lua_tointeger(vm.as_ptr(), index))
+    }
+
+    fn from_lua(vm: &'_ Vm, index: i32) -> crate::vm::Result<Self> {
+        let mut ok = 0;
+        let num = unsafe { lua_tointegerx(vm.as_ptr(), index, &mut ok) };
+        if ok != 1 {
+            Err(TypeError::from_stack(Type::Number, vm, index))
+        } else {
+            Ok(Integer(num))
+        }
+    }
+}
+
+impl FromLua<'_> for Number {
+    #[inline(always)]
+    unsafe fn from_lua_unchecked(vm: &'_ Vm, index: i32) -> Self {
+        Number(lua_tonumber(vm.as_ptr(), index))
+    }
+
+    fn from_lua(vm: &'_ Vm, index: i32) -> crate::vm::Result<Self> {
+        let mut ok = 0;
+        let num = unsafe { lua_tonumberx(vm.as_ptr(), index, &mut ok) };
+        if ok != 1 {
+            Err(TypeError::from_stack(Type::Number, vm, index))
+        } else {
+            Ok(Number(num))
+        }
+    }
+}
+
+impl FromLua<'_> for Boolean {
+    unsafe fn from_lua_unchecked(vm: &'_ Vm, index: i32) -> Self {
+        Boolean(unsafe { lua_toboolean(vm.as_ptr(), index) == 1 })
+    }
+
+    fn from_lua(vm: &'_ Vm, index: i32) -> crate::vm::Result<Self> {
+        Ok(Boolean(unsafe { lua_toboolean(vm.as_ptr(), index) == 1 }))
+    }
+}
+
+unsafe impl IntoLua for Number {
+    #[inline(always)]
+    fn into_lua(self, vm: &Vm) -> u16 {
+        unsafe { lua_pushnumber(vm.as_ptr(), self.0) }
+        1
+    }
+}
+
+unsafe impl IntoLua for Integer {
+    #[inline(always)]
+    fn into_lua(self, vm: &Vm) -> u16 {
+        unsafe { lua_pushinteger(vm.as_ptr(), self.0) }
+        1
+    }
+}
+
+unsafe impl IntoLua for Boolean {
+    fn into_lua(self, vm: &Vm) -> u16 {
+        unsafe { lua_pushboolean(vm.as_ptr(), if self.0 { 1 } else { 0 }) }
+        1
     }
 }
