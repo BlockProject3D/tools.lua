@@ -35,6 +35,7 @@ use std::ffi::c_void;
 use std::marker::PhantomData;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Mutex;
+use bp3d_debug::debug;
 use crate::ffi::ext::{lua_ext_keyreg_get, lua_ext_keyreg_ref, lua_ext_keyreg_set, lua_ext_keyreg_unref};
 
 #[derive(Debug)]
@@ -142,7 +143,9 @@ fn ref_to_voidp(r: &'static Mutex<BTreeSet<usize>>) -> *const c_void
 
 pub(crate) fn handle_root_vm_init() {
     let refs = unsafe { lua_ext_keyreg_ref() };
+    debug!({refs}, "Init RootVM");
     if refs == 1 { // First reference, initialize the key registry...
+        debug!("Setting up new named key registry...");
         let ptr = ref_to_voidp(Box::leak(Box::new(Mutex::new(BTreeSet::new()))));
         unsafe { lua_ext_keyreg_set(ptr) };
     }
@@ -151,7 +154,11 @@ pub(crate) fn handle_root_vm_init() {
 pub(crate) fn handle_root_vm_uninit() {
     let refs = unsafe { lua_ext_keyreg_unref() };
     if refs == 0 {
-        unsafe { drop(Box::from_raw(voidp_to_ptr(lua_ext_keyreg_get()))) }
+        debug!("Closing named key registry...");
+        unsafe {
+            drop(Box::from_raw(voidp_to_ptr(lua_ext_keyreg_get())));
+            lua_ext_keyreg_set(std::ptr::null_mut());
+        }
     }
 }
 

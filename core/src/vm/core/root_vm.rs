@@ -97,7 +97,6 @@ impl Drop for RootVm {
         unsafe {
             drop(Box::from_raw(Pool::from_vm(self)));
         }
-        debug!("Closing named key registry...");
         handle_root_vm_uninit();
         unsafe {
             debug!("Closing Lua VM...");
