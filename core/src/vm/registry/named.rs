@@ -35,6 +35,7 @@ use std::ffi::c_void;
 use std::marker::PhantomData;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Mutex;
+use crate::ffi::ext::{lua_ext_keyreg_get, lua_ext_keyreg_ref, lua_ext_keyreg_set, lua_ext_keyreg_unref};
 
 #[derive(Debug)]
 pub struct RawKey {
@@ -105,11 +106,6 @@ impl Set for RawKey {
     }
 }
 
-// Ideally this should be a HashSet, however Rust has decided otherwise; then give Rust whatever it
-// wants. In call cases this not going to be used in a hot path.
-//FIXME: This does not work across modules.
-static KEY_REGISTRY: Mutex<BTreeSet<usize>> = Mutex::new(BTreeSet::new());
-
 fn check_register_key_unique(key: &RawKey) {
     if key.registered.load(Ordering::Relaxed) {
         return;
@@ -118,13 +114,44 @@ fn check_register_key_unique(key: &RawKey) {
     if *registered {
         return;
     }
-    let mut lock = KEY_REGISTRY.lock().unwrap();
+    let registry = unsafe { voidp_to_ref(lua_ext_keyreg_get()) };
+    let mut lock = registry.lock().unwrap();
     if lock.contains(&(key.ptr as _)) {
         panic!("Attempt to register a duplicate key");
     } else {
         lock.insert(key.ptr as _);
         *registered = true;
         key.registered.store(true, Ordering::Relaxed);
+    }
+}
+
+unsafe fn voidp_to_ref(p: *const c_void) -> &'static Mutex<BTreeSet<usize>>
+{
+    unsafe { &*(p as *const Mutex<BTreeSet<usize>>) }
+}
+
+unsafe fn voidp_to_ptr(p: *const c_void) -> *mut Mutex<BTreeSet<usize>>
+{
+    p as *mut Mutex<BTreeSet<usize>>
+}
+
+fn ref_to_voidp(r: &'static Mutex<BTreeSet<usize>>) -> *const c_void
+{
+    r as *const Mutex<BTreeSet<usize>> as *const c_void
+}
+
+pub(crate) fn handle_root_vm_init() {
+    let refs = unsafe { lua_ext_keyreg_ref() };
+    if refs == 1 { // First reference, initialize the key registry...
+        let ptr = ref_to_voidp(Box::leak(Box::new(Mutex::new(BTreeSet::new()))));
+        unsafe { lua_ext_keyreg_set(ptr) };
+    }
+}
+
+pub(crate) fn handle_root_vm_uninit() {
+    let refs = unsafe { lua_ext_keyreg_unref() };
+    if refs == 0 {
+        unsafe { drop(Box::from_raw(voidp_to_ptr(lua_ext_keyreg_get()))) }
     }
 }
 

@@ -35,6 +35,7 @@ use std::cell::Cell;
 use std::ops::{Deref, DerefMut};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
+use crate::vm::registry::named::{handle_root_vm_init, handle_root_vm_uninit};
 
 thread_local! {
     // WTF?! The compiler should be smart enough to do this on its own! Another compiler defect!
@@ -64,6 +65,7 @@ impl RootVm {
             vm: unsafe { Vm::from_raw(l) },
             alive: Arc::new(AtomicBool::new(true)),
         };
+        handle_root_vm_init();
         unsafe { Pool::new_in_vm(&mut vm) };
         vm
     }
@@ -95,6 +97,8 @@ impl Drop for RootVm {
         unsafe {
             drop(Box::from_raw(Pool::from_vm(self)));
         }
+        debug!("Closing named key registry...");
+        handle_root_vm_uninit();
         unsafe {
             debug!("Closing Lua VM...");
             lua_close(self.vm.as_ptr());
