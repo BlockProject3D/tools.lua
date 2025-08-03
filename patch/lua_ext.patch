@@ -1,8 +1,17 @@
 diff --git a/src/lj_api.c b/src/lj_api.c
-index e9fc25b4..7e21f135 100644
+index e9fc25b4..747d1905 100644
 --- a/src/lj_api.c
 +++ b/src/lj_api.c
-@@ -1317,3 +1317,44 @@ LUA_API void lua_setallocf(lua_State *L, lua_Alloc f, void *ud)
+@@ -9,6 +9,8 @@
+ #define lj_api_c
+ #define LUA_CORE
+ 
++#include <stdatomic.h>
++
+ #include "lj_obj.h"
+ #include "lj_gc.h"
+ #include "lj_err.h"
+@@ -1317,3 +1319,73 @@ LUA_API void lua_setallocf(lua_State *L, lua_Alloc f, void *ud)
    g->allocf = f;
  }
  
@@ -46,4 +55,33 @@ index e9fc25b4..7e21f135 100644
 +#else
 +  return lj_num2int(n);
 +#endif
++}
++
++LUALIB_API int lua_ext_fast_checkboolean(lua_State *L, int idx)
++{
++  cTValue *o = index2adr(L, idx);
++  if (LJ_LIKELY(tvisbool(o))) {
++    return (int)intV(o);
++  } else {
++    lj_err_argt(L, idx, LUA_TNUMBER);
++  }
++}
++
++static atomic_intptr_t BP3D_LUA_EXT_KEYREG = 0;
++static atomic_uint_fast32_t BP3D_LUA_EXT_KEYREG_REFS = 0;
++
++LUALIB_API void* lua_ext_keyreg_get() {
++    return (void*)BP3D_LUA_EXT_KEYREG;
++}
++
++LUALIB_API void lua_ext_keyreg_set(void* ptr) {
++    BP3D_LUA_EXT_KEYREG = (atomic_intptr_t)ptr;
++}
++
++LUALIB_API unsigned int lua_ext_keyreg_ref() {
++    return (unsigned int)++BP3D_LUA_EXT_KEYREG_REFS;
++}
++
++LUALIB_API unsigned int lua_ext_keyreg_unref() {
++    return (unsigned int)--BP3D_LUA_EXT_KEYREG_REFS;
 +}

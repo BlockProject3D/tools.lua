@@ -27,7 +27,7 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::ffi::lua::{RawInteger, RawNumber, State};
-use std::ffi::c_int;
+use std::ffi::{c_int, c_uint, c_void};
 
 pub type MSize = u32;
 
@@ -37,6 +37,7 @@ pub type MSize = u32;
 extern "C" {
     pub fn lua_ext_fast_checknumber(l: State, numarg: c_int) -> RawNumber;
     pub fn lua_ext_fast_checkinteger(l: State, numarg: c_int) -> RawInteger;
+    pub fn lua_ext_fast_checkboolean(l: State, numarg: c_int) -> c_int;
 }
 
 //-------
@@ -59,4 +60,14 @@ extern "C" {
 
     /// Sets global JIT flags.
     pub fn lua_ext_setjitflags(l: State, flags: u32) -> c_int;
+}
+
+//---------------------
+// Named registry keys
+//---------------------
+extern "C" {
+    pub fn lua_ext_keyreg_get() -> *const c_void;
+    pub fn lua_ext_keyreg_set(ptr: *const c_void);
+    pub fn lua_ext_keyreg_ref() -> c_uint;
+    pub fn lua_ext_keyreg_unref() -> c_uint;
 }
