@@ -128,11 +128,13 @@ fn check_register_key_unique(key: &RawKey) {
 
 unsafe fn voidp_to_ref(p: *const c_void) -> &'static Mutex<BTreeSet<usize>>
 {
+    assert!(!p.is_null());
     unsafe { &*(p as *const Mutex<BTreeSet<usize>>) }
 }
 
 unsafe fn voidp_to_ptr(p: *const c_void) -> *mut Mutex<BTreeSet<usize>>
 {
+    assert!(!p.is_null());
     p as *mut Mutex<BTreeSet<usize>>
 }
 
