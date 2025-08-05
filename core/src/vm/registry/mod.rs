@@ -30,5 +30,6 @@ pub mod core;
 mod interface;
 pub mod named;
 pub mod types;
+pub mod lua_ref;
 
 pub use interface::*;

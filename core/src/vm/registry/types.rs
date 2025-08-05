@@ -31,4 +31,4 @@ use std::marker::PhantomData;
 pub struct Table;
 pub struct Function;
 pub struct Thread;
-pub struct RawPtr<T>(PhantomData<T>);
+pub struct LuaRef<T>(PhantomData<T>);

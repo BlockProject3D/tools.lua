@@ -28,7 +28,6 @@
 
 use crate::ffi::lua::{lua_pushlightuserdata, lua_touserdata};
 use crate::util::core::SimpleDrop;
-use crate::vm::registry::{FromIndex, Set};
 use crate::vm::value::IntoLua;
 use crate::vm::Vm;
 
@@ -63,6 +62,23 @@ impl<T> RawPtr<T> {
     pub fn as_mut_ptr(&self) -> *mut T {
         self.0 as *mut T
     }
+
+    /// Extracts a [RawPtr] from the given Lua [Vm] index.
+    ///
+    /// # Arguments
+    ///
+    /// * `vm`: the [Vm] where to read the lightuserdata from.
+    /// * `index`: the index of the lightuserdata pointer on the stack.
+    ///
+    /// # Safety
+    ///
+    /// Calling this function assumes the given index is valid for [Vm] and the lightuserdata
+    /// pointer points to an instance of T. If any of these assumptions are not respected,
+    /// this function is UB.
+    #[inline(always)]
+    pub unsafe fn from_lua(vm: &Vm, index: i32) -> Self {
+        Self(lua_touserdata(vm.as_ptr(), index) as _)
+    }
 }
 
 unsafe impl<T> IntoLua for RawPtr<T> {
@@ -70,60 +86,5 @@ unsafe impl<T> IntoLua for RawPtr<T> {
     fn into_lua(self, vm: &Vm) -> u16 {
         unsafe { lua_pushlightuserdata(vm.as_ptr(), self.0 as _) };
         1
-    }
-}
-
-pub struct RawPtrRef<'a, T> {
-    vm: &'a Vm,
-    index: i32,
-    ptr: RawPtr<T>,
-}
-
-impl<'a, T> RawPtrRef<'a, T> {
-    /// Creates a [RawPtrRef] from a [Vm] and an index on the vm.
-    ///
-    /// # Arguments
-    ///
-    /// * `vm`: the [Vm] instance to attach to.
-    /// * `index`: the index on the given [Vm] instance.
-    ///
-    /// returns: RawPtrRef<<unknown>>
-    ///
-    /// # Safety
-    ///
-    /// This function assumes that `index` points to a valid light-userdata object of type `T` on
-    /// the stack represented by `vm`. Breaking any of these assumptions is UB.
-    #[inline(always)]
-    pub unsafe fn from_raw(vm: &'a Vm, index: i32) -> Self {
-        Self { vm, index, ptr: RawPtr::new(lua_touserdata(vm.as_ptr(), index) as _) }
-    }
-
-    pub fn from_ptr(vm: &'a Vm, ptr: RawPtr<T>) -> Self {
-        ptr.into_lua(vm);
-        Self { vm, index: vm.top(), ptr }
-    }
-
-    #[inline(always)]
-    pub fn as_ptr(&self) -> RawPtr<T> {
-        self.ptr
-    }
-}
-
-impl<T: 'static> crate::vm::registry::Value for crate::vm::registry::types::RawPtr<T> {
-    type Value<'a> = RawPtrRef<'a, T>;
-
-    #[inline(always)]
-    unsafe fn from_registry(vm: &Vm, index: i32) -> Self::Value<'_> {
-        RawPtrRef::from_raw(vm, index)
-    }
-
-    #[inline(always)]
-    fn push_registry<R: FromIndex>(value: Self::Value<'_>) -> R {
-        unsafe { R::from_index(value.vm, value.index) }
-    }
-
-    #[inline(always)]
-    unsafe fn set_registry(key: &impl Set, value: Self::Value<'_>) {
-        key.set(value.vm, value.index);
     }
 }

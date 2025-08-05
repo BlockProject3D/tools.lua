@@ -26,13 +26,13 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use crate::ffi::lua::lua_settop;
 use crate::vm::registry::named::Key;
 use crate::vm::Vm;
 use bp3d_debug::debug;
 use std::rc::Rc;
-use crate::vm::registry::types::RawPtr;
-use crate::vm::value::types::RawPtrRef;
+use crate::vm::registry::types::LuaRef;
+use crate::vm::value::types::RawPtr;
+use crate::vm::registry::lua_ref::LuaRef as LiveLuaRef;
 
 /// This trait represents a value which can be attached to a [Pool](Pool).
 pub trait Raw {
@@ -73,7 +73,7 @@ impl<T> Raw for Rc<T> {
     }
 }
 
-static DESTRUCTOR_POOL: Key<RawPtr<Pool>> = Key::new("__destructor_pool__");
+static DESTRUCTOR_POOL: Key<LuaRef<RawPtr<Pool>>> = Key::new("__destructor_pool__");
 
 #[derive(Default)]
 pub struct Pool {
@@ -92,8 +92,8 @@ impl Pool {
     /// This is only safe to be called on [RootVm](crate::vm::RootVm) construction.
     pub unsafe fn new_in_vm(vm: &mut Vm) {
         let b = Box::leak(Box::new(Pool::new()));
-        let ptr = crate::vm::value::types::RawPtr::new(b as *mut Pool);
-        DESTRUCTOR_POOL.set(RawPtrRef::from_ptr(vm, ptr));
+        let ptr = RawPtr::new(b as *mut Pool);
+        DESTRUCTOR_POOL.set(LiveLuaRef::new(vm, ptr));
     }
 
     /// Extracts a destructor pool from the given [Vm].
@@ -101,11 +101,9 @@ impl Pool {
     /// # Safety
     ///
     /// The returned reference must not be aliased.
-    unsafe fn _from_vm(vm: &Vm) -> crate::vm::value::types::RawPtr<Self> {
-        let l = vm.as_ptr();
+    unsafe fn _from_vm(vm: &Vm) -> RawPtr<Self> {
         let ptr = DESTRUCTOR_POOL.push(vm).unwrap();
-        lua_settop(l, -2); // Remove the pointer from the lua stack.
-        ptr.as_ptr()
+        ptr.get()
     }
 
     pub fn from_vm(vm: &mut Vm) -> &mut Self {

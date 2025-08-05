@@ -31,7 +31,7 @@ use crate::util::core::SimpleDrop;
 use crate::vm::util::LuaType;
 
 pub use super::function::Function;
-pub use super::raw_ptr::{RawPtr, RawPtrRef};
+pub use super::raw_ptr::RawPtr;
 
 #[derive(Copy, Clone, PartialOrd, PartialEq, Debug)]
 pub struct Number(pub RawNumber);
