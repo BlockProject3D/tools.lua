@@ -26,47 +26,50 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-//! This module contains tools to allow interrupting a root Vm.
+use std::marker::PhantomData;
+use std::ops::{Deref, DerefMut};
+use std::sync::Arc;
+use std::sync::atomic::AtomicBool;
+use crate::vm::{RootVm, Vm};
 
-mod vm;
+pub struct InterruptibleRootVm {
+    vm: RootVm,
+    alive: Arc<AtomicBool>,
+    useless: PhantomData<*const ()>, // This is to ensure InterruptibleVm is never Send nor Sync.
+}
 
-#[cfg(unix)]
-mod unix;
+impl InterruptibleRootVm {
+    pub fn new(vm: RootVm) -> Self {
+        Self {
+            vm,
+            alive: Arc::new(AtomicBool::new(true)),
+            useless: PhantomData,
+        }
+    }
 
-#[cfg(windows)]
-mod windows;
-
-pub use vm::InterruptibleRootVm;
-
-#[cfg(unix)]
-pub use unix::Signal;
-
-#[cfg(windows)]
-pub use windows::Signal;
-
-unsafe impl Send for Signal {}
-unsafe impl Sync for Signal {}
-
-use bp3d_util::simple_error;
-use std::thread::JoinHandle;
-
-simple_error! {
-    pub Error {
-        AlreadyInterrupting => "attempt to interrupt a Vm while interrupting a different Vm",
-        IncorrectThread => "attempt to interrupt a Vm from the wrong thread",
-        Timeout => "the lua hook did not trigger in the requested time (is the JIT enabled?)",
-        Unknown => "unknown system error"
+    pub fn get_alive(this: &Self) -> &Arc<AtomicBool> {
+        &this.alive
     }
 }
 
-pub fn spawn_interruptible<R: Send + 'static>(
-    f: impl FnOnce(&mut InterruptibleRootVm) -> R + Send + 'static,
-) -> (Signal, JoinHandle<R>) {
-    let (send, recv) = std::sync::mpsc::channel();
-    let handle = std::thread::spawn(move || {
-        let mut vm = InterruptibleRootVm::new(crate::vm::RootVm::new());
-        send.send(Signal::create(&mut vm)).unwrap();
-        f(&mut vm)
-    });
-    (recv.recv().unwrap(), handle)
+impl Deref for InterruptibleRootVm {
+    type Target = Vm;
+
+    #[inline(always)]
+    fn deref(&self) -> &Self::Target {
+        &self.vm
+    }
+}
+
+impl DerefMut for InterruptibleRootVm {
+    #[inline(always)]
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.vm
+    }
+}
+
+impl Drop for InterruptibleRootVm {
+    fn drop(&mut self) {
+        self.alive.store(false, std::sync::atomic::Ordering::SeqCst);
+    }
 }

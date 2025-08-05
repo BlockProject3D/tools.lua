@@ -26,12 +26,11 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use super::Error;
+use super::{Error, InterruptibleRootVm};
 use crate::ffi::ext::lua_ext_ccatch_error;
 use crate::ffi::lua::{
     lua_pushstring, lua_sethook, Debug, State, MASKCALL, MASKCOUNT, MASKLINE, MASKRET,
 };
-use crate::vm::RootVm;
 use bp3d_debug::{error, warning};
 use std::sync::{Arc, Mutex};
 use std::sync::atomic::AtomicBool;
@@ -65,8 +64,8 @@ pub struct Signal {
 }
 
 impl Signal {
-    pub fn create(vm: &mut RootVm) -> Self {
-        let alive = RootVm::get_alive(vm).clone();
+    pub fn create(vm: &mut InterruptibleRootVm) -> Self {
+        let alive = InterruptibleRootVm::get_alive(vm).clone();
         let th = unsafe { GetCurrentThread() };
         let l = vm.as_ptr();
         Self { l, th, alive }

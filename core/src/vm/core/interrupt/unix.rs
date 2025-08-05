@@ -30,8 +30,7 @@ use crate::ffi::ext::lua_ext_ccatch_error;
 use crate::ffi::lua::{
     lua_pushstring, lua_sethook, Debug, State, MASKCALL, MASKCOUNT, MASKLINE, MASKRET,
 };
-use crate::vm::core::interrupt::Error;
-use crate::vm::RootVm;
+use crate::vm::core::interrupt::{Error, InterruptibleRootVm};
 use bp3d_debug::{error, warning};
 use libc::{c_int, pthread_kill, pthread_self, pthread_t, SIGUSR1};
 use std::mem::MaybeUninit;
@@ -105,8 +104,8 @@ extern "C" fn signal_handler(_: c_int) {
 static SIG_BOUND: Once = Once::new();
 
 impl Signal {
-    pub fn create(vm: &mut RootVm) -> Self {
-        let alive = RootVm::get_alive(vm).clone();
+    pub fn create(vm: &mut InterruptibleRootVm) -> Self {
+        let alive = InterruptibleRootVm::get_alive(vm).clone();
         let th = unsafe { pthread_self() };
         let l = vm.as_ptr();
         let thread = std::thread::current().id();
