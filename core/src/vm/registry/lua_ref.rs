@@ -27,7 +27,7 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use std::marker::PhantomData;
-use crate::ffi::lua::lua_settop;
+use crate::ffi::lua::{lua_replace, lua_settop};
 use crate::vm::registry::{FromIndex, Set};
 use crate::vm::value::{FromLua, IntoLua};
 use crate::vm::value::types::RawPtr;
@@ -102,8 +102,8 @@ impl<'a, T: SimpleRegistryValue> LuaRef<'a, T> {
     }
 
     pub fn set(&self, value: T) {
-        //TODO: Implement
-        todo!()
+        value.into_lua(self.vm);
+        unsafe { lua_replace(self.vm.as_ptr(), self.index) };
     }
 }
 
