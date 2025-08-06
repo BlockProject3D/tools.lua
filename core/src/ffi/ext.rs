@@ -27,7 +27,7 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::ffi::lua::{RawInteger, RawNumber, State};
-use std::ffi::{c_int, c_uint, c_void};
+use std::ffi::{c_int, c_void};
 
 pub type MSize = u32;
 
@@ -66,8 +66,7 @@ extern "C" {
 // Named registry keys
 //---------------------
 extern "C" {
-    pub fn lua_ext_keyreg_get() -> *const c_void;
-    pub fn lua_ext_keyreg_set(ptr: *const c_void);
-    pub fn lua_ext_keyreg_ref() -> c_uint;
-    pub fn lua_ext_keyreg_unref() -> c_uint;
+    pub fn lua_ext_keyreg_get() -> *mut c_void;
+    pub fn lua_ext_keyreg_ref(ptr: *mut c_void) -> *mut c_void;
+    pub fn lua_ext_keyreg_unref() -> *mut c_void;
 }

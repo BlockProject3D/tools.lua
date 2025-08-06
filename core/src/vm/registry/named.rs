@@ -36,7 +36,7 @@ use std::marker::PhantomData;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Mutex;
 use bp3d_debug::debug;
-use crate::ffi::ext::{lua_ext_keyreg_get, lua_ext_keyreg_ref, lua_ext_keyreg_set, lua_ext_keyreg_unref};
+use crate::ffi::ext::{lua_ext_keyreg_get, lua_ext_keyreg_ref, lua_ext_keyreg_unref};
 
 #[derive(Debug)]
 pub struct RawKey {
@@ -126,41 +126,43 @@ fn check_register_key_unique(key: &RawKey) {
     }
 }
 
-unsafe fn voidp_to_ref(p: *const c_void) -> &'static Mutex<BTreeSet<usize>>
+unsafe fn voidp_to_ref(p: *mut c_void) -> &'static Mutex<BTreeSet<usize>>
 {
     assert!(!p.is_null());
     unsafe { &*(p as *const Mutex<BTreeSet<usize>>) }
 }
 
-unsafe fn voidp_to_ptr(p: *const c_void) -> *mut Mutex<BTreeSet<usize>>
+unsafe fn voidp_to_ptr(p: *mut c_void) -> *mut Mutex<BTreeSet<usize>>
 {
     assert!(!p.is_null());
     p as *mut Mutex<BTreeSet<usize>>
 }
 
-fn ref_to_voidp(r: &'static Mutex<BTreeSet<usize>>) -> *const c_void
+fn ref_to_voidp(r: &'static Mutex<BTreeSet<usize>>) -> *mut c_void
 {
-    r as *const Mutex<BTreeSet<usize>> as *const c_void
+    r as *const Mutex<BTreeSet<usize>> as *mut c_void
 }
 
 pub(crate) fn handle_root_vm_init() {
-    let refs = unsafe { lua_ext_keyreg_ref() };
-    debug!({refs}, "Init RootVM");
-    if refs == 1 { // First reference, initialize the key registry...
-        debug!("Setting up new named key registry...");
-        let ptr = ref_to_voidp(Box::leak(Box::new(Mutex::new(BTreeSet::new()))));
-        unsafe { lua_ext_keyreg_set(ptr) };
+    let ptr = ref_to_voidp(Box::leak(Box::new(Mutex::new(BTreeSet::new()))));
+    // Pointer set in lua_ext_keyreg_ref to avoid TOCTOU.
+    let ptr = unsafe { lua_ext_keyreg_ref(ptr) };
+    if ptr.is_null() {
+        debug!("Set up new named key registry...");
+    } else {
+        debug!("Named key registry already exists");
+        unsafe { drop(Box::from_raw(voidp_to_ptr(ptr))) };
     }
 }
 
 pub(crate) fn handle_root_vm_uninit() {
-    let refs = unsafe { lua_ext_keyreg_unref() };
-    if refs == 0 {
+    // Pointer reset to NULL in lua_ext_keyreg_unref to avoid TOCTOU.
+    let ptr = unsafe { lua_ext_keyreg_unref() };
+    if !ptr.is_null() {
         debug!("Closing named key registry...");
-        unsafe {
-            drop(Box::from_raw(voidp_to_ptr(lua_ext_keyreg_get())));
-            lua_ext_keyreg_set(std::ptr::null_mut());
-        }
+        unsafe { drop(Box::from_raw(voidp_to_ptr(ptr))) };
+    } else {
+        debug!("Named key registry is still in use");
     }
 }
 
