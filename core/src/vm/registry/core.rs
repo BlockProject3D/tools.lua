@@ -33,6 +33,8 @@ use crate::vm::value::util::ensure_value_top;
 use crate::vm::Vm;
 use std::ffi::c_int;
 use std::marker::PhantomData;
+#[cfg(feature = "send")]
+use crate::vm::registry::send_key::VmCheckedRawKey;
 
 //TODO: Check if key can be a NonZeroI32.
 
@@ -118,9 +120,15 @@ impl Set for RawKey {
 }
 
 pub struct Key<T> {
+    #[cfg(feature = "send")]
+    raw: VmCheckedRawKey,
+    #[cfg(not(feature = "send"))]
     raw: RawKey,
     useless: PhantomData<*const T>,
 }
+
+#[cfg(feature = "send")]
+unsafe impl<T> Send for Key<T> {}
 
 impl<T: Value> Key<T> {
     /// Pushes the lua value associated to this registry key on the lua stack.
@@ -147,7 +155,10 @@ impl<T: Value> Key<T> {
     /// returns: <T as RegistryValue>::Value
     #[inline(always)]
     pub fn as_raw(&self) -> RawKey {
-        self.raw
+        #[cfg(feature = "send")]
+        return self.raw.as_raw();
+        #[cfg(not(feature = "send"))]
+        return self.raw;
     }
 
     /// Deletes this registry key from the specified [Vm].
@@ -159,6 +170,9 @@ impl<T: Value> Key<T> {
     /// returns: ()
     #[inline(always)]
     pub fn delete(self, vm: &Vm) {
+        #[cfg(feature = "send")]
+        self.raw.delete(vm);
+        #[cfg(not(feature = "send"))]
         unsafe { self.raw.delete(vm) };
     }
 

@@ -26,13 +26,46 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-pub mod core;
-mod interface;
-pub mod named;
-pub mod types;
-pub mod lua_ref;
+use crate::ffi::lua::State;
+use crate::vm::registry::core::RawKey;
+use crate::vm::registry::{FromIndex, Set};
+use crate::vm::Vm;
 
-#[cfg(feature = "send")]
-mod send_key;
+pub struct VmCheckedRawKey {
+    raw: RawKey,
+    vm: State
+}
 
-pub use interface::*;
+impl VmCheckedRawKey {
+    pub fn push(&self, vm: &Vm) {
+        assert!(vm.as_ptr() == self.vm);
+        unsafe { self.raw.push(vm) }
+    }
+
+    pub fn delete(self, vm: &Vm) {
+        assert!(vm.as_ptr() == self.vm);
+        unsafe { self.raw.delete(vm) }
+    }
+
+    #[inline(always)]
+    pub fn as_raw(&self) -> RawKey {
+        self.raw
+    }
+}
+
+impl FromIndex for VmCheckedRawKey {
+    unsafe fn from_index(vm: &Vm, index: i32) -> Self {
+        let raw = RawKey::from_index(vm, index);
+        Self {
+            vm: vm.as_ptr(),
+            raw
+        }
+    }
+}
+
+impl Set for VmCheckedRawKey {
+    unsafe fn set(&self, vm: &Vm, index: i32) {
+        assert!(vm.as_ptr() == self.vm);
+        self.raw.set(vm, index);
+    }
+}

@@ -31,18 +31,21 @@ use crate::ffi::lua::lua_close;
 use crate::vm::core::destructor::Pool;
 use crate::vm::Vm;
 use bp3d_debug::debug;
-use std::cell::Cell;
 use std::ops::{Deref, DerefMut};
 use crate::vm::registry::named::{handle_root_vm_init, handle_root_vm_uninit};
 
+#[cfg(not(feature = "send"))]
 thread_local! {
     // WTF?! The compiler should be smart enough to do this on its own! Another compiler defect!
-    static HAS_VM: Cell<bool> = const { Cell::new(false) };
+    static HAS_VM: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
 }
 
 pub struct RootVm {
     vm: Vm
 }
+
+#[cfg(feature = "send")]
+unsafe impl Send for RootVm { }
 
 impl Default for RootVm {
     fn default() -> Self {
@@ -52,11 +55,13 @@ impl Default for RootVm {
 
 impl RootVm {
     pub fn new() -> RootVm {
+        #[cfg(not(feature = "send"))]
         if HAS_VM.get() {
             panic!("A VM already exists for this thread.")
         }
         let l = unsafe { luaL_newstate() };
         unsafe { luaL_openlibs(l) };
+        #[cfg(not(feature = "send"))]
         HAS_VM.set(true);
         let mut vm = RootVm {
             vm: unsafe { Vm::from_raw(l) }
@@ -94,6 +99,7 @@ impl Drop for RootVm {
             debug!("Closing Lua VM...");
             lua_close(self.vm.as_ptr());
         }
+        #[cfg(not(feature = "send"))]
         HAS_VM.set(false);
     }
 }
