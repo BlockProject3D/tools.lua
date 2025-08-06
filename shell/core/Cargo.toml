@@ -5,7 +5,7 @@ edition = "2024"
 publish = false
 
 [dependencies]
-bp3d-lua = { version = "1.0.0-rc.2.1.0", path = "../../core", features = ["root-vm", "util-module", "util-thread", "libs", "dynamic", "interrupt"] }
+bp3d-lua = { version = "1.0.0-rc.4.0.0", path = "../../core", features = ["root-vm", "util-module", "util-thread", "libs", "dynamic", "interrupt"] }
 bp3d-debug = "1.0.0-rc.6.2.0"
 bp3d-net = { version = "1.0.0-rc.2.1.2", features = ["ipc"] }
 tokio = { version = "1.45.1", features = ["full"] }
