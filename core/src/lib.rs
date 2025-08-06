@@ -26,7 +26,6 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-//TODO: Support dynamic linking and modules by dynamic linking to luajit.
 //TODO: Attempt to implement custom __index on userdata.
 
 pub mod ffi;
