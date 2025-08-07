@@ -26,13 +26,12 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use bp3d_debug::debug;
 use crate::ffi::laux::{luaL_newstate, luaL_openlibs};
 use crate::ffi::lua::lua_close;
 use crate::vm::core::destructor::Pool;
-use crate::vm::Vm;
-use bp3d_debug::debug;
-use std::ops::{Deref, DerefMut};
 use crate::vm::registry::named::{handle_root_vm_init, handle_root_vm_uninit};
+use crate::vm::Vm;
 
 #[cfg(not(feature = "send"))]
 thread_local! {
@@ -40,21 +39,11 @@ thread_local! {
     static HAS_VM: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
 }
 
-pub struct RootVm {
-    vm: Vm
-}
+#[repr(transparent)]
+pub struct UnsafeRootVm(pub Vm);
 
-#[cfg(feature = "send")]
-unsafe impl Send for RootVm { }
-
-impl Default for RootVm {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl RootVm {
-    pub fn new() -> RootVm {
+impl UnsafeRootVm {
+    pub fn new(is_send: bool) -> UnsafeRootVm {
         #[cfg(not(feature = "send"))]
         if HAS_VM.get() {
             panic!("A VM already exists for this thread.")
@@ -63,41 +52,23 @@ impl RootVm {
         unsafe { luaL_openlibs(l) };
         #[cfg(not(feature = "send"))]
         HAS_VM.set(true);
-        let mut vm = RootVm {
-            vm: unsafe { Vm::from_raw(l) }
-        };
+        let mut vm = UnsafeRootVm(unsafe { Vm::from_raw(l) });
         handle_root_vm_init();
-        unsafe { Pool::new_in_vm(&mut vm) };
+        unsafe { Pool::new_in_vm(&mut vm.0, is_send) };
         vm
     }
 }
 
-impl Deref for RootVm {
-    type Target = Vm;
-
-    #[inline(always)]
-    fn deref(&self) -> &Self::Target {
-        &self.vm
-    }
-}
-
-impl DerefMut for RootVm {
-    #[inline(always)]
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.vm
-    }
-}
-
-impl Drop for RootVm {
+impl Drop for UnsafeRootVm {
     fn drop(&mut self) {
         debug!("Deleting destructor pool");
         unsafe {
-            drop(Box::from_raw(Pool::from_vm(self)));
+            drop(Box::from_raw(Pool::from_vm(&mut self.0)));
         }
         handle_root_vm_uninit();
         unsafe {
             debug!("Closing Lua VM...");
-            lua_close(self.vm.as_ptr());
+            lua_close(self.0.as_ptr());
         }
         #[cfg(not(feature = "send"))]
         HAS_VM.set(false);

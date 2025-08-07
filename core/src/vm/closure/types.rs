@@ -68,7 +68,7 @@ impl RClosure<RawPtr<()>> {
         R: IntoParam,
         F: Send
     {
-        let ptr = crate::vm::core::destructor::Pool::attach(vm, Box::new(fun));
+        let ptr = crate::vm::core::destructor::Pool::attach_send(vm, Box::new(fun));
         extern "C-unwind" fn _cfunc<T, R, F: Fn(T) -> R>(l: State) -> i32
         where
             for<'a> T: FromParam<'a>,

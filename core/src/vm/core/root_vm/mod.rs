@@ -26,24 +26,24 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-pub mod destructor;
-mod interface;
-pub mod iter;
-pub mod load;
-#[cfg(feature = "root-vm")]
-mod root_vm;
-pub mod util;
-mod vm;
+mod common;
 
-#[cfg(feature = "root-vm")]
-pub mod jit;
+#[cfg(feature = "send")]
+mod send;
 
-#[cfg(feature = "interrupt")]
-pub mod interrupt;
+mod unsend;
 
-pub use interface::*;
+// --> Static type aliases <--
 
-#[cfg(feature = "root-vm")]
-pub use root_vm::*;
+pub type UnSendRootVm = unsend::RootVm;
 
-pub use vm::Vm;
+#[cfg(feature = "send")]
+pub type SendRootVm = send::RootVm;
+
+// --> Automatic type aliases <--
+
+#[cfg(not(feature = "send"))]
+pub type RootVm = unsend::RootVm;
+
+#[cfg(feature = "send")]
+pub type RootVm = send::RootVm;

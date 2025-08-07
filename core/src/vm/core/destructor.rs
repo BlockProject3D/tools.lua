@@ -29,10 +29,25 @@
 use crate::vm::registry::named::Key;
 use crate::vm::Vm;
 use bp3d_debug::debug;
-use std::rc::Rc;
+use std::sync::Arc;
 use crate::vm::registry::types::LuaRef;
 use crate::vm::value::types::RawPtr;
 use crate::vm::registry::lua_ref::LuaRef as LiveLuaRef;
+
+/// This trait represents a value which can be attached to a [Pool](Pool).
+pub trait RawSend: Send {
+    type Ptr: Copy;
+
+    fn into_raw(self) -> Self::Ptr;
+
+    /// Deletes the raw pointer.
+    ///
+    /// # Safety
+    ///
+    /// This function must be called with the same pointer that originated from the same type using
+    /// the [into_raw](Raw::into_raw) method.
+    unsafe fn delete(ptr: Self::Ptr);
+}
 
 /// This trait represents a value which can be attached to a [Pool](Pool).
 pub trait Raw {
@@ -49,6 +64,18 @@ pub trait Raw {
     unsafe fn delete(ptr: Self::Ptr);
 }
 
+impl<T: Raw + Send> RawSend for T {
+    type Ptr = T::Ptr;
+
+    fn into_raw(self) -> Self::Ptr {
+        T::into_raw(self)
+    }
+
+    unsafe fn delete(ptr: Self::Ptr) {
+        T::delete(ptr)
+    }
+}
+
 impl<T> Raw for Box<T> {
     type Ptr = *mut T;
 
@@ -61,28 +88,43 @@ impl<T> Raw for Box<T> {
     }
 }
 
-impl<T> Raw for Rc<T> {
+impl<T> Raw for std::rc::Rc<T> {
     type Ptr = *const T;
 
     fn into_raw(self) -> Self::Ptr {
-        Rc::into_raw(self)
+        std::rc::Rc::into_raw(self)
     }
 
     unsafe fn delete(ptr: Self::Ptr) {
-        drop(Rc::from_raw(ptr))
+        drop(std::rc::Rc::from_raw(ptr))
+    }
+}
+
+impl<T: Send + Sync> RawSend for Arc<T> {
+    type Ptr = *const T;
+
+    fn into_raw(self) -> Self::Ptr {
+        Arc::into_raw(self)
+    }
+
+    unsafe fn delete(ptr: Self::Ptr) {
+        drop(Arc::from_raw(ptr))
     }
 }
 
 static DESTRUCTOR_POOL: Key<LuaRef<RawPtr<Pool>>> = Key::new("__destructor_pool__");
 
-#[derive(Default)]
 pub struct Pool {
     leaked: Vec<Box<dyn FnOnce()>>,
+    is_send: bool
 }
 
 impl Pool {
-    pub fn new() -> Self {
-        Self::default()
+    pub fn new(is_send: bool) -> Self {
+        Self {
+            leaked: Vec::new(),
+            is_send
+        }
     }
 
     /// Inserts this pool in the given Vm.
@@ -90,8 +132,8 @@ impl Pool {
     /// # Safety
     ///
     /// This is only safe to be called on [RootVm](crate::vm::RootVm) construction.
-    pub unsafe fn new_in_vm(vm: &mut Vm) {
-        let b = Box::leak(Box::new(Pool::new()));
+    pub unsafe fn new_in_vm(vm: &mut Vm, is_send: bool) {
+        let b = Box::leak(Box::new(Pool::new(is_send)));
         let ptr = RawPtr::new(b as *mut Pool);
         DESTRUCTOR_POOL.set(LiveLuaRef::new(vm, ptr));
     }
@@ -110,6 +152,14 @@ impl Pool {
         unsafe { &mut *Self::_from_vm(vm).as_mut_ptr() }
     }
 
+    pub fn attach_send<R: RawSend>(vm: &Vm, raw: R) -> R::Ptr
+    where
+        R::Ptr: 'static,
+    {
+        let ptr = unsafe { Self::_from_vm(vm) };
+        unsafe { (*ptr.as_mut_ptr()).attach_mut_send(raw) }
+    }
+
     pub fn attach<R: Raw>(vm: &Vm, raw: R) -> R::Ptr
     where
         R::Ptr: 'static,
@@ -118,10 +168,24 @@ impl Pool {
         unsafe { (*ptr.as_mut_ptr()).attach_mut(raw) }
     }
 
+    pub fn attach_mut_send<R: RawSend>(&mut self, raw: R) -> R::Ptr
+    where
+        R::Ptr: 'static,
+    {
+        let ptr = R::into_raw(raw);
+        self.leaked.push(Box::new(move || {
+            unsafe { R::delete(ptr) };
+        }));
+        ptr
+    }
+
     pub fn attach_mut<R: Raw>(&mut self, raw: R) -> R::Ptr
     where
         R::Ptr: 'static,
     {
+        if self.is_send {
+            panic!("Attempt to attach !Send type to Send destructor Pool: this is forbidden!")
+        }
         let ptr = R::into_raw(raw);
         self.leaked.push(Box::new(move || {
             unsafe { R::delete(ptr) };

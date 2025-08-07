@@ -26,24 +26,36 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-pub mod destructor;
-mod interface;
-pub mod iter;
-pub mod load;
-#[cfg(feature = "root-vm")]
-mod root_vm;
-pub mod util;
-mod vm;
+use std::ops::{Deref, DerefMut};
+use crate::vm::core::root_vm::common::UnsafeRootVm;
+use crate::vm::Vm;
 
-#[cfg(feature = "root-vm")]
-pub mod jit;
+pub struct RootVm {
+    vm: UnsafeRootVm
+}
 
-#[cfg(feature = "interrupt")]
-pub mod interrupt;
+impl RootVm {
+    pub fn new() -> RootVm {
+        RootVm {
+            vm: UnsafeRootVm::new(true)
+        }
+    }
+}
 
-pub use interface::*;
+unsafe impl Send for RootVm { }
 
-#[cfg(feature = "root-vm")]
-pub use root_vm::*;
+impl Deref for RootVm {
+    type Target = Vm;
 
-pub use vm::Vm;
+    #[inline(always)]
+    fn deref(&self) -> &Self::Target {
+        &self.vm.0
+    }
+}
+
+impl DerefMut for RootVm {
+    #[inline(always)]
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.vm.0
+    }
+}
