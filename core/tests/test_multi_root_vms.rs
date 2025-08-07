@@ -28,6 +28,7 @@
 
 #![cfg(feature = "send")]
 
+use bp3d_lua::vm::core::destructor::Pool;
 use bp3d_lua::vm::registry::core::Key;
 use bp3d_lua::vm::RootVm;
 use bp3d_lua::vm::value::types::Function;
@@ -126,3 +127,21 @@ fn test_multi_root_vms_panic_4() {
     let root2 = RootVm::new();
     key.delete(&root2);
 }
+
+#[test]
+#[should_panic]
+fn test_multi_root_vms_not_send_destructor() {
+    let root1 = RootVm::new();
+    Pool::attach(&root1, Box::new(()));
+}
+
+#[test]
+fn test_multi_root_vms_send_destructor() {
+    let root1 = RootVm::new();
+    Pool::attach_send(&root1, Box::new(()));
+}
+
+/*#[test]
+fn test_multi_root_vms_not_send_build_error() {
+    todo!()
+}*/
