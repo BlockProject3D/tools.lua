@@ -129,6 +129,10 @@ pub struct ModuleManager {
     loader: ModuleLoader,
 }
 
+// This is safe because ModuleManager does not use thread locals or mutable globals of some kind.
+// The hard work is mostly done by syscalls or static read-only memory.
+unsafe impl Send for ModuleManager {}
+
 impl ModuleManager {
     fn load_plugin<L: Library>(
         vm: &Vm,
