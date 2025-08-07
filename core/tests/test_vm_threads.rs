@@ -28,9 +28,9 @@
 
 use std::cell::Cell;
 use bp3d_lua::{decl_closure, decl_lib_func};
-use bp3d_lua::vm::closure::rc::Rc;
+use bp3d_lua::vm::closure::rc::{Rc, Shared};
+use bp3d_lua::vm::core::UnSendRootVm;
 use bp3d_lua::vm::function::types::RFunction;
-use bp3d_lua::vm::RootVm;
 use bp3d_lua::vm::thread::core::{State, Yield};
 use bp3d_lua::vm::thread::value::Value;
 
@@ -42,9 +42,9 @@ decl_closure! {
 
 #[test]
 fn test_threads_yield_lua() {
-    let vm = RootVm::new();
+    let vm = UnSendRootVm::new();
     assert!(vm.as_thread().is_none());
-    let obj = std::rc::Rc::new(Cell::new(0));
+    let obj = Shared::new(Cell::new(0));
     vm.set_global(c"increment", increment(Rc::from_rust(&vm, obj.clone()))).unwrap();
     vm.run_code::<()>(c"
         CO = coroutine.create(function()
@@ -81,7 +81,7 @@ decl_lib_func! {
 
 #[test]
 fn test_threads_yield_rust_fail() {
-    let vm = RootVm::new();
+    let vm = UnSendRootVm::new();
     assert!(vm.as_thread().is_none());
     vm.set_global(c"my_yield", RFunction::wrap(my_yield)).unwrap();
     let res = vm.run_code::<()>(c"my_yield()").unwrap_err().into_runtime().unwrap();
@@ -90,9 +90,9 @@ fn test_threads_yield_rust_fail() {
 
 #[test]
 fn test_threads_yield_rust() {
-    let vm = RootVm::new();
+    let vm = UnSendRootVm::new();
     assert!(vm.as_thread().is_none());
-    let obj = std::rc::Rc::new(Cell::new(0));
+    let obj = Shared::new(Cell::new(0));
     vm.set_global(c"increment", increment(Rc::from_rust(&vm, obj.clone()))).unwrap();
     vm.set_global(c"my_yield", RFunction::wrap(my_yield)).unwrap();
     vm.run_code::<()>(c"
@@ -118,9 +118,9 @@ fn test_threads_yield_rust() {
 
 #[test]
 fn test_threads_with_yield_value_lua() {
-    let vm = RootVm::new();
+    let vm = UnSendRootVm::new();
     assert!(vm.as_thread().is_none());
-    let obj = std::rc::Rc::new(Cell::new(0));
+    let obj = Shared::new(Cell::new(0));
     vm.set_global(c"increment", increment(Rc::from_rust(&vm, obj.clone()))).unwrap();
     vm.run_code::<()>(c"
         CO = coroutine.create(function()
@@ -139,9 +139,9 @@ fn test_threads_with_yield_value_lua() {
 
 #[test]
 fn test_threads_with_yield_value_rust() {
-    let vm = RootVm::new();
+    let vm = UnSendRootVm::new();
     assert!(vm.as_thread().is_none());
-    let obj = std::rc::Rc::new(Cell::new(0));
+    let obj = Shared::new(Cell::new(0));
     vm.set_global(c"increment", increment(Rc::from_rust(&vm, obj.clone()))).unwrap();
     vm.set_global(c"my_yield", RFunction::wrap(my_yield2)).unwrap();
     vm.run_code::<()>(c"
@@ -161,9 +161,9 @@ fn test_threads_with_yield_value_rust() {
 
 #[test]
 fn test_threads_with_yield_value_unsafe() {
-    let vm = RootVm::new();
+    let vm = UnSendRootVm::new();
     assert!(vm.as_thread().is_none());
-    let obj = std::rc::Rc::new(Cell::new(0));
+    let obj = Shared::new(Cell::new(0));
     vm.set_global(c"increment", increment(Rc::from_rust(&vm, obj.clone()))).unwrap();
     vm.run_code::<()>(c"
         CO = coroutine.create(function()
