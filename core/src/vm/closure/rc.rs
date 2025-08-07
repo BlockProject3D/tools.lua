@@ -32,6 +32,8 @@ use crate::vm::Vm;
 use std::ops::Deref;
 use crate::vm::value::types::RawPtr;
 
+pub type Shared<T> = std::rc::Rc<T>;
+
 #[repr(transparent)]
 pub struct Rc<T>(*const T);
 
@@ -69,7 +71,7 @@ impl<T: 'static> IntoUpvalue for Rc<T> {
 
 impl<T: 'static> Rc<T> {
     #[inline(always)]
-    pub fn from_rust(vm: &Vm, rc: std::rc::Rc<T>) -> Rc<T> {
+    pub fn from_rust(vm: &Vm, rc: Shared<T>) -> Rc<T> {
         Rc(crate::vm::core::destructor::Pool::attach(vm, rc))
     }
 }

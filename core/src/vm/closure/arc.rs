@@ -26,11 +26,52 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-pub mod context;
-mod core;
-mod interface;
-pub mod rc;
-pub mod types;
-pub mod arc;
+use crate::util::core::SimpleDrop;
+use crate::vm::closure::{FromUpvalue, IntoUpvalue, Upvalue};
+use crate::vm::Vm;
+use std::ops::Deref;
+use crate::vm::value::types::RawPtr;
 
-pub use interface::*;
+pub type Shared<T> = std::sync::Arc<T>;
+
+#[repr(transparent)]
+pub struct Arc<T: Send + Sync>(*const T);
+
+#[repr(transparent)]
+pub struct Ref<'a, T: Send + Sync>(&'a T);
+
+unsafe impl<T: Send + Sync> SimpleDrop for Ref<'_, T> {}
+
+impl<T: Send + Sync> Deref for Ref<'_, T> {
+    type Target = T;
+
+    fn deref(&self) -> &Self::Target {
+        self.0
+    }
+}
+
+impl<'a, T: Send + Sync> FromUpvalue<'a> for Ref<'a, T> {
+    #[inline(always)]
+    unsafe fn from_upvalue(vm: &'a Vm, index: i32) -> Self {
+        let ptr: RawPtr<T> = FromUpvalue::from_upvalue(vm, index);
+        Ref(&*ptr.as_ptr())
+    }
+}
+
+impl<T: Send + Sync + 'static> Upvalue for Arc<T> {
+    type From<'a> = crate::vm::closure::rc::Ref<'a, T>;
+}
+
+impl<T: Send + Sync + 'static> IntoUpvalue for Arc<T> {
+    #[inline(always)]
+    fn into_upvalue(self, vm: &Vm) -> u16 {
+        RawPtr::new(self.0 as *mut T).into_upvalue(vm)
+    }
+}
+
+impl<T: Send + Sync + 'static> Arc<T> {
+    #[inline(always)]
+    pub fn from_rust(vm: &Vm, rc: Shared<T>) -> Arc<T> {
+        Arc(crate::vm::core::destructor::Pool::attach_send(vm, rc))
+    }
+}

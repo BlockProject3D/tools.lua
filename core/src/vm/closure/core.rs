@@ -79,8 +79,6 @@ impl_from_upvalue_using_from_lua_unchecked!(i64, u64);
 
 impl_from_upvalue_using_from_lua_unchecked!(i8, u8, i16, u16, i32, u32, f32, f64, bool);
 
-// Wrap this in a new RawPtr type...
-
 impl<T> FromUpvalue<'_> for RawPtr<T> {
     #[inline(always)]
     unsafe fn from_upvalue(vm: &Vm, index: i32) -> Self {
