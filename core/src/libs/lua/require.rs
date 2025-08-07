@@ -29,12 +29,12 @@
 use crate::decl_closure;
 use crate::libs::interface::Lib;
 use crate::util::Namespace;
-use crate::vm::closure::rc::Rc;
+use crate::vm::closure::arc::{Arc, Shared};
 use crate::vm::value::any::{AnyParam, UncheckedAnyReturn};
 use crate::vm::Vm;
 use bp3d_util::simple_error;
-use std::cell::RefCell;
 use std::collections::HashMap;
+use std::sync::Mutex;
 
 simple_error! {
     pub Error {
@@ -44,12 +44,12 @@ simple_error! {
     }
 }
 
-pub trait Source {
+pub trait Source: Send + Sync {
     fn run(&self, vm: &Vm, path: &str) -> crate::vm::Result<AnyParam>;
 }
 
 #[derive(Default)]
-pub struct Provider(RefCell<HashMap<String, Box<dyn Source>>>);
+pub struct Provider(Mutex<HashMap<String, Box<dyn Source>>>);
 
 impl Provider {
     pub fn new() -> Self {
@@ -57,14 +57,14 @@ impl Provider {
     }
 
     pub fn add_source<S: Source + 'static>(&self, name: String, source: S) {
-        let mut guard = self.0.borrow_mut();
+        let mut guard = self.0.lock().unwrap();
         guard.insert(name, Box::new(source));
     }
 
     pub fn require(&self, vm: &Vm, path: &str) -> Result<AnyParam, Error> {
         let id = path.find('.').ok_or(Error::InvalidSyntax)?;
         let source = &path[..id];
-        let guard = self.0.borrow();
+        let guard = self.0.lock().unwrap();
         let src = guard
             .get(source)
             .ok_or_else(|| Error::UnknownSource(source.into()))?;
@@ -74,14 +74,14 @@ impl Provider {
 }
 
 decl_closure! {
-    fn require |provider: Rc<Provider>| (vm: &Vm, path: &str) -> Result<UncheckedAnyReturn, Error> {
+    fn require |provider: Arc<Provider>| (vm: &Vm, path: &str) -> Result<UncheckedAnyReturn, Error> {
         let top = vm.top();
         provider.require(vm, path)?;
         unsafe { Ok(UncheckedAnyReturn::new(vm, (vm.top() - top) as _)) }
     }
 }
 
-pub struct Require(pub std::rc::Rc<Provider>);
+pub struct Require(pub Shared<Provider>);
 
 impl Lib for Require {
     const NAMESPACE: &'static str = "bp3d.lua";
@@ -91,7 +91,7 @@ impl Lib for Require {
     }
 
     fn register(&self, vm: &Vm) -> crate::vm::Result<()> {
-        let rc = Rc::from_rust(vm, self.0.clone());
+        let rc = Arc::from_rust(vm, self.0.clone());
         let mut namespace = Namespace::new(vm, "bp3d.lua")?;
         namespace.add([("require", require(rc))])
     }

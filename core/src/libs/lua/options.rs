@@ -32,11 +32,12 @@ use crate::libs::lua::load::Load;
 use crate::libs::lua::require::{Provider, Require};
 use crate::libs::Lib;
 use std::path::Path;
+use crate::vm::closure::arc::Shared;
 
 #[derive(Default)]
 pub struct Lua<'a> {
     pub(super) load_chroot_path: Option<&'a Path>,
-    pub(super) provider: Option<std::rc::Rc<Provider>>,
+    pub(super) provider: Option<Shared<Provider>>,
 }
 
 impl<'a> Lua<'a> {
@@ -49,7 +50,7 @@ impl<'a> Lua<'a> {
         self
     }
 
-    pub fn provider(mut self, provider: std::rc::Rc<Provider>) -> Self {
+    pub fn provider(mut self, provider: Shared<Provider>) -> Self {
         self.provider = Some(provider);
         self
     }
