@@ -30,7 +30,7 @@ use std::collections::HashSet;
 use bp3d_lua::decl_closure;
 use bp3d_lua::libs::Lib;
 use bp3d_lua::util::Namespace;
-use bp3d_lua::vm::closure::rc::Rc;
+use bp3d_lua::vm::closure::rc::{Rc, Shared};
 use bp3d_lua::vm::table::Table;
 use bp3d_lua::vm::value::any::AnyValue;
 use crate::data::DataOut;
@@ -144,7 +144,7 @@ decl_closure! {
     }
 }
 
-pub struct Autocomplete(std::rc::Rc<DataOut>);
+pub struct Autocomplete(Shared<DataOut>);
 
 impl Autocomplete {
     pub fn new(logger: DataOut) -> Autocomplete {

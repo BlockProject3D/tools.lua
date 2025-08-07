@@ -29,7 +29,7 @@
 use bp3d_lua::decl_closure;
 use bp3d_lua::libs::Lib;
 use bp3d_lua::util::Namespace;
-use bp3d_lua::vm::closure::rc::Rc;
+use bp3d_lua::vm::closure::rc::{Rc, Shared};
 use bp3d_lua::vm::thread::value::Value;
 use crate::scheduler::SchedulerPtr;
 
@@ -45,10 +45,10 @@ decl_closure! {
     }
 }
 
-pub struct SchedulerApi(std::rc::Rc<SchedulerPtr>);
+pub struct SchedulerApi(Shared<SchedulerPtr>);
 
 impl SchedulerApi {
-    pub fn new(ptr: std::rc::Rc<SchedulerPtr>) -> Self {
+    pub fn new(ptr: Shared<SchedulerPtr>) -> Self {
         Self(ptr)
     }
 }
