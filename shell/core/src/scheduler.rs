@@ -103,7 +103,7 @@ impl Scheduler {
                     }
                 };
                 if let Some(new_time_ms) = out.data {
-                    if out.state == State::Yielded {
+                    if out.state == State::Suspended {
                         if task.period_ms.is_some() {
                             task.period_ms = Some(new_time_ms);
                         }
@@ -117,7 +117,7 @@ impl Scheduler {
                     }
                 }
                 if let Some(period_ms) = task.period_ms {
-                    if out.state == State::Yielded {
+                    if out.state == State::Suspended {
                         task.at_ms = time + period_ms as u64;
                         self.main.push(task);
                     } else {
