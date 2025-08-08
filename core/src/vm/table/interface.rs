@@ -79,6 +79,7 @@ unsafe impl IntoParam for Table<'_> {
 
 unsafe impl IntoLua for Table<'_> {
     fn into_lua(self, vm: &Vm) -> u16 {
+        assert!(self.vm.as_ptr() == vm.as_ptr());
         let top = unsafe { lua_gettop(vm.as_ptr()) };
         if top != self.index() {
             unsafe { lua_pushvalue(vm.as_ptr(), self.index()) };
