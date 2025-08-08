@@ -28,19 +28,31 @@
 
 use std::marker::PhantomData;
 use crate::ffi::lua::{lua_replace, lua_settop};
+use crate::impl_simple_registry_value_static;
 use crate::vm::registry::{FromIndex, Set};
 use crate::vm::value::{FromLua, IntoLua};
 use crate::vm::value::types::RawPtr;
 use crate::vm::Vm;
 
-/// Represents a simple registry value.
+/// Represents a simple value type which can be manipulated by [LuaRef].
+///
+/// # Notes
+///
+/// * The definition of a simple type in bp3d-lua is a type which does not hold a reference to
+/// the [Vm]. This is typically the case of primitives like strings, integers, numbers, etc. Types
+/// such as tables or functions are called complex in bp3d-lua as they require constant interactions
+/// with the Lua stack represented by a [Vm] in order to operate on them.
+///
+/// * For complex types, no wrapper is needed as they already have a reference to the attached [Vm]
+/// in their value type. Instead, complex types which can be saved in the registry directly
+/// implements the registry [Value](crate::vm::registry::Value) trait.
 ///
 /// # Safety
 ///
-/// This trait always assumes a single lua value is managed. If the underlying type manipulates
-/// multiple stack indices on the given lua [Vm], the implementation is considered UB.
-pub unsafe trait SimpleRegistryValue {
-    fn into_lua(self, vm: &Vm);
+/// This trait always assumes a single lua value is managed. If the underlying [SimpleValue]
+/// manipulates multiple stack indices on the given lua [Vm], the implementation is considered UB.
+pub unsafe trait SimpleValue<'a> {
+    fn into_lua(self, vm: &'a Vm);
 
     /// Extracts an instance of `Self` from the given Lua [Vm] and index.
     ///
@@ -56,7 +68,13 @@ pub unsafe trait SimpleRegistryValue {
     /// This function assumes the given index is valid for [Vm] and that the object on the stack at
     /// the given index is already of type `Self`. If any of these assumptions are broken, this
     /// function is UB.
-    unsafe fn from_lua(vm: &Vm, index: i32) -> Self;
+    unsafe fn from_lua(vm: &'a Vm, index: i32) -> Self;
+}
+
+/// Marks a type as being compatible with the [LuaRef](crate::vm::registry::types::LuaRef) based
+/// registry system for simple types.
+pub trait SimpleRegistryValue {
+    type Value<'a>: SimpleValue<'a>;
 }
 
 pub struct LuaRef<'a, T> {
@@ -65,7 +83,7 @@ pub struct LuaRef<'a, T> {
     useless: PhantomData<T>,
 }
 
-impl<'a, T: SimpleRegistryValue> LuaRef<'a, T> {
+impl<'a, T: SimpleValue<'a>> LuaRef<'a, T> {
     pub fn new(vm: &'a Vm, value: T) -> Self {
         value.into_lua(vm);
         Self {
@@ -117,34 +135,42 @@ impl<'a, T> Drop for LuaRef<'a, T> {
 }
 
 impl<T: SimpleRegistryValue + 'static> super::Value for super::types::LuaRef<T> {
-    type Value<'a> = LuaRef<'a, T>;
+    type Value<'a> = LuaRef<'a, T::Value<'a>>;
 
     unsafe fn from_registry(vm: &Vm, index: i32) -> Self::Value<'_> {
         LuaRef::from_raw(vm, vm.get_absolute_index(index))
     }
 
     fn push_registry<R: FromIndex>(value: Self::Value<'_>) -> R {
-        unsafe { R::from_index(value.vm, value.index) }
+        unsafe {
+            let r = R::from_index(value.vm, value.index);
+            // Avoid calling the destructor which may try to pop an already popped value.
+            std::mem::forget(value);
+            r
+        }
     }
 
     unsafe fn set_registry(key: &impl Set, value: Self::Value<'_>) {
         key.set(value.vm, value.index);
+        // Avoid calling the destructor which may try to pop an already popped value.
+        std::mem::forget(value);
     }
 }
 
-unsafe impl<T> SimpleRegistryValue for T where for<'a> T: FromLua<'a> + IntoLua {
+unsafe impl<'a, T> SimpleValue<'a> for T where T: FromLua<'a> + IntoLua {
     #[inline(always)]
-    fn into_lua(self, vm: &Vm) {
-        IntoLua::into_lua(self, vm);
+    fn into_lua(self, vm: &'a Vm) {
+        // This ensures the safety guarentee still holds.
+        assert_eq!(IntoLua::into_lua(self, vm), 1);
     }
 
     #[inline(always)]
-    unsafe fn from_lua(vm: &Vm, index: i32) -> Self {
-        unsafe { FromLua::from_lua_unchecked(vm, index) }
+    unsafe fn from_lua(vm: &'a Vm, index: i32) -> Self {
+        T::from_lua_unchecked(vm, index)
     }
 }
 
-unsafe impl<T> SimpleRegistryValue for RawPtr<T> {
+unsafe impl<T> SimpleValue<'_> for RawPtr<T> {
     #[inline(always)]
     fn into_lua(self, vm: &Vm) {
         IntoLua::into_lua(self, vm);
@@ -154,4 +180,22 @@ unsafe impl<T> SimpleRegistryValue for RawPtr<T> {
     unsafe fn from_lua(vm: &Vm, index: i32) -> Self {
         unsafe { RawPtr::from_lua(vm, index) }
     }
+}
+
+impl_simple_registry_value_static! {
+    <T> (RawPtr<T>) => RawPtr<T>;
+    (&str) => &'a str;
+    (f32) => f32;
+    (f64) => f64;
+    (i8) => i8;
+    (i16) => i16;
+    (i32) => i32;
+    (i64) => i64;
+    (u8) => u8;
+    (u16) => u16;
+    (u32) => u32;
+    (u64) => u64;
+    (String) => String;
+    (&[u8]) => &'a [u8];
+    (Vec<u8>) => Vec<u8>;
 }

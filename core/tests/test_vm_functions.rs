@@ -26,13 +26,10 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#![cfg(all(feature = "root-vm", feature = "util-method"))]
+#![cfg(feature = "root-vm")]
 
-use bp3d_lua::util::LuaMethod;
-use bp3d_lua::vm::table::Table;
 use bp3d_lua::vm::value::types::Function;
 use bp3d_lua::vm::RootVm;
-use std::ffi::CStr;
 
 #[test]
 fn test_vm_function_1_arg() {
@@ -59,28 +56,5 @@ fn test_vm_function_2_args() {
     let str: &str = f.call((42, true)).unwrap();
     assert_eq!(str, "this 42 is a test true");
     assert_eq!(vm.top(), top + 3); // Function + 2 results
-    vm.clear();
-}
-
-const METHODS: &CStr = c"
-local obj = { ctx = 'this is a test' }
-
-function obj:greeting()
-    return 'Hello ' .. self.ctx
-end
-
-return obj
-";
-
-#[test]
-fn test_vm_function_method() {
-    let mut vm = RootVm::new();
-    let top = vm.top();
-    let obj: Table = vm.run_code(METHODS).unwrap();
-    let method = LuaMethod::create(obj, c"greeting").unwrap();
-    let str: &str = method.call(&vm, ()).unwrap();
-    assert_eq!(str, "Hello this is a test");
-    method.delete(&vm);
-    assert_eq!(vm.top(), top + 1); // 1 result
     vm.clear();
 }

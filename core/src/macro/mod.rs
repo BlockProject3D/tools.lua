@@ -38,6 +38,17 @@ macro_rules! c_stringify {
     };
 }
 
+#[macro_export]
+macro_rules! impl_simple_registry_value_static {
+    ($($(<$($generics: ident)*>)? ($t: ty) => $v: ty;)*) => {
+        $(
+            impl $(<$($generics),*>)? $crate::vm::registry::lua_ref::SimpleRegistryValue for $t {
+                type Value<'a> = $v;
+            }
+        )*
+    };
+}
+
 /// This macro is unsafe and should not be used from safe code directly. It is intended as a
 /// building block for other macros.
 #[macro_export]
