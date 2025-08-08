@@ -124,7 +124,8 @@ pub fn run_lua_register(
                     let mut msg =
                         unsafe { MemBufStr::wrap(&mut error.string.len, &mut error.string.data) };
                     let _ = write!(msg, "{}", e);
-                }
+                },
+                Error::BadThreadState => error.ty = error::ErrorType::BadThreadState
             }
             false
         }

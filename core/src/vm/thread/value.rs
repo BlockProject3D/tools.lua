@@ -27,9 +27,13 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use std::fmt::{Debug, Display};
-use crate::ffi::lua::{lua_newthread, lua_pushvalue, lua_tothread};
+use crate::ffi::lua::{lua_gettop, lua_newthread, lua_pushvalue, lua_tothread, lua_type, lua_xmove, ThreadStatus, Type};
 use crate::vm::thread::core::Thread;
+use crate::vm::value::types::Function;
+use crate::vm::value::util::ensure_value_top;
 use crate::vm::Vm;
+
+//TODO: Rename to Thread and find a better name for core::Thread
 
 /// Represents a thread object value on a lua stack.
 pub struct Value<'a> {
@@ -99,6 +103,18 @@ impl<'a> Value<'a> {
             index: vm.top(),
             thread
         }
+    }
+
+    pub fn set_function(&self, function: Function<'a>) -> crate::vm::Result<()> {
+        if self.thread.status() != ThreadStatus::Ok {
+            return Err(crate::vm::error::Error::BadThreadState);
+        }
+        ensure_value_top(self.vm, function.index());
+        unsafe { lua_xmove(self.vm.as_ptr(), self.thread.as_ptr(), 1); }
+        unsafe {
+            assert_eq!(lua_type(self.thread.as_ptr(), -1), Type::Function); 
+        };
+        Ok(())
     }
 
     /// Returns the absolute index of this table on the Lua stack.

@@ -33,6 +33,7 @@ use bp3d_lua::vm::core::UnSendRootVm;
 use bp3d_lua::vm::function::types::RFunction;
 use bp3d_lua::vm::thread::core::{State, Yield};
 use bp3d_lua::vm::thread::value::Value;
+use bp3d_lua::vm::value::types::Function;
 
 decl_closure! {
     fn increment |val: Rc<Cell<u32>>| () -> () {
@@ -41,7 +42,7 @@ decl_closure! {
 }
 
 #[test]
-fn test_threads_yield_lua() {
+fn test_vm_threads_yield_lua() {
     let vm = UnSendRootVm::new();
     assert!(vm.as_thread().is_none());
     let obj = Shared::new(Cell::new(0));
@@ -57,7 +58,7 @@ fn test_threads_yield_lua() {
     ").unwrap();
     let thread: Value = vm.get_global(c"CO").unwrap();
     assert_eq!(obj.get(), 0);
-    assert_eq!(thread.as_thread().resume::<()>(()).unwrap().state, State::Yielded);
+    assert_eq!(thread.as_thread().resume::<()>(()).unwrap().state, State::Suspended);
     assert_eq!(obj.get(), 1);
     assert_eq!(thread.as_thread().resume::<()>(42).unwrap().state, State::Finished);
     assert_eq!(obj.get(), 2);
@@ -80,7 +81,7 @@ decl_lib_func! {
 }
 
 #[test]
-fn test_threads_yield_rust_fail() {
+fn test_vm_threads_yield_rust_fail() {
     let vm = UnSendRootVm::new();
     assert!(vm.as_thread().is_none());
     vm.set_global(c"my_yield", RFunction::wrap(my_yield)).unwrap();
@@ -89,7 +90,7 @@ fn test_threads_yield_rust_fail() {
 }
 
 #[test]
-fn test_threads_yield_rust() {
+fn test_vm_threads_yield_rust() {
     let vm = UnSendRootVm::new();
     assert!(vm.as_thread().is_none());
     let obj = Shared::new(Cell::new(0));
@@ -106,7 +107,7 @@ fn test_threads_yield_rust() {
     ").unwrap();
     let thread: Value = vm.get_global(c"CO").unwrap();
     assert_eq!(obj.get(), 0);
-    assert_eq!(thread.as_thread().resume::<()>(()).unwrap().state, State::Yielded);
+    assert_eq!(thread.as_thread().resume::<()>(()).unwrap().state, State::Suspended);
     assert_eq!(obj.get(), 1);
     assert_eq!(thread.as_thread().resume::<()>(42).unwrap().state, State::Finished);
     assert_eq!(obj.get(), 2);
@@ -117,7 +118,7 @@ fn test_threads_yield_rust() {
 }
 
 #[test]
-fn test_threads_with_yield_value_lua() {
+fn test_vm_threads_with_yield_value_lua() {
     let vm = UnSendRootVm::new();
     assert!(vm.as_thread().is_none());
     let obj = Shared::new(Cell::new(0));
@@ -138,7 +139,7 @@ fn test_threads_with_yield_value_lua() {
 }
 
 #[test]
-fn test_threads_with_yield_value_rust() {
+fn test_vm_threads_with_yield_value_rust() {
     let vm = UnSendRootVm::new();
     assert!(vm.as_thread().is_none());
     let obj = Shared::new(Cell::new(0));
@@ -160,7 +161,7 @@ fn test_threads_with_yield_value_rust() {
 }
 
 #[test]
-fn test_threads_with_yield_value_unsafe() {
+fn test_vm_threads_with_yield_value_unsafe() {
     let vm = UnSendRootVm::new();
     assert!(vm.as_thread().is_none());
     let obj = Shared::new(Cell::new(0));
@@ -197,4 +198,21 @@ fn test_threads_with_yield_value_unsafe() {
     assert_eq!(s2, "test2");
     assert_eq!(s3, "test3");
     assert_eq!(obj.get(), 3);
+}
+
+#[test]
+fn test_vm_threads_set_function() {
+    let vm = UnSendRootVm::new();
+    let top = vm.top();
+    assert!(vm.as_thread().is_none());
+    let obj = Shared::new(Cell::new(0));
+    vm.set_global(c"increment", increment(Rc::from_rust(&vm, obj.clone()))).unwrap();
+    vm.run_code::<()>(c"function ThreadMain() increment() coroutine.yield() increment() end").unwrap();
+    let main_fn: Function = vm.get_global(c"ThreadMain").unwrap();
+    let thread = Value::new(&vm);
+    thread.set_function(main_fn).unwrap();
+    assert_eq!(thread.as_thread().resume::<()>(()).unwrap().state, State::Suspended);
+    assert_eq!(thread.as_thread().resume::<()>(()).unwrap().state, State::Finished);
+    assert_eq!(obj.get(), 2);
+    assert_eq!(vm.top() - top, 2)
 }

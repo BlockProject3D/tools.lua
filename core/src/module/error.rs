@@ -49,6 +49,7 @@ pub enum ErrorType {
     ParseFloat = -12,
     ParseInt = -13,
     UncatchableRuntime = -14,
+    BadThreadState = -15,
     UserDataArgsEmpty = 1,
     UserDataMutViolation = 2,
     UserDataGc = 3,

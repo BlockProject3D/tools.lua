@@ -149,7 +149,8 @@ simple_error! {
         UnsupportedType(Type) => "unsupported lua type: {:?}",
         Loader(String) => "loader error: {}",
         ParseFloat => "parse float error",
-        ParseInt => "parse int error"
+        ParseInt => "parse int error",
+        BadThreadState => "attempt to set the function of a thread in suspended or dead state"
     }
 }
 

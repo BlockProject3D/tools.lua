@@ -37,7 +37,7 @@ use crate::vm::Vm;
 
 #[derive(Copy, Clone, Eq, PartialEq, Debug)]
 pub enum State {
-    Yielded,
+    Suspended,
     Finished,
 }
 
@@ -125,7 +125,7 @@ impl<'a> Thread<'a> {
             ThreadStatus::Yield => {
                 let data = T::from_lua(&self.vm, top)?;
                 Ok(Output {
-                    state: State::Yielded,
+                    state: State::Suspended,
                     data
                 })
             },
