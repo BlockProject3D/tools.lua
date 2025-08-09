@@ -78,8 +78,9 @@ fn list_table_completions(set: &mut HashSet<usize>, path: Vec<String>, root: &mu
     if set.contains(&value.uid()) {
         return Ok(());
     }
-    for res in value.iter() {
-        let (k, v) = res?;
+    for (k, v) in value.iter() {
+        let k = k.to_any()?;
+        let v = v.to_any()?;
         match k {
             Any::String(name) => {
                 let c = get_capacity(&v);
