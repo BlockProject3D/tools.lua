@@ -1,0 +1,17 @@
+error[E0382]: use of moved value: `func`
+  --> tests/safety/test_scope_safe_3.rs:40:35
+   |
+34 |     let func: Function = vm.get_global(c"MY_GLOBAL").unwrap();
+   |         ---- move occurs because `func` has type `bp3d_lua::vm::value::types::Function<'_>`, which does not implement the `Copy` trait
+35 |     let _ = vm.scope(|_| {
+   |                      --- value moved into closure here
+36 |         vm.set_global(c"MY_GLOBAL_2", func).unwrap();
+   |                                       ---- variable moved due to use in closure
+...
+40 |     vm.set_global(c"MY_GLOBAL_3", func).unwrap();
+   |                                   ^^^^ value used here after move
+   |
+help: consider cloning the value if the performance cost is acceptable
+   |
+36 |         vm.set_global(c"MY_GLOBAL_2", func.clone()).unwrap();
+   |                                           ++++++++

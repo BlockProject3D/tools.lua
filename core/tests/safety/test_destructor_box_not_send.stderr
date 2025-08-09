@@ -1,0 +1,25 @@
+error[E0277]: `*const ()` cannot be sent between threads safely
+  --> tests/safety/test_destructor_box_not_send.rs:38:5
+   |
+38 |     bp3d_lua::vm::core::destructor::Pool::attach_send(&vm, Box::new(UnSendType(PhantomData)));
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `*const ()` cannot be sent between threads safely
+   |
+   = help: within `UnSendType`, the trait `Send` is not implemented for `*const ()`
+   = help: the trait `RawSend` is implemented for `std::sync::Arc<T>`
+note: required because it appears within the type `PhantomData<*const ()>`
+  --> $RUST/core/src/marker.rs
+   |
+   | pub struct PhantomData<T: ?Sized>;
+   |            ^^^^^^^^^^^
+note: required because it appears within the type `UnSendType`
+  --> tests/safety/test_destructor_box_not_send.rs:34:8
+   |
+34 | struct UnSendType(PhantomData<*const ()>);
+   |        ^^^^^^^^^^
+   = note: required for `Unique<UnSendType>` to implement `Send`
+note: required because it appears within the type `Box<UnSendType>`
+  --> $RUST/alloc/src/boxed.rs
+   |
+   | pub struct Box<
+   |            ^^^
+   = note: required for `Box<UnSendType>` to implement `RawSend`

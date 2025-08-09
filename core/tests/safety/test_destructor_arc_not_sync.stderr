@@ -1,0 +1,22 @@
+error[E0277]: the trait bound `std::sync::Arc<UnSyncType>: RawSend` is not satisfied
+  --> tests/safety/test_destructor_arc_not_sync.rs:42:60
+   |
+42 |     bp3d_lua::vm::core::destructor::Pool::attach_send(&vm, obj);
+   |     -------------------------------------------------      ^^^ the trait `RawSend` is not implemented for `std::sync::Arc<UnSyncType>`
+   |     |
+   |     required by a bound introduced by this call
+   |
+   = help: the trait `RawSend` is implemented for `std::sync::Arc<T>`
+note: required by a bound in `Pool::attach_send`
+  --> src/vm/core/destructor.rs
+   |
+   |     pub fn attach_send<R: RawSend>(vm: &Vm, raw: R) -> R::Ptr
+   |                           ^^^^^^^ required by this bound in `Pool::attach_send`
+
+error[E0277]: the trait bound `std::sync::Arc<UnSyncType>: RawSend` is not satisfied
+  --> tests/safety/test_destructor_arc_not_sync.rs:42:5
+   |
+42 |     bp3d_lua::vm::core::destructor::Pool::attach_send(&vm, obj);
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `RawSend` is not implemented for `std::sync::Arc<UnSyncType>`
+   |
+   = help: the trait `RawSend` is implemented for `std::sync::Arc<T>`

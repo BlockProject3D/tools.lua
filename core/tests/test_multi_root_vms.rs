@@ -140,8 +140,3 @@ fn test_multi_root_vms_send_destructor() {
     let root1 = RootVm::new();
     Pool::attach_send(&root1, Box::new(()));
 }
-
-/*#[test]
-fn test_multi_root_vms_not_send_build_error() {
-    todo!()
-}*/

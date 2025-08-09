@@ -1,0 +1,16 @@
+error[E0597]: `vm` does not live long enough
+  --> tests/safety/test_scope_safe_2.rs:35:9
+   |
+32 |     let vm = RootVm::new();
+   |         -- binding `vm` declared here
+33 |     let _ = vm.scope(|_| {
+   |                      --- value captured here
+34 |         // Should not build as get_global is limited to vm.scope.
+35 |         vm.get_global::<&str>(c"MY_GLOBAL")
+   |         ^^---------------------------------
+   |         |
+   |         borrowed value does not live long enough
+   |         returning this value requires that `vm` is borrowed for `'static`
+36 |     });
+37 | }
+   | - `vm` dropped here while still borrowed

@@ -1,0 +1,26 @@
+error[E0597]: `vm` does not live long enough
+  --> tests/safety/test_vm_threads_unsafe_type.rs:34:26
+   |
+33 |     let vm = UnSendRootVm::new();
+   |         -- binding `vm` declared here
+34 |     let thread: Thread = vm.get_global(c"CO").unwrap();
+   |                          ^^ borrowed value does not live long enough
+...
+37 |     let _: &str = thread.as_thread().resume(()).unwrap().data;
+   |                   ----------------------------- argument requires that `vm` is borrowed for `'static`
+38 | }
+   | - `vm` dropped here while still borrowed
+
+error[E0597]: `thread` does not live long enough
+  --> tests/safety/test_vm_threads_unsafe_type.rs:37:19
+   |
+34 |     let thread: Thread = vm.get_global(c"CO").unwrap();
+   |         ------ binding `thread` declared here
+...
+37 |     let _: &str = thread.as_thread().resume(()).unwrap().data;
+   |                   ^^^^^^-----------------------
+   |                   |
+   |                   borrowed value does not live long enough
+   |                   argument requires that `thread` is borrowed for `'static`
+38 | }
+   | - `thread` dropped here while still borrowed

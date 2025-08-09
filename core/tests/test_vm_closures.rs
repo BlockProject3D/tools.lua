@@ -78,9 +78,9 @@ fn test_vm_fast_closure() {
 
 #[test]
 fn test_vm_rust_closure() {
-    let mut vm = RootVm::new();
+    let vm = RootVm::new();
     let top = vm.top();
-    let closure = RClosure::from_rust(&mut vm, |val: f32| format!("this is a test: {}", val));
+    let closure = RClosure::from_rust(&vm, |val: f32| format!("this is a test: {}", val));
     vm.set_global(c"test", closure).unwrap();
     assert_eq!(top, vm.top());
     let s: &str = vm.run_code(c"return test(42.42)").unwrap();

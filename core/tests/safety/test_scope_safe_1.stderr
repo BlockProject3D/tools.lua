@@ -1,0 +1,10 @@
+error: lifetime may not live long enough
+  --> tests/safety/test_scope_safe_1.rs:35:9
+   |
+33 |     let _ = vm.scope(|vm| {
+   |                       --- return type of closure is Result<&'2 str, bp3d_lua::vm::error::Error>
+   |                       |
+   |                       has type `&'1 bp3d_lua::vm::Vm`
+34 |         // Should not build as get_global is limited to vm.scope.
+35 |         vm.get_global::<&str>(c"MY_GLOBAL")
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ returning this value requires that `'1` must outlive `'2`

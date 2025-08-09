@@ -29,6 +29,7 @@ libc = { version = "0.2.170", optional = true }
 
 [dev-dependencies]
 bp3d-lua-codegen = { version = "1.0.0-rc.1.0.0", path = "../codegen" }
+trybuild = "1.0.110"
 
 [build-dependencies]
 bp3d-lua-build = { version = "1.0.0-rc.1.0.0", path = "../build" }

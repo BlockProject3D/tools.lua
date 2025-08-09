@@ -1,0 +1,9 @@
+error[E0277]: `std::rc::Rc<UnSendType>` cannot be sent between threads safely
+  --> tests/safety/test_destructor_rc_not_send.rs:40:5
+   |
+40 |     bp3d_lua::vm::core::destructor::Pool::attach_send(&vm, obj);
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `std::rc::Rc<UnSendType>` cannot be sent between threads safely
+   |
+   = help: the trait `Send` is not implemented for `std::rc::Rc<UnSendType>`
+   = help: the trait `RawSend` is implemented for `std::sync::Arc<T>`
+   = note: required for `std::rc::Rc<UnSendType>` to implement `RawSend`
