@@ -26,7 +26,7 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::fmt::{Debug, Display};
+use std::fmt::Debug;
 use crate::ffi::lua::{lua_replace, lua_type, Type};
 use crate::vm::value::{FromLua, IntoLua};
 use crate::vm::value::any::Any;
