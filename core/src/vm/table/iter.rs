@@ -27,7 +27,7 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::ffi::lua::{lua_next, lua_pushnil, lua_settop};
-use crate::vm::value::any::AnyValue;
+use crate::vm::value::any::Any;
 use crate::vm::value::FromLua;
 use crate::vm::Vm;
 
@@ -54,7 +54,7 @@ impl<'a> Iter<'a> {
 }
 
 impl<'a> Iterator for Iter<'a> {
-    type Item = crate::vm::Result<(AnyValue<'a>, AnyValue<'a>)>;
+    type Item = crate::vm::Result<(Any<'a>, Any<'a>)>;
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.has_started {
@@ -74,8 +74,8 @@ impl<'a> Iterator for Iter<'a> {
         self.last_top = self.vm.top();
         self.has_started = true;
         if ret != 0 {
-            let value = AnyValue::from_lua(self.vm, -2);
-            let key = AnyValue::from_lua(self.vm, -1);
+            let value = Any::from_lua(self.vm, -2);
+            let key = Any::from_lua(self.vm, -1);
             Some(match (value, key) {
                 (Ok(key), Ok(value)) => Ok((key, value)),
                 (Ok(_), Err(e)) => Err(e),

@@ -37,7 +37,7 @@ use bp3d_lua::libs::Lib;
 use bp3d_debug::{debug, error, info};
 use bp3d_lua::vm::core::jit::JitOptions;
 use bp3d_lua::vm::core::load::{Code, Script};
-use bp3d_lua::vm::value::any::AnyValue;
+use bp3d_lua::vm::value::any::Any;
 use bp3d_lua::vm::Vm;
 use crate::autocomplete::Autocomplete;
 use crate::data::DataOut;
@@ -86,7 +86,7 @@ impl Lua {
         self.out_queue.recv().await
     }
 
-    fn handle_value(res: bp3d_lua::vm::Result<AnyValue>, logger: &DataOut) -> bool {
+    fn handle_value(res: bp3d_lua::vm::Result<Any>, logger: &DataOut) -> bool {
         match res {
             Ok(v) => {
                 logger.send(Log("output", v.to_string()));

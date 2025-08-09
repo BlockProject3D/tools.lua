@@ -41,7 +41,7 @@ use std::fmt::Display;
 use std::str::FromStr;
 
 #[derive(Debug, PartialEq, Clone)]
-pub enum AnyValue<'a> {
+pub enum Any<'a> {
     None,
     Nil,
     Number(f64),
@@ -54,45 +54,45 @@ pub enum AnyValue<'a> {
     Thread(Thread<'a>),
 }
 
-impl Eq for AnyValue<'_> {}
+impl Eq for Any<'_> {}
 
-impl Display for AnyValue<'_> {
+impl Display for Any<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            AnyValue::None => f.write_str("<none>"),
-            AnyValue::Nil => f.write_str("nil"),
-            AnyValue::Number(v) => write!(f, "{}", v),
-            AnyValue::Boolean(v) => write!(f, "{}", v),
-            AnyValue::String(v) => write!(f, "{}", v),
-            AnyValue::Buffer(v) => write!(f, "{:?}", v),
-            AnyValue::Function(v) => write!(f, "{}", v),
-            AnyValue::Table(v) => write!(f, "{}", v),
-            AnyValue::UserData(v) => write!(f, "{}", v),
-            AnyValue::Thread(v) => write!(f, "{}", v),
+            Any::None => f.write_str("<none>"),
+            Any::Nil => f.write_str("nil"),
+            Any::Number(v) => write!(f, "{}", v),
+            Any::Boolean(v) => write!(f, "{}", v),
+            Any::String(v) => write!(f, "{}", v),
+            Any::Buffer(v) => write!(f, "{:?}", v),
+            Any::Function(v) => write!(f, "{}", v),
+            Any::Table(v) => write!(f, "{}", v),
+            Any::UserData(v) => write!(f, "{}", v),
+            Any::Thread(v) => write!(f, "{}", v),
         }
     }
 }
 
-impl AnyValue<'_> {
+impl Any<'_> {
     pub fn ty(&self) -> Type {
         match self {
-            AnyValue::None => Type::None,
-            AnyValue::Nil => Type::Nil,
-            AnyValue::Number(_) => Type::Number,
-            AnyValue::Boolean(_) => Type::Boolean,
-            AnyValue::String(_) => Type::String,
-            AnyValue::Buffer(_) => Type::String,
-            AnyValue::Function(_) => Type::Function,
-            AnyValue::Table(_) => Type::Table,
-            AnyValue::UserData(_) => Type::Userdata,
-            AnyValue::Thread(_) => Type::Thread,
+            Any::None => Type::None,
+            Any::Nil => Type::Nil,
+            Any::Number(_) => Type::Number,
+            Any::Boolean(_) => Type::Boolean,
+            Any::String(_) => Type::String,
+            Any::Buffer(_) => Type::String,
+            Any::Function(_) => Type::Function,
+            Any::Table(_) => Type::Table,
+            Any::UserData(_) => Type::Userdata,
+            Any::Thread(_) => Type::Thread,
         }
     }
 
     pub fn to_number(&self) -> Result<crate::ffi::lua::RawNumber, Error> {
         match self {
-            AnyValue::Number(v) => Ok(*v),
-            AnyValue::String(v) => {
+            Any::Number(v) => Ok(*v),
+            Any::String(v) => {
                 crate::ffi::lua::RawNumber::from_str(v).map_err(|_| Error::ParseFloat)
             }
             _ => Err(Error::Type(TypeError {
@@ -104,8 +104,8 @@ impl AnyValue<'_> {
 
     pub fn to_integer(&self) -> Result<crate::ffi::lua::RawInteger, Error> {
         match self {
-            AnyValue::Number(v) => Ok(*v as _),
-            AnyValue::String(v) => {
+            Any::Number(v) => Ok(*v as _),
+            Any::String(v) => {
                 crate::ffi::lua::RawInteger::from_str(v).map_err(|_| Error::ParseInt)
             }
             _ => Err(Error::Type(TypeError {
@@ -116,34 +116,34 @@ impl AnyValue<'_> {
     }
 }
 
-unsafe impl IntoLua for AnyValue<'_> {
+unsafe impl IntoLua for Any<'_> {
     fn into_lua(self, vm: &Vm) -> u16 {
         match self {
-            AnyValue::None => 0,
-            AnyValue::Nil => {
+            Any::None => 0,
+            Any::Nil => {
                 unsafe { lua_pushnil(vm.as_ptr()) };
                 1
             }
-            AnyValue::Number(v) => v.into_lua(vm),
-            AnyValue::Boolean(v) => v.into_lua(vm),
-            AnyValue::String(v) => v.into_lua(vm),
-            AnyValue::Buffer(v) => v.into_lua(vm),
-            AnyValue::Function(v) => v.into_lua(vm),
-            AnyValue::Table(v) => v.into_lua(vm),
-            AnyValue::UserData(_) => 0,
-            AnyValue::Thread(_) => 0,
+            Any::Number(v) => v.into_lua(vm),
+            Any::Boolean(v) => v.into_lua(vm),
+            Any::String(v) => v.into_lua(vm),
+            Any::Buffer(v) => v.into_lua(vm),
+            Any::Function(v) => v.into_lua(vm),
+            Any::Table(v) => v.into_lua(vm),
+            Any::UserData(_) => 0,
+            Any::Thread(_) => 0,
         }
     }
 }
 
-unsafe impl IntoParam for AnyValue<'_> {
+unsafe impl IntoParam for Any<'_> {
     #[inline(always)]
     fn into_param(self, vm: &Vm) -> i32 {
         IntoLua::into_lua(self, vm) as _
     }
 }
 
-impl<'a> FromLua<'a> for AnyValue<'a> {
+impl<'a> FromLua<'a> for Any<'a> {
     #[inline(always)]
     unsafe fn from_lua_unchecked(vm: &'a Vm, index: i32) -> Self {
         Self::from_lua(vm, index).unwrap_unchecked()
@@ -152,41 +152,41 @@ impl<'a> FromLua<'a> for AnyValue<'a> {
     fn from_lua(vm: &'a Vm, index: i32) -> crate::vm::Result<Self> {
         let ty = unsafe { lua_type(vm.as_ptr(), index) };
         match ty {
-            Type::None => Ok(AnyValue::None),
-            Type::Nil => Ok(AnyValue::Nil),
+            Type::None => Ok(Any::None),
+            Type::Nil => Ok(Any::Nil),
             Type::Boolean => {
                 let value = unsafe { lua_toboolean(vm.as_ptr(), index) };
-                Ok(AnyValue::Boolean(value == 1))
+                Ok(Any::Boolean(value == 1))
             }
             Type::LightUserdata => Err(Error::UnsupportedType(ty)),
             Type::Number => {
                 let value = unsafe { lua_tonumber(vm.as_ptr(), index) };
-                Ok(AnyValue::Number(value))
+                Ok(Any::Number(value))
             }
             Type::String => {
                 let buffer: &[u8] = unsafe { FromLua::from_lua_unchecked(vm, index) };
                 match std::str::from_utf8(buffer) {
-                    Ok(s) => Ok(AnyValue::String(s)),
-                    Err(_) => Ok(AnyValue::Buffer(buffer)),
+                    Ok(s) => Ok(Any::String(s)),
+                    Err(_) => Ok(Any::Buffer(buffer)),
                 }
             }
-            Type::Table => Ok(unsafe { AnyValue::Table(FromLua::from_lua_unchecked(vm, index)) }),
+            Type::Table => Ok(unsafe { Any::Table(FromLua::from_lua_unchecked(vm, index)) }),
             Type::Function => {
-                Ok(unsafe { AnyValue::Function(FromLua::from_lua_unchecked(vm, index)) })
+                Ok(unsafe { Any::Function(FromLua::from_lua_unchecked(vm, index)) })
             }
             Type::Userdata => {
-                Ok(unsafe { AnyValue::UserData(FromLua::from_lua_unchecked(vm, index)) })
+                Ok(unsafe { Any::UserData(FromLua::from_lua_unchecked(vm, index)) })
             }
-            Type::Thread => Ok(unsafe { AnyValue::Thread(FromLua::from_lua_unchecked(vm, index)) }),
+            Type::Thread => Ok(unsafe { Any::Thread(FromLua::from_lua_unchecked(vm, index)) }),
         }
     }
 }
 
-unsafe impl SimpleDrop for AnyValue<'_> {}
+unsafe impl SimpleDrop for Any<'_> {}
 
-impl LuaType for AnyValue<'_> {}
+impl LuaType for Any<'_> {}
 
-impl<'a> FromParam<'a> for AnyValue<'a> {
+impl<'a> FromParam<'a> for Any<'a> {
     #[inline(always)]
     unsafe fn from_param(vm: &'a Vm, index: i32) -> Self {
         match FromLua::from_lua(vm, index) {

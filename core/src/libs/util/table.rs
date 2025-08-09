@@ -31,7 +31,7 @@ use crate::libs::Lib;
 use crate::util::Namespace;
 use crate::vm::function::types::RFunction;
 use crate::vm::table::Table as LuaTable;
-use crate::vm::value::any::AnyValue;
+use crate::vm::value::any::Any;
 use crate::vm::Vm;
 use bp3d_util::simple_error;
 
@@ -39,7 +39,7 @@ fn update_rec(vm: &Vm, mut dst: LuaTable, mut src: LuaTable) -> crate::vm::Resul
     for res in src.iter() {
         let (k, v) = res?;
         match v {
-            AnyValue::Table(v) => vm.scope(|_| {
+            Any::Table(v) => vm.scope(|_| {
                 let dst1: Option<LuaTable> = dst.get_any(k.clone())?;
                 match dst1 {
                     None => {
@@ -97,7 +97,7 @@ fn to_string_rec(prefix: String, mut table: LuaTable) -> crate::vm::Result<Vec<S
     for res in table.iter() {
         let (k, v) = res?;
         match v {
-            AnyValue::Table(v) => {
+            Any::Table(v) => {
                 lines.push(format!("{}:", k));
                 lines.extend(to_string_rec(prefix.clone() + "    ", v)?);
             }
@@ -114,7 +114,7 @@ decl_lib_func! {
 }
 
 decl_lib_func! {
-    fn contains(src: LuaTable, value: AnyValue) -> crate::vm::Result<bool> {
+    fn contains(src: LuaTable, value: Any) -> crate::vm::Result<bool> {
         let mut src = src;
         for res in src.iter() {
             let (_, v) = res?;
@@ -127,7 +127,7 @@ decl_lib_func! {
 }
 
 decl_lib_func! {
-    fn contains_key(src: LuaTable, key: AnyValue) -> crate::vm::Result<bool> {
+    fn contains_key(src: LuaTable, key: Any) -> crate::vm::Result<bool> {
         let mut src = src;
         for res in src.iter() {
             let (k, _) = res?;

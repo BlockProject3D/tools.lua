@@ -32,7 +32,7 @@ use bp3d_lua::libs::Lib;
 use bp3d_lua::util::Namespace;
 use bp3d_lua::vm::closure::rc::{Rc, Shared};
 use bp3d_lua::vm::table::Table;
-use bp3d_lua::vm::value::any::AnyValue;
+use bp3d_lua::vm::value::any::Any;
 use crate::data::DataOut;
 
 pub enum Mode {
@@ -52,9 +52,9 @@ pub struct Item {
 }
 
 impl Item {
-    pub fn from_lua(name: &str, val: &AnyValue) -> Self {
+    pub fn from_lua(name: &str, val: &Any) -> Self {
         match val {
-            AnyValue::Function(_) => Item { name: name.into(), ty: Type::Function },
+            Any::Function(_) => Item { name: name.into(), ty: Type::Function },
             _ => Item { name: name.into(), ty: Type::Attribute }
         }
     }
@@ -65,11 +65,11 @@ pub struct Completions {
     pub items: Vec<Item>
 }
 
-fn get_capacity(val: &AnyValue) -> usize {
+fn get_capacity(val: &Any) -> usize {
     match val {
-        AnyValue::Function(_) => 0,
-        AnyValue::Table(v) => v.len(),
-        AnyValue::UserData(_) => 1,
+        Any::Function(_) => 0,
+        Any::Table(v) => v.len(),
+        Any::UserData(_) => 1,
         _ => 0
     }
 }
@@ -81,7 +81,7 @@ fn list_table_completions(set: &mut HashSet<usize>, path: Vec<String>, root: &mu
     for res in value.iter() {
         let (k, v) = res?;
         match k {
-            AnyValue::String(name) => {
+            Any::String(name) => {
                 let c = get_capacity(&v);
                 if c > 0 {
                     let mut path = path.clone();
@@ -107,10 +107,10 @@ fn list_table_completions(set: &mut HashSet<usize>, path: Vec<String>, root: &mu
     Ok(())
 }
 
-fn list_completions(set: &mut HashSet<usize>, path: Vec<String>, root: &mut Vec<Completions>, value: AnyValue, metatables: bool) -> bp3d_lua::vm::Result<()> {
+fn list_completions(set: &mut HashSet<usize>, path: Vec<String>, root: &mut Vec<Completions>, value: Any, metatables: bool) -> bp3d_lua::vm::Result<()> {
     match value {
-        AnyValue::Table(v) => list_table_completions(set, path, root, v, metatables),
-        AnyValue::UserData(v) => {
+        Any::Table(v) => list_table_completions(set, path, root, v, metatables),
+        Any::UserData(v) => {
             if let Some(tbl) = v.get_metatable() {
                 // We assume userdata have a single metatable (following current bp3d-lua pattern).
                 list_table_completions(set, path, root, tbl, false)?;
@@ -123,7 +123,7 @@ fn list_completions(set: &mut HashSet<usize>, path: Vec<String>, root: &mut Vec<
 
 decl_closure! {
     fn build_completions |ch: Rc<DataOut>| (lua: &Vm, name: &str, metatables: bool) -> bp3d_lua::vm::Result<()> {
-        let value: AnyValue = lua.get_global(name)?;
+        let value: Any = lua.get_global(name)?;
         let mut root = Vec::new();
         let mut set = HashSet::new();
         list_completions(&mut set, vec![name.into()], &mut root, value, metatables)?;
@@ -134,7 +134,7 @@ decl_closure! {
 
 decl_closure! {
     fn delete_completions |ch: Rc<DataOut>| (lua: &Vm, name: &str, metatables: bool) -> bp3d_lua::vm::Result<()> {
-        let value: AnyValue = lua.get_global(name)?;
+        let value: Any = lua.get_global(name)?;
         let mut root = Vec::new();
         let mut set = HashSet::new();
         list_completions(&mut set, vec![name.into()], &mut root, value, metatables)?;
