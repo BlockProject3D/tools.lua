@@ -119,7 +119,7 @@ impl<'a, T: SimpleValue<'a>> LuaRef<'a, T> {
         unsafe { T::from_lua(self.vm, self.index) }
     }
 
-    pub fn set(&self, value: T) {
+    pub fn set(&mut self, value: T) {
         value.into_lua(self.vm);
         unsafe { lua_replace(self.vm.as_ptr(), self.index) };
     }

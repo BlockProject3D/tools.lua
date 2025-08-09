@@ -97,7 +97,7 @@ fn test_vm_registry_string_modify() {
     let r = LiveLuaRef::new(&vm, "this is a test");
     let key: Key<LuaRef<&str>> = Key::new(r);
     assert_eq!(vm.top(), top);
-    let value = key.push(&vm);
+    let mut value = key.push(&vm);
     assert_eq!(value.get(), "this is a test");
     value.set("one more test");
     assert_eq!(value.get(), "one more test");
