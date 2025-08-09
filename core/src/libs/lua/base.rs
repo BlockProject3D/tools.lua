@@ -30,13 +30,7 @@ use crate::libs::Lib;
 use crate::util::Namespace;
 use crate::vm::table::Table;
 
-const PATCH_LIST: &[&str] = &[
-    "disable_lua_load",
-    "lib_init",
-    "lj_disable_jit",
-    "lua_ext",
-    "lua_load_no_bc",
-];
+include!(env!("BP3D_LUA_PATCH_SUMMARY_FILE"));
 
 pub struct Base;
 

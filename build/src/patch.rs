@@ -29,8 +29,26 @@
 use crate::util::CommandRunner;
 use bp3d_os::fs::CopyOptions;
 use std::ffi::OsStr;
+use std::fs::File;
 use std::path::{Path, PathBuf};
 use std::process::Command;
+use std::io::Write;
+
+pub struct Summary {
+    patches: Vec<String>
+}
+
+impl Summary {
+    pub fn write(&self, out: &Path) -> std::io::Result<()> {
+        let mut file = File::create(out)?;
+        writeln!(&mut file, "const PATCH_LIST: &[&str] = &[")?;
+        for patch in &self.patches {
+            writeln!(&mut file, "    \"{}\",", patch)?;
+        }
+        writeln!(&mut file, "];")?;
+        Ok(())
+    }
+}
 
 pub struct Patch {
     src_path: PathBuf,
@@ -75,7 +93,7 @@ impl Patch {
         mut self,
         patches: impl IntoIterator<Item = &'a str>,
         out_path: &Path,
-    ) -> std::io::Result<Vec<String>> {
+    ) -> std::io::Result<Summary> {
         for patch in patches {
             self.apply(patch)?;
         }
@@ -86,7 +104,7 @@ impl Patch {
                 CopyOptions::new().exclude(OsStr::new(".git")),
             )?;
         }
-        Ok(self.get_patch_list().map(String::from).collect())
+        Ok(Summary { patches: self.get_patch_list().map(String::from).collect() })
     }
 }
 

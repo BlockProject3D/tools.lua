@@ -46,12 +46,18 @@ const PATCH_LIST: &[&str] = &[
                              // pcall/xpcall but only from lua_pcall C API.
 ];
 
-fn apply_patches(out_path: &Path) -> std::io::Result<Vec<String>> {
-    Patch::new(
+fn apply_patches(luajit_build_path: &Path, summary_path: &Path) -> std::io::Result<()> {
+    let summary = Patch::new(
         &Path::new("..").join("patch"),
         &Path::new("..").join("LuaJIT"),
     )?
-    .apply_all(PATCH_LIST.iter().copied(), out_path)
+    .apply_all(PATCH_LIST.iter().copied(), luajit_build_path)?;
+    #[cfg(feature = "libs")]
+    {
+        summary.write(summary_path)?;
+        println!("cargo:rustc-env=BP3D_LUA_PATCH_SUMMARY_FILE={}", summary_path.display());
+    }
+    Ok(())
 }
 
 fn run_build(build_dir: &Path) -> std::io::Result<Lib> {
@@ -78,7 +84,7 @@ fn main() {
     let out_path = Path::new(&out).join("luajit-build");
 
     // Apply patches to LuaJIT source code.
-    apply_patches(&out_path).expect("Failed to patch LuaJIT");
+    apply_patches(&out_path, &Path::new(&out).join("patch_summary.rs")).expect("Failed to patch LuaJIT");
 
     // Copy the source directory to the build directory.
     println!("Internal LuaJIT build directory: {}", out_path.display());
