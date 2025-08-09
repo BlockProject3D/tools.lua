@@ -27,53 +27,51 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use std::fmt::{Debug, Display};
-use crate::ffi::lua::{lua_gettop, lua_newthread, lua_pushvalue, lua_tothread, lua_type, lua_xmove, ThreadStatus, Type};
-use crate::vm::thread::core::Thread;
+use crate::ffi::lua::{lua_newthread, lua_pushvalue, lua_tothread, lua_type, lua_xmove, ThreadStatus, Type};
+use crate::vm::thread::core;
 use crate::vm::value::types::Function;
 use crate::vm::value::util::ensure_value_top;
 use crate::vm::Vm;
 
-//TODO: Rename to Thread and find a better name for core::Thread
-
 /// Represents a thread object value on a lua stack.
-pub struct Value<'a> {
+pub struct Thread<'a> {
     pub(super) vm: &'a Vm,
     index: i32,
-    thread: Thread<'static>
+    thread: core::Thread<'static>
 }
 
-impl Clone for Value<'_> {
+impl Clone for Thread<'_> {
     fn clone(&self) -> Self {
         unsafe { lua_pushvalue(self.vm.as_ptr(), self.index) };
-        Value {
+        Thread {
             vm: self.vm,
             index: self.vm.top(),
-            thread: unsafe { Thread::from_raw(self.thread.as_ptr()) }
+            thread: unsafe { core::Thread::from_raw(self.thread.as_ptr()) }
         }
     }
 }
 
-impl PartialEq for Value<'_> {
+impl PartialEq for Thread<'_> {
     fn eq(&self, other: &Self) -> bool {
         self.thread.eq(&other.thread)
     }
 }
 
-impl Eq for Value<'_> {}
+impl Eq for Thread<'_> {}
 
-impl Display for Value<'_> {
+impl Display for Thread<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "thread@{:X}", self.thread.uid())
     }
 }
 
-impl Debug for Value<'_> {
+impl Debug for Thread<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "Thread({:?})", self.index)
     }
 }
 
-impl<'a> Value<'a> {
+impl<'a> Thread<'a> {
     /// Creates a thread value from a raw Vm and index on `vm` stack.
     ///
     /// # Arguments
@@ -92,12 +90,12 @@ impl<'a> Value<'a> {
         Self {
             vm,
             index,
-            thread: Thread::from_raw(lua_tothread(vm.as_ptr(), index))
+            thread: core::Thread::from_raw(lua_tothread(vm.as_ptr(), index))
         }
     }
 
     pub fn new(vm: &'a Vm) -> Self {
-        let thread = unsafe { Thread::from_raw(lua_newthread(vm.as_ptr())) };
+        let thread = unsafe { core::Thread::from_raw(lua_newthread(vm.as_ptr())) };
         Self {
             vm,
             index: vm.top(),
@@ -112,7 +110,7 @@ impl<'a> Value<'a> {
         ensure_value_top(self.vm, function.index());
         unsafe { lua_xmove(self.vm.as_ptr(), self.thread.as_ptr(), 1); }
         unsafe {
-            assert_eq!(lua_type(self.thread.as_ptr(), -1), Type::Function); 
+            assert_eq!(lua_type(self.thread.as_ptr(), -1), Type::Function);
         };
         Ok(())
     }
@@ -125,7 +123,7 @@ impl<'a> Value<'a> {
 
     /// Returns the thread stack object attached to this thread value.
     #[inline(always)]
-    pub fn as_thread(&self) -> &Thread {
+    pub fn as_thread(&self) -> &core::Thread {
         &self.thread
     }
 }

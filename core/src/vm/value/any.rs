@@ -31,7 +31,7 @@ use crate::util::core::SimpleDrop;
 use crate::vm::error::{Error, TypeError};
 use crate::vm::function::{FromParam, IntoParam};
 use crate::vm::table::Table;
-use crate::vm::thread::value::Value as Thread;
+use crate::vm::thread::value::Thread as Thread;
 use crate::vm::userdata::AnyUserData;
 use crate::vm::util::{lua_rust_error, LuaType};
 use crate::vm::value::function::Function;

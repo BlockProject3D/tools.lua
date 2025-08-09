@@ -30,17 +30,17 @@ use bp3d_lua::decl_closure;
 use bp3d_lua::libs::Lib;
 use bp3d_lua::util::Namespace;
 use bp3d_lua::vm::closure::rc::{Rc, Shared};
-use bp3d_lua::vm::thread::value::Value;
+use bp3d_lua::vm::thread::value::Thread;
 use crate::scheduler::SchedulerPtr;
 
 decl_closure! {
-    fn schedule_in |scheduler: Rc<SchedulerPtr>| (thread: Value, after_ms: u32) -> () {
+    fn schedule_in |scheduler: Rc<SchedulerPtr>| (thread: Thread, after_ms: u32) -> () {
         scheduler.schedule_in(thread, after_ms);
     }
 }
 
 decl_closure! {
-    fn schedule_periodically |scheduler: Rc<SchedulerPtr>| (thread: Value, period_ms: u32) -> () {
+    fn schedule_periodically |scheduler: Rc<SchedulerPtr>| (thread: Thread, period_ms: u32) -> () {
         scheduler.schedule_periodically(thread, period_ms);
     }
 }

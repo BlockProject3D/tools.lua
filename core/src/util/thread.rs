@@ -35,7 +35,7 @@ pub struct LuaThread {
 }
 
 impl LuaThread {
-    pub fn create(value: crate::vm::thread::value::Value) -> Self {
+    pub fn create(value: crate::vm::thread::value::Thread) -> Self {
         let thread = unsafe { crate::vm::thread::core::Thread::from_raw(value.as_thread().as_ptr()) };
         Self {
             key: Key::new(value),

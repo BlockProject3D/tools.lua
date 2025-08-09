@@ -33,7 +33,7 @@ use bp3d_debug::{error, warning};
 use bp3d_os::time::Instant;
 use bp3d_lua::util::LuaThread;
 use bp3d_lua::vm::thread::core::State;
-use bp3d_lua::vm::thread::value::Value;
+use bp3d_lua::vm::thread::value::Thread;
 use bp3d_lua::vm::Vm;
 use crate::data::DataOut;
 use crate::data_out::Log;
@@ -70,7 +70,7 @@ struct Scheduler {
 }
 
 impl Scheduler {
-    pub fn schedule_in(&mut self, value: Value, after_ms: u32) {
+    pub fn schedule_in(&mut self, value: Thread, after_ms: u32) {
         let task = Task {
             at_ms: self.instant.elapsed().as_millis() as u64 + after_ms as u64,
             period_ms: None,
@@ -79,7 +79,7 @@ impl Scheduler {
         self.main.push(task);
     }
 
-    pub fn schedule_periodically(&mut self, value: Value, period_ms: u32) {
+    pub fn schedule_periodically(&mut self, value: Thread, period_ms: u32) {
         let task = Task {
             at_ms: self.instant.elapsed().as_millis() as u64 + period_ms as u64,
             period_ms: Some(period_ms),
@@ -139,12 +139,12 @@ impl SchedulerPtr {
         Self(RefCell::new(Scheduler { main: BinaryHeap::new(), instant: Instant::now() }))
     }
 
-    pub fn schedule_in(&self, value: Value, after_ms: u32) {
+    pub fn schedule_in(&self, value: Thread, after_ms: u32) {
         let mut inner = self.0.borrow_mut();
         inner.schedule_in(value, after_ms);
     }
 
-    pub fn schedule_periodically(&self, value: Value, period_ms: u32) {
+    pub fn schedule_periodically(&self, value: Thread, period_ms: u32) {
         let mut inner = self.0.borrow_mut();
         inner.schedule_periodically(value, period_ms);
     }

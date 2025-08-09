@@ -31,47 +31,47 @@ use crate::ffi::lua::{lua_gettop, lua_pushvalue, Type};
 use crate::util::core::SimpleDrop;
 use crate::vm::function::{FromParam, IntoParam};
 use crate::vm::registry::{FromIndex, Set};
-use crate::vm::thread::value::Value;
+use crate::vm::thread::value::Thread;
 use crate::vm::util::LuaType;
 use crate::vm::value::{FromLua, IntoLua};
 use crate::vm::value::util::ensure_type_equals;
 use crate::vm::Vm;
 
-impl<'a> FromLua<'a> for Value<'a> {
+impl<'a> FromLua<'a> for Thread<'a> {
     #[inline(always)]
     unsafe fn from_lua_unchecked(vm: &'a Vm, index: i32) -> Self {
-        Value::from_raw(vm, vm.get_absolute_index(index))
+        Thread::from_raw(vm, vm.get_absolute_index(index))
     }
 
     fn from_lua(vm: &'a Vm, index: i32) -> crate::vm::Result<Self> {
         ensure_type_equals(vm, index, Type::Thread)?;
-        unsafe { Ok(Value::from_raw(vm, vm.get_absolute_index(index))) }
+        unsafe { Ok(Thread::from_raw(vm, vm.get_absolute_index(index))) }
     }
 }
 
-unsafe impl SimpleDrop for Value<'_> {}
+unsafe impl SimpleDrop for Thread<'_> {}
 
-impl LuaType for Value<'_> {}
+impl LuaType for Thread<'_> {}
 
-impl<'a> FromParam<'a> for Value<'a> {
+impl<'a> FromParam<'a> for Thread<'a> {
     unsafe fn from_param(vm: &'a Vm, index: i32) -> Self {
         luaL_checktype(vm.as_ptr(), index, Type::Thread);
-        Value::from_raw(vm, vm.get_absolute_index(index))
+        Thread::from_raw(vm, vm.get_absolute_index(index))
     }
 
     fn try_from_param(vm: &'a Vm, index: i32) -> Option<Self> {
-        Value::from_lua(vm, index).ok()
+        Thread::from_lua(vm, index).ok()
     }
 }
 
-unsafe impl IntoParam for Value<'_> {
+unsafe impl IntoParam for Thread<'_> {
     #[inline(always)]
     fn into_param(self, vm: &Vm) -> i32 {
         IntoLua::into_lua(self, vm) as _
     }
 }
 
-unsafe impl IntoLua for Value<'_> {
+unsafe impl IntoLua for Thread<'_> {
     fn into_lua(self, vm: &Vm) -> u16 {
         assert!(self.vm.as_ptr() == vm.as_ptr());
         let top = unsafe { lua_gettop(vm.as_ptr()) };
@@ -83,10 +83,10 @@ unsafe impl IntoLua for Value<'_> {
 }
 
 impl crate::vm::registry::Value for crate::vm::registry::types::Thread {
-    type Value<'a> = Value<'a>;
+    type Value<'a> = Thread<'a>;
 
     unsafe fn from_registry(vm: &Vm, index: i32) -> Self::Value<'_> {
-        unsafe { Value::from_lua_unchecked(vm, index) }
+        unsafe { Thread::from_lua_unchecked(vm, index) }
     }
 
     fn push_registry<R: FromIndex>(value: Self::Value<'_>) -> R {

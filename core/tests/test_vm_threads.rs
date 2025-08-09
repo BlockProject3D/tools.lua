@@ -32,7 +32,7 @@ use bp3d_lua::vm::closure::rc::{Rc, Shared};
 use bp3d_lua::vm::core::UnSendRootVm;
 use bp3d_lua::vm::function::types::RFunction;
 use bp3d_lua::vm::thread::core::{State, Yield};
-use bp3d_lua::vm::thread::value::Value;
+use bp3d_lua::vm::thread::value::Thread;
 use bp3d_lua::vm::value::types::Function;
 
 decl_closure! {
@@ -56,7 +56,7 @@ fn test_vm_threads_yield_lua() {
             end
         end)
     ").unwrap();
-    let thread: Value = vm.get_global(c"CO").unwrap();
+    let thread: Thread = vm.get_global(c"CO").unwrap();
     assert_eq!(obj.get(), 0);
     assert_eq!(thread.as_thread().resume::<()>(()).unwrap().state, State::Suspended);
     assert_eq!(obj.get(), 1);
@@ -105,7 +105,7 @@ fn test_vm_threads_yield_rust() {
             end
         end)
     ").unwrap();
-    let thread: Value = vm.get_global(c"CO").unwrap();
+    let thread: Thread = vm.get_global(c"CO").unwrap();
     assert_eq!(obj.get(), 0);
     assert_eq!(thread.as_thread().resume::<()>(()).unwrap().state, State::Suspended);
     assert_eq!(obj.get(), 1);
@@ -131,7 +131,7 @@ fn test_vm_threads_with_yield_value_lua() {
             return 42
         end)
     ").unwrap();
-    let thread: Value = vm.get_global(c"CO").unwrap();
+    let thread: Thread = vm.get_global(c"CO").unwrap();
     assert_eq!(obj.get(), 0);
     assert_eq!(thread.as_thread().resume::<i32>(()).unwrap().data, 1);
     assert_eq!(thread.as_thread().resume::<i32>(()).unwrap().data, 42);
@@ -153,7 +153,7 @@ fn test_vm_threads_with_yield_value_rust() {
             return 42
         end)
     ").unwrap();
-    let thread: Value = vm.get_global(c"CO").unwrap();
+    let thread: Thread = vm.get_global(c"CO").unwrap();
     assert_eq!(obj.get(), 0);
     assert_eq!(thread.as_thread().resume::<i32>(()).unwrap().data, 5);
     assert_eq!(thread.as_thread().resume::<i32>(()).unwrap().data, 42);
@@ -177,7 +177,7 @@ fn test_vm_threads_with_yield_value_unsafe() {
             return \"test3\"
         end)
     ").unwrap();
-    let thread: Value = vm.get_global(c"CO").unwrap();
+    let thread: Thread = vm.get_global(c"CO").unwrap();
     assert_eq!(obj.get(), 0);
     let s: String = thread.as_thread().resume(()).unwrap().data;
     let s2: String = thread.as_thread().resume(()).unwrap().data;
@@ -209,7 +209,7 @@ fn test_vm_threads_set_function() {
     vm.set_global(c"increment", increment(Rc::from_rust(&vm, obj.clone()))).unwrap();
     vm.run_code::<()>(c"function ThreadMain() increment() coroutine.yield() increment() end").unwrap();
     let main_fn: Function = vm.get_global(c"ThreadMain").unwrap();
-    let thread = Value::new(&vm);
+    let thread = Thread::new(&vm);
     thread.set_function(main_fn).unwrap();
     assert_eq!(thread.as_thread().resume::<()>(()).unwrap().state, State::Suspended);
     assert_eq!(thread.as_thread().resume::<()>(()).unwrap().state, State::Finished);
