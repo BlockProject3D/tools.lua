@@ -26,11 +26,12 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#![cfg(all(feature = "root-vm", feature = "libs"))]
+#![cfg(all(feature = "root-vm", feature = "libs", feature = "module"))]
 
 use bp3d_lua::libs::lua::{Lua, Module};
 use bp3d_lua::libs::util::Util;
 use bp3d_lua::libs::Lib;
+use bp3d_lua::module::VERSION;
 use bp3d_lua::vm::RootVm;
 
 #[test]
@@ -39,12 +40,12 @@ fn test_vm_lib_lua() {
     let top = vm.top();
     Lua::new().build().register(&vm).unwrap();
     Module::new(&[]).register(&vm).unwrap();
-    //FIXME: Find a way to write the version differently.
+    vm.set_global("BP3D_LUA_CRATE_VERSION", VERSION).unwrap();
     vm.run_code::<()>(
         c"
         assert(bp3d.lua.name == 'bp3d-lua')
-        assert(bp3d.lua.version == '1.0.0-rc.4.0.0')
-        assert(#bp3d.lua.patches == 5)
+        assert(bp3d.lua.version == BP3D_LUA_CRATE_VERSION)
+        assert(#bp3d.lua.patches == 7)
         local func = bp3d.lua.loadString('return 1 + 1')
         assert(func)
         assert(func() == 2)

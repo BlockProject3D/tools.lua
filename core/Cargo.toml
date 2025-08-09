@@ -1,6 +1,6 @@
 [package]
 name = "bp3d-lua"
-version = "1.0.0-rc.4.0.0"
+version = "1.0.0-rc.5.0.0"
 authors = ["Yuri Edward <yuri6037@outlook.com>"]
 edition = "2021" # Possible very-little performance improvement with 2024 (2.35 vs 2.37/2.4)
 description = "Lua wrapper and base library for BP3D."
