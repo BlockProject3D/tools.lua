@@ -26,31 +26,49 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use crate::ffi::lua::{RawInteger, RawNumber};
-use crate::util::core::SimpleDrop;
-use crate::vm::util::LuaType;
+use std::fmt::{Debug, Display};
+use crate::ffi::lua::{lua_replace, lua_type, Type};
+use crate::vm::value::{FromLua, IntoLua};
+use crate::vm::value::any::Any;
+use crate::vm::Vm;
 
-pub use super::function::Function;
-pub use super::raw_ptr::RawPtr;
-pub use super::unknown::Unknown;
+pub struct Unknown<'a> {
+    vm: &'a Vm,
+    index: i32
+}
 
-#[derive(Copy, Clone, PartialOrd, PartialEq, Debug)]
-pub struct Number(pub RawNumber);
+impl Debug for Unknown<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Table({:?})", self.index)
+    }
+}
 
-unsafe impl SimpleDrop for Number {}
+impl<'a> Unknown<'a> {
+    pub fn from_vm(vm: &'a Vm, index: i32) -> Self {
+        Self {
+            vm,
+            index
+        }
+    }
 
-impl LuaType for Number {}
+    pub fn get<T: FromLua<'a>>(&'a self) -> crate::vm::Result<T> {
+        T::from_lua(self.vm, self.index)
+    }
 
-#[derive(Copy, Clone, PartialOrd, PartialEq, Debug, Eq, Ord, Hash)]
-pub struct Integer(pub RawInteger);
+    pub fn ty(&self) -> Type {
+        unsafe { lua_type(self.vm.as_ptr(), self.index) }
+    }
 
-unsafe impl SimpleDrop for Integer {}
+    pub fn to_any(self) -> crate::vm::Result<Any<'a>> {
+        Any::from_lua(self.vm, self.index)
+    }
 
-impl LuaType for Integer {}
+    pub fn set(&mut self, value: impl IntoLua) {
+        value.into_lua(self.vm);
+        unsafe { lua_replace(self.vm.as_ptr(), self.index) };
+    }
 
-#[derive(Copy, Clone, PartialOrd, PartialEq, Debug, Eq, Ord, Hash)]
-pub struct Boolean(pub bool);
-
-unsafe impl SimpleDrop for Boolean {}
-
-impl LuaType for Boolean {}
+    pub fn index(&self) -> i32 {
+        self.index
+    }
+}
