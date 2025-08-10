@@ -26,7 +26,7 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#![cfg(all(feature = "root-vm", feature = "util-method", feature = "util-function"))]
+#![cfg(all(feature = "root-vm", feature = "util-method"))]
 
 use std::ffi::CStr;
 use bp3d_lua::util::{LuaFunction, LuaMethod};
