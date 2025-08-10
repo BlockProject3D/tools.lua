@@ -30,7 +30,7 @@
 
 use bp3d_lua::ffi::lua::RawNumber;
 use bp3d_lua::vm::function::types::RFunction;
-use bp3d_lua::vm::userdata::LuaDrop;
+use bp3d_lua::vm::userdata::{AnyUserData, LuaDrop};
 use bp3d_lua::vm::{RootVm, Vm};
 use bp3d_lua::{decl_lib_func, decl_userdata, decl_userdata_mut};
 use std::sync::Mutex;
@@ -307,4 +307,32 @@ fn test_vm_userdata_security5() {
     }
     assert_eq!(unsafe { DROP_COUNTER }, 6);
     assert_eq!(unsafe { LUA_DROP_COUNTER }, 6);
+}
+
+#[test]
+fn test_vm_userdata_call_method() {
+    let _guard = MUTEX.lock();
+    let vm = RootVm::new();
+    let top = vm.top();
+    vm.register_userdata::<MyInt>(bp3d_lua::vm::userdata::case::Snake).unwrap();
+    vm.set_global("MY_INT", MyInt(123456)).unwrap();
+    let ud: AnyUserData = vm.get_global("MY_INT").unwrap();
+    let val: &str = ud.call_method("tostring", ()).unwrap();
+    let val2: RawNumber = ud.call_method("tonumber", ()).unwrap();
+    assert_eq!(val, "123456");
+    assert_eq!(val2, 123456.0);
+    assert_eq!(vm.top(), top + 3);
+}
+
+#[test]
+fn test_vm_userdata_display() {
+    let _guard = MUTEX.lock();
+    let vm = RootVm::new();
+    let top = vm.top();
+    vm.register_userdata::<MyInt>(bp3d_lua::vm::userdata::case::Snake).unwrap();
+    vm.set_global("MY_INT", MyInt(123456)).unwrap();
+    let ud: AnyUserData = vm.get_global("MY_INT").unwrap();
+    let s = ud.to_string();
+    assert_eq!(s, "MyInt(123456)");
+    assert_eq!(vm.top(), top + 1);
 }
