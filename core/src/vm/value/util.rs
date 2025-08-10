@@ -103,3 +103,17 @@ pub fn checked_get_metatable(vm: &Vm, index: i32) -> Option<Table> {
     }
     None
 }
+
+/// Pushes the value at `index` to the top of the stack if both [Vm] objects points to the exact
+/// same State.
+///
+/// # Arguments
+///
+/// * `src_vm`: the source [Vm] object.
+/// * `dst_vm`: the target [Vm] object.
+/// * `index`: the index on source [Vm].
+pub fn checked_push_value(src_vm: &Vm, dst_vm: &Vm, index: i32) -> u16 {
+    assert!(src_vm.as_ptr() == dst_vm.as_ptr());
+    unsafe { lua_pushvalue(src_vm.as_ptr(), index) };
+    1
+}

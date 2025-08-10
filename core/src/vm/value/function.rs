@@ -33,7 +33,7 @@ use crate::vm::core::util::{pcall, push_error_handler};
 use crate::vm::function::{FromParam, IntoParam};
 use crate::vm::registry::{FromIndex, Set};
 use crate::vm::util::LuaType;
-use crate::vm::value::util::ensure_type_equals;
+use crate::vm::value::util::{checked_push_value, ensure_type_equals};
 use crate::vm::value::{FromLua, IntoLua};
 use crate::vm::Vm;
 use std::fmt::{Debug, Display};
@@ -102,10 +102,9 @@ unsafe impl IntoParam for Function<'_> {
 }
 
 unsafe impl IntoLua for Function<'_> {
+    #[inline(always)]
     fn into_lua(self, vm: &Vm) -> u16 {
-        assert!(self.vm.as_ptr() == vm.as_ptr());
-        unsafe { lua_pushvalue(vm.as_ptr(), self.index) };
-        1
+        checked_push_value(self.vm, vm, self.index)
     }
 }
 
