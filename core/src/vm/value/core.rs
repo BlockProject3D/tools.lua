@@ -194,17 +194,13 @@ impl<'a, T: UserDataImmutable> FromLua<'a> for &'a T {
     }
 }
 
-macro_rules! count_tts {
-    () => {0};
-    ($_head:tt $($tail:tt)*) => {1 + count_tts!($($tail)*)};
-}
-
 macro_rules! impl_from_lua_tuple {
     ($($name: ident: $name2: ident ($name3: tt)),*) => {
         impl<'a, $($name: FromLua<'a>),*> FromLua<'a> for ($($name),*) {
             #[inline(always)]
             fn num_values() -> i16 {
-                count_tts!($($name)*)
+                $($name::num_values()+)*
+                0
             }
 
             unsafe fn from_lua_unchecked(vm: &'a Vm, mut index: i32) -> Self {
@@ -221,9 +217,9 @@ macro_rules! impl_from_lua_tuple {
         unsafe impl<$($name: IntoLua),*> IntoLua for ($($name),*) {
             fn into_lua(self, vm: &Vm) -> u16 {
                 $(
-                    self.$name3.into_lua(vm);
+                    self.$name3.into_lua(vm) +
                 )*
-                count_tts!($($name)*)
+                0
             }
         }
     };

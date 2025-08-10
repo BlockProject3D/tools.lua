@@ -302,19 +302,14 @@ unsafe impl<T: UserData> IntoParam for T {
     }
 }
 
-macro_rules! count_tts {
-    () => {0};
-    ($_head:tt $($tail:tt)*) => {1 + count_tts!($($tail)*)};
-}
-
 macro_rules! impl_into_param_tuple {
     ($($name: ident: $name2: tt),*) => {
         unsafe impl<$($name: IntoParam),*> IntoParam for ($($name),*) {
             fn into_param(self, vm: &Vm) -> i32 {
                 $(
-                    self.$name2.into_param(vm);
+                    self.$name2.into_param(vm) +
                 )*
-                count_tts!($($name)*)
+                0
             }
         }
     };
