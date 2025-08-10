@@ -27,13 +27,16 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::ffi::laux::luaL_testudata;
-use crate::ffi::lua::{lua_pushvalue, lua_topointer, lua_touserdata, lua_type, Type};
+use crate::ffi::lua::{lua_pushvalue, lua_settop, lua_topointer, lua_touserdata, lua_type, Type};
 use crate::vm::error::{Error, TypeError};
 use crate::vm::userdata::{UserData, UserDataImmutable};
-use crate::vm::value::FromLua;
+use crate::vm::value::{FromLua, IntoLua};
 use crate::vm::Vm;
 use std::fmt::{Debug, Display};
+use crate::util::core::AnyStr;
+use crate::util::LuaFunction;
 use crate::vm::table::Table;
+use crate::vm::value::types::Function;
 use crate::vm::value::util::checked_get_metatable;
 
 pub struct AnyUserData<'a> {
@@ -129,6 +132,19 @@ impl<'a> AnyUserData<'a> {
     pub fn get_metatable(&self) -> Option<Table> {
         checked_get_metatable(self.vm, self.index)
     }
+
+    pub fn call_method<'b, T: FromLua<'b>>(&'b self, name: impl AnyStr, args: impl IntoLua) -> crate::vm::Result<T> {
+        let tbl = self.get_metatable().ok_or(Error::Type(TypeError {
+            expected: Type::Table,
+            actual: Type::None,
+        }))?;
+        let f: Function = tbl.get(name)?;
+        let f = LuaFunction::create(f);
+        unsafe { lua_settop(self.vm.as_ptr(), -2) }; // Pop the metatatble from the stack.
+        let res: T = f.call(self.vm, (self, args))?;
+        f.delete(self.vm);
+        Ok(res)
+    }
 }
 
 impl<'a> FromLua<'a> for AnyUserData<'a> {
@@ -147,5 +163,13 @@ impl<'a> FromLua<'a> for AnyUserData<'a> {
                 actual: ty,
             }))
         }
+    }
+}
+
+unsafe impl IntoLua for &AnyUserData<'_> {
+    fn into_lua(self, vm: &Vm) -> u16 {
+        assert!(self.vm.as_ptr() == vm.as_ptr());
+        unsafe { lua_pushvalue(vm.as_ptr(), self.index) };
+        1
     }
 }
