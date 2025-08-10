@@ -31,7 +31,7 @@ use crate::ffi::laux::{luaL_setmetatable, luaL_testudata};
 use crate::ffi::lua::{lua_newuserdata, lua_pushboolean, lua_pushinteger, lua_pushlstring, lua_pushnil, lua_pushnumber, lua_settop, lua_toboolean, lua_tointeger, lua_tointegerx, lua_tolstring, lua_tonumber, lua_tonumberx, lua_touserdata, lua_type, Type};
 use crate::vm::error::{Error, TypeError};
 use crate::vm::userdata::{UserData, UserDataImmutable};
-use crate::vm::value::util::ensure_type_equals;
+use crate::vm::value::util::check_type_equals;
 use crate::vm::value::{FromLua, IntoLua};
 use crate::vm::value::types::{Boolean, Integer, Number};
 use crate::vm::Vm;
@@ -125,7 +125,7 @@ macro_rules! impl_from_lua {
             }
 
             fn from_lua(vm: &Vm, index: i32) -> crate::vm::Result<Self> {
-                ensure_type_equals(vm, index, Type::$expected)?;
+                check_type_equals(vm, index, Type::$expected)?;
                 Ok(unsafe { $func(vm.as_ptr(), index) $($ret)* })
             }
         }

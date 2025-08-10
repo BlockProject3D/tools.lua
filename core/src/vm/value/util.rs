@@ -34,7 +34,7 @@ use crate::vm::Vm;
 
 /// Ensures the given lua value at index is of a specified type.
 #[inline(always)]
-pub fn ensure_type_equals(vm: &Vm, index: i32, expected: Type) -> crate::vm::Result<()> {
+pub fn check_type_equals(vm: &Vm, index: i32, expected: Type) -> crate::vm::Result<()> {
     let ty = unsafe { lua_type(vm.as_ptr(), index) };
     if ty == expected {
         //FIXME: likely branch
@@ -51,7 +51,7 @@ pub fn ensure_type_equals(vm: &Vm, index: i32, expected: Type) -> crate::vm::Res
 /// If the value at index is not at the top of the stack, this function moves it to the top and
 /// replaces the original index by a nil value.
 #[inline(always)]
-pub fn ensure_value_top(vm: &Vm, index: i32) {
+pub fn move_value_top(vm: &Vm, index: i32) {
     let index = vm.get_absolute_index(index);
     if index != vm.top() {
         let l = vm.as_ptr();
@@ -70,7 +70,7 @@ pub fn ensure_value_top(vm: &Vm, index: i32) {
 ///
 /// * `vm`: the vm to operate on.
 /// * `value`: the value to be placed on the lua stack.
-pub fn ensure_single_into_lua(vm: &Vm, value: impl IntoLua) -> crate::vm::Result<()> {
+pub fn check_push_single(vm: &Vm, value: impl IntoLua) -> crate::vm::Result<()> {
     let nums = value.into_lua(vm);
     if nums != 1 {
         // Clear the stack.
@@ -91,7 +91,7 @@ pub fn ensure_single_into_lua(vm: &Vm, value: impl IntoLua) -> crate::vm::Result
 /// * `index`: the object index inside the `vm` [Vm].
 ///
 /// returns: Option<Table>
-pub fn checked_get_metatable(vm: &Vm, index: i32) -> Option<Table> {
+pub fn check_get_metatable(vm: &Vm, index: i32) -> Option<Table> {
     unsafe { lua_getmetatable(vm.as_ptr(), index) };
     let ty = unsafe { lua_type(vm.as_ptr(), -1) };
     if ty == Type::Table {
@@ -112,7 +112,7 @@ pub fn checked_get_metatable(vm: &Vm, index: i32) -> Option<Table> {
 /// * `src_vm`: the source [Vm] object.
 /// * `dst_vm`: the target [Vm] object.
 /// * `index`: the index on source [Vm].
-pub fn checked_push_value(src_vm: &Vm, dst_vm: &Vm, index: i32) -> u16 {
+pub fn check_push_value(src_vm: &Vm, dst_vm: &Vm, index: i32) -> u16 {
     assert!(src_vm.as_ptr() == dst_vm.as_ptr());
     unsafe { lua_pushvalue(src_vm.as_ptr(), index) };
     1

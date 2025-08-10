@@ -29,7 +29,7 @@
 use std::collections::BTreeSet;
 use crate::ffi::lua::{lua_insert, lua_pushlightuserdata, lua_rawget, lua_rawset, State, Type, REGISTRYINDEX};
 use crate::vm::registry::{Set, Value};
-use crate::vm::value::util::{ensure_type_equals, ensure_value_top};
+use crate::vm::value::util::{check_type_equals, move_value_top};
 use crate::vm::Vm;
 use std::ffi::c_void;
 use std::marker::PhantomData;
@@ -102,7 +102,7 @@ impl Set for RawKey {
     unsafe fn set(&self, vm: &Vm, index: i32) {
         check_register_key_unique(self);
         let l = vm.as_ptr();
-        ensure_value_top(vm, index);
+        move_value_top(vm, index);
         rawsetp(l, REGISTRYINDEX, self.ptr);
     }
 }
@@ -185,7 +185,7 @@ impl<T: Value> Key<T> {
     pub fn push<'a>(&self, vm: &'a Vm) -> Option<T::Value<'a>> {
         unsafe {
             self.raw.push(vm);
-            ensure_type_equals(vm, -1, Type::LightUserdata)
+            check_type_equals(vm, -1, Type::LightUserdata)
                 .map(|_| T::from_registry(vm, -1)).ok()
         }
     }

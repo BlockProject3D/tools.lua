@@ -30,7 +30,7 @@ use crate::ffi::ext::{lua_ext_tab_len, MSize};
 use crate::ffi::lua::{lua_createtable, lua_gettable, lua_gettop, lua_objlen, lua_pushvalue, lua_rawseti, lua_setmetatable, lua_settable, lua_topointer};
 use crate::vm::table::iter::Iter;
 use crate::vm::table::traits::{GetTable, SetTable};
-use crate::vm::value::util::{checked_get_metatable, ensure_single_into_lua};
+use crate::vm::value::util::{check_get_metatable, check_push_single};
 use crate::vm::value::{FromLua, IntoLua};
 use crate::vm::Vm;
 use std::fmt::{Debug, Display};
@@ -126,7 +126,7 @@ impl<'a> Table<'a> {
     }
 
     pub fn get_metatable(&self) -> Option<Table> {
-        checked_get_metatable(self.vm, self.index)
+        check_get_metatable(self.vm, self.index)
     }
 
     /// Returns the absolute index of this table on the Lua stack.
@@ -159,7 +159,7 @@ impl<'a> Table<'a> {
 
     pub fn set(&mut self, key: impl SetTable, value: impl IntoLua) -> crate::vm::Result<()> {
         unsafe {
-            ensure_single_into_lua(self.vm, value)?;
+            check_push_single(self.vm, value)?;
             key.set_table(self.vm.as_ptr(), self.index)?;
         }
         Ok(())
@@ -170,7 +170,7 @@ impl<'a> Table<'a> {
             return Err(crate::vm::error::Error::MultiValue);
         }
         unsafe {
-            ensure_single_into_lua(self.vm, key)?;
+            check_push_single(self.vm, key)?;
             lua_gettable(self.vm.as_ptr(), self.index);
             T::from_lua(self.vm, -1)
         }
@@ -178,8 +178,8 @@ impl<'a> Table<'a> {
 
     pub fn set_any(&mut self, key: impl IntoLua, value: impl IntoLua) -> crate::vm::Result<()> {
         unsafe {
-            ensure_single_into_lua(self.vm, key)?;
-            ensure_single_into_lua(self.vm, value)?;
+            check_push_single(self.vm, key)?;
+            check_push_single(self.vm, value)?;
             lua_settable(self.vm.as_ptr(), self.index);
         }
         Ok(())
@@ -188,7 +188,7 @@ impl<'a> Table<'a> {
     pub fn push(&mut self, value: impl IntoLua) -> crate::vm::Result<()> {
         unsafe {
             let len = lua_objlen(self.vm.as_ptr(), self.index);
-            ensure_single_into_lua(self.vm, value)?;
+            check_push_single(self.vm, value)?;
             lua_rawseti(self.vm.as_ptr(), self.index, len as i32 + 1);
         }
         Ok(())

@@ -33,7 +33,7 @@ use crate::vm::core::util::{pcall, push_error_handler};
 use crate::vm::function::{FromParam, IntoParam};
 use crate::vm::registry::{FromIndex, Set};
 use crate::vm::util::LuaType;
-use crate::vm::value::util::{checked_push_value, ensure_type_equals};
+use crate::vm::value::util::{check_push_value, check_type_equals};
 use crate::vm::value::{FromLua, IntoLua};
 use crate::vm::Vm;
 use std::fmt::{Debug, Display};
@@ -103,8 +103,8 @@ unsafe impl IntoParam for Function<'_> {
 
 unsafe impl IntoLua for Function<'_> {
     #[inline(always)]
-    fn into_lua(self, vm: &Vm) -> u16 {
-        checked_push_value(self.vm, vm, self.index)
+    fn into_lua(self, vm: &Vm) -> u16 { //TODO: This should be identical to Table
+        check_push_value(self.vm, vm, self.index)
     }
 }
 
@@ -136,7 +136,7 @@ impl<'a> FromLua<'a> for Function<'a> {
     }
 
     fn from_lua(vm: &'a Vm, index: i32) -> crate::vm::Result<Self> {
-        ensure_type_equals(vm, index, Type::Function)?;
+        check_type_equals(vm, index, Type::Function)?;
         Ok(Function {
             vm,
             index: vm.get_absolute_index(index),

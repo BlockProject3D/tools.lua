@@ -162,7 +162,7 @@ impl Parser for FromParam {
                 }
 
                 fn try_from_param(vm: &#lifetime bp3d_lua::vm::Vm, index: i32) -> Option<Self> {
-                    bp3d_lua::vm::value::util::ensure_type_equals(vm, index, bp3d_lua::ffi::lua::Type::Table).ok()?;
+                    bp3d_lua::vm::value::util::check_type_equals(vm, index, bp3d_lua::ffi::lua::Type::Table).ok()?;
                     let mut top = vm.top();
                     let mut f = || -> Option<Self> {
                         #(#try_from_params)*

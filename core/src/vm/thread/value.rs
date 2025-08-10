@@ -30,7 +30,7 @@ use std::fmt::{Debug, Display};
 use crate::ffi::lua::{lua_newthread, lua_pushvalue, lua_tothread, lua_type, lua_xmove, ThreadStatus, Type};
 use crate::vm::thread::core;
 use crate::vm::value::types::Function;
-use crate::vm::value::util::ensure_value_top;
+use crate::vm::value::util::move_value_top;
 use crate::vm::Vm;
 
 /// Represents a thread object value on a lua stack.
@@ -107,7 +107,7 @@ impl<'a> Thread<'a> {
         if self.thread.status() != ThreadStatus::Ok {
             return Err(crate::vm::error::Error::BadThreadState);
         }
-        ensure_value_top(self.vm, function.index());
+        move_value_top(self.vm, function.index());
         unsafe { lua_xmove(self.vm.as_ptr(), self.thread.as_ptr(), 1); }
         unsafe {
             assert_eq!(lua_type(self.thread.as_ptr(), -1), Type::Function);

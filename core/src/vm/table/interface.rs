@@ -39,7 +39,7 @@ use crate::vm::registry::{FromIndex, Set};
 use crate::vm::table::traits::{GetTable, SetTable};
 use crate::vm::table::Table;
 use crate::vm::util::LuaType;
-use crate::vm::value::util::ensure_type_equals;
+use crate::vm::value::util::check_type_equals;
 use crate::vm::value::{FromLua, IntoLua};
 use crate::vm::Vm;
 
@@ -67,7 +67,7 @@ impl<'a> FromLua<'a> for Table<'a> {
     }
 
     fn from_lua(vm: &'a Vm, index: i32) -> crate::vm::Result<Self> {
-        ensure_type_equals(vm, index, Type::Table)?;
+        check_type_equals(vm, index, Type::Table)?;
         Ok(unsafe { Table::from_raw(vm, vm.get_absolute_index(index)) })
     }
 }

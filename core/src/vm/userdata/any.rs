@@ -37,7 +37,7 @@ use crate::util::core::AnyStr;
 use crate::util::LuaFunction;
 use crate::vm::table::Table;
 use crate::vm::value::types::Function;
-use crate::vm::value::util::{checked_get_metatable, checked_push_value};
+use crate::vm::value::util::{check_get_metatable, check_push_value};
 
 pub struct AnyUserData<'a> {
     vm: &'a Vm,
@@ -144,7 +144,7 @@ impl<'a> AnyUserData<'a> {
     }
 
     pub fn get_metatable(&self) -> Option<Table> {
-        checked_get_metatable(self.vm, self.index)
+        check_get_metatable(self.vm, self.index)
     }
 
     pub fn get_type_name(&self) -> crate::vm::Result<&str> {
@@ -194,6 +194,6 @@ impl<'a> FromLua<'a> for AnyUserData<'a> {
 unsafe impl IntoLua for &AnyUserData<'_> {
     #[inline(always)]
     fn into_lua(self, vm: &Vm) -> u16 {
-        checked_push_value(self.vm, vm, self.index)
+        check_push_value(self.vm, vm, self.index)
     }
 }

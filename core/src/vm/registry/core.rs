@@ -29,7 +29,7 @@
 use crate::ffi::laux::{luaL_ref, luaL_unref};
 use crate::ffi::lua::{lua_rawgeti, lua_rawseti, REGISTRYINDEX};
 use crate::vm::registry::{FromIndex, Set, Value};
-use crate::vm::value::util::ensure_value_top;
+use crate::vm::value::util::move_value_top;
 use crate::vm::Vm;
 use std::ffi::c_int;
 use std::marker::PhantomData;
@@ -107,14 +107,14 @@ impl RawKey {
 
 impl FromIndex for RawKey {
     unsafe fn from_index(vm: &Vm, index: i32) -> Self {
-        ensure_value_top(vm, index);
+        move_value_top(vm, index);
         Self::from_top(vm)
     }
 }
 
 impl Set for RawKey {
     unsafe fn set(&self, vm: &Vm, index: i32) {
-        ensure_value_top(vm, index);
+        move_value_top(vm, index);
         lua_rawseti(vm.as_ptr(), REGISTRYINDEX, self.0);
     }
 }
