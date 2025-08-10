@@ -46,16 +46,16 @@ const PATCH_LIST: &[&str] = &[
                              // pcall/xpcall but only from lua_pcall C API.
 ];
 
-fn apply_patches(luajit_build_path: &Path, summary_path: &Path) -> std::io::Result<()> {
-    let summary = Patch::new(
+fn apply_patches(luajit_build_path: &Path, _summary_path: &Path) -> std::io::Result<()> {
+    let _summary = Patch::new(
         &Path::new("..").join("patch"),
         &Path::new("..").join("LuaJIT"),
     )?
     .apply_all(PATCH_LIST.iter().copied(), luajit_build_path)?;
     #[cfg(feature = "libs")]
     {
-        summary.write(summary_path)?;
-        println!("cargo:rustc-env=BP3D_LUA_PATCH_SUMMARY_FILE={}", summary_path.display());
+        _summary.write(_summary_path)?;
+        println!("cargo:rustc-env=BP3D_LUA_PATCH_SUMMARY_FILE={}", _summary_path.display());
     }
     Ok(())
 }
