@@ -30,7 +30,7 @@ use std::collections::{BTreeMap, HashMap};
 use std::hash::Hash;
 use crate::ffi::laux::luaL_checktype;
 use crate::ffi::lua::{
-    lua_getfield, lua_gettop, lua_pushvalue, lua_rawgeti, lua_rawseti, lua_setfield, lua_type,
+    lua_getfield, lua_rawgeti, lua_rawseti, lua_setfield, lua_type,
     State, Type,
 };
 use crate::util::core::{AnyStr, SimpleDrop};
@@ -39,7 +39,7 @@ use crate::vm::registry::{FromIndex, Set};
 use crate::vm::table::traits::{GetTable, SetTable};
 use crate::vm::table::Table;
 use crate::vm::util::LuaType;
-use crate::vm::value::util::check_type_equals;
+use crate::vm::value::util::{check_type_equals, check_value_top};
 use crate::vm::value::{FromLua, IntoLua};
 use crate::vm::Vm;
 
@@ -80,13 +80,9 @@ unsafe impl IntoParam for Table<'_> {
 }
 
 unsafe impl IntoLua for Table<'_> {
+    #[inline(always)]
     fn into_lua(self, vm: &Vm) -> u16 {
-        assert!(self.vm.as_ptr() == vm.as_ptr());
-        let top = unsafe { lua_gettop(vm.as_ptr()) };
-        if top != self.index() {
-            unsafe { lua_pushvalue(vm.as_ptr(), self.index()) };
-        }
-        1
+        check_value_top(self.vm, vm, self.index())
     }
 }
 

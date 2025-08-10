@@ -26,7 +26,7 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use crate::ffi::lua::{lua_getmetatable, lua_pushnil, lua_pushvalue, lua_replace, lua_settop, lua_type, Type};
+use crate::ffi::lua::{lua_getmetatable, lua_gettop, lua_pushnil, lua_pushvalue, lua_replace, lua_settop, lua_type, Type};
 use crate::vm::error::{Error, TypeError};
 use crate::vm::table::Table;
 use crate::vm::value::IntoLua;
@@ -115,5 +115,24 @@ pub fn check_get_metatable(vm: &Vm, index: i32) -> Option<Table> {
 pub fn check_push_value(src_vm: &Vm, dst_vm: &Vm, index: i32) -> u16 {
     assert!(src_vm.as_ptr() == dst_vm.as_ptr());
     unsafe { lua_pushvalue(src_vm.as_ptr(), index) };
+    1
+}
+
+/// Pushes the value at `index` to the top of the stack if both [Vm] objects points to the exact
+/// same State and if index is not already at the top of the stack. If `index` is already at the
+/// top of the stack, this function doesn't perform any operations on the Lua stack identified by
+/// `dst_vm`.
+///
+/// # Arguments
+///
+/// * `src_vm`: the source [Vm] object.
+/// * `dst_vm`: the target [Vm] object.
+/// * `index`: the index on source [Vm]. Must be absolute.
+pub fn check_value_top(src_vm: &Vm, dst_vm: &Vm, index: i32) -> u16 {
+    assert!(src_vm.as_ptr() == dst_vm.as_ptr());
+    let top = unsafe { lua_gettop(src_vm.as_ptr()) };
+    if top != index {
+        unsafe { lua_pushvalue(src_vm.as_ptr(), index) };
+    }
     1
 }

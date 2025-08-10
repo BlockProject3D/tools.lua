@@ -53,8 +53,7 @@ impl<T> Deref for Ref<'_, T> {
 impl<'a, T> FromUpvalue<'a> for Ref<'a, T> {
     #[inline(always)]
     unsafe fn from_upvalue(vm: &'a Vm, index: i32) -> Self {
-        let ptr: RawPtr<T> = FromUpvalue::from_upvalue(vm, index);
-        Ref(&*ptr.as_ptr())
+        Ref(&*RawPtr::<T>::from_upvalue(vm, index).as_ptr())
     }
 }
 

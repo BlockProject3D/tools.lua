@@ -27,14 +27,14 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::ffi::laux::luaL_checktype;
-use crate::ffi::lua::{lua_gettop, lua_pushvalue, Type};
+use crate::ffi::lua::Type;
 use crate::util::core::SimpleDrop;
 use crate::vm::function::{FromParam, IntoParam};
 use crate::vm::registry::{FromIndex, Set};
 use crate::vm::thread::value::Thread;
 use crate::vm::util::LuaType;
 use crate::vm::value::{FromLua, IntoLua};
-use crate::vm::value::util::check_type_equals;
+use crate::vm::value::util::{check_type_equals, check_value_top};
 use crate::vm::Vm;
 
 impl<'a> FromLua<'a> for Thread<'a> {
@@ -72,13 +72,9 @@ unsafe impl IntoParam for Thread<'_> {
 }
 
 unsafe impl IntoLua for Thread<'_> {
+    #[inline(always)]
     fn into_lua(self, vm: &Vm) -> u16 {
-        assert!(self.vm.as_ptr() == vm.as_ptr());
-        let top = unsafe { lua_gettop(vm.as_ptr()) };
-        if top != self.index() {
-            unsafe { lua_pushvalue(vm.as_ptr(), self.index()) };
-        }
-        1
+        check_value_top(self.vm, vm, self.index())
     }
 }
 
