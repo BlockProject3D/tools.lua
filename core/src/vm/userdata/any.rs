@@ -27,7 +27,7 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::ffi::laux::luaL_testudata;
-use crate::ffi::lua::{lua_pushvalue, lua_settop, lua_topointer, lua_touserdata, lua_type, Type};
+use crate::ffi::lua::{lua_pushvalue, lua_replace, lua_settop, lua_topointer, lua_touserdata, lua_type, Type};
 use crate::vm::error::{Error, TypeError};
 use crate::vm::userdata::{UserData, UserDataImmutable};
 use crate::vm::value::{FromLua, IntoLua};
@@ -64,11 +64,25 @@ impl Eq for AnyUserData<'_> {}
 
 impl Display for AnyUserData<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "userdata@{:X}",
-            unsafe { lua_touserdata(self.vm.as_ptr(), self.index) } as usize
-        )
+        let res = self.vm.scope(|_| {
+            let res: crate::vm::Result<&str> = self.call_method("__tostring", ())
+                .or_else(|_| self.call_method("tostring", ()));
+            match res {
+                Ok(v) => {
+                    let type_name = self.get_type_name()?;
+                    Ok(write!(f, "{}({})", type_name, v))
+                },
+                Err(e) => Err(e)
+            }
+        });
+        match res {
+            Ok(v) => v,
+            Err(_) => write!(
+                f,
+                "userdata@{:X}",
+                unsafe { lua_touserdata(self.vm.as_ptr(), self.index) } as usize
+            )
+        }
     }
 }
 
@@ -131,6 +145,17 @@ impl<'a> AnyUserData<'a> {
 
     pub fn get_metatable(&self) -> Option<Table> {
         checked_get_metatable(self.vm, self.index)
+    }
+
+    pub fn get_type_name(&self) -> crate::vm::Result<&str> {
+        let tbl = self.get_metatable().ok_or(Error::Type(TypeError {
+            expected: Type::Table,
+            actual: Type::None,
+        }))?;
+        let value: &str = tbl.get(c"__metatable")?;
+        let value2: &'a str = unsafe { std::mem::transmute(value) };
+        unsafe { lua_replace(self.vm.as_ptr(), -2) };
+        Ok(value2)
     }
 
     pub fn call_method<'b, T: FromLua<'b>>(&'b self, name: impl AnyStr, args: impl IntoLua) -> crate::vm::Result<T> {
