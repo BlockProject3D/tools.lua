@@ -51,8 +51,19 @@ impl<'a> Unknown<'a> {
         }
     }
 
-    pub fn get<T: FromLua<'a>>(&'a self) -> crate::vm::Result<T> {
+    /// Interprets the underlying reference on the lua stack as the specified Rust type.
+    pub fn get<T: FromLua<'a>>(&self) -> crate::vm::Result<T> {
         T::from_lua(self.vm, self.index)
+    }
+
+    /// Interprets the underlying reference on the lua stack as the specified Rust type.
+    ///
+    /// # Safety
+    ///
+    /// This function assumes the type of the value at index `index` is already of the expected type,
+    /// if not, calling this function is UB.
+    pub unsafe fn get_unchecked<T: FromLua<'a>>(&self) -> T {
+        T::from_lua_unchecked(self.vm, self.index)
     }
 
     pub fn ty(&self) -> Type {

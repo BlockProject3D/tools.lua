@@ -120,10 +120,10 @@ unsafe impl IntoParam for String {
     }
 }
 
-unsafe impl IntoParam for Vec<u8> {
+unsafe impl IntoParam for Box<[u8]> {
     #[inline(always)]
     fn into_param(self, vm: &Vm) -> i32 {
-        self.as_slice().into_param(vm)
+        self.as_ref().into_param(vm)
     }
 }
 

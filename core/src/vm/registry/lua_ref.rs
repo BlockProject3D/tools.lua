@@ -197,5 +197,5 @@ impl_simple_registry_value_static! {
     (u64) => u64;
     (String) => String;
     (&[u8]) => &'a [u8];
-    (Vec<u8>) => Vec<u8>;
+    (Box<[u8]>) => Box<[u8]>;
 }

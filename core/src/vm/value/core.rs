@@ -104,7 +104,7 @@ impl FromLua<'_> for String {
     }
 }
 
-impl FromLua<'_> for Vec<u8> {
+impl FromLua<'_> for Box<[u8]> {
     unsafe fn from_lua_unchecked(vm: &'_ Vm, index: i32) -> Self {
         let bytes: &[u8] = FromLua::from_lua_unchecked(vm, index);
         bytes.into()
@@ -337,10 +337,10 @@ unsafe impl IntoLua for String {
     }
 }
 
-unsafe impl IntoLua for Vec<u8> {
+unsafe impl IntoLua for Box<[u8]> {
     #[inline(always)]
     fn into_lua(self, vm: &Vm) -> u16 {
-        self.as_slice().into_lua(vm)
+        self.as_ref().into_lua(vm)
     }
 }
 

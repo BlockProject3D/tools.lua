@@ -185,8 +185,8 @@ decl_lib_func! {
 }
 
 decl_lib_func! {
-    fn getenv(key: &str) -> Option<Vec<u8>> {
-        std::env::var_os(key).map(|v| v.into_encoded_bytes())
+    fn getenv(key: &str) -> Option<Box<[u8]>> {
+        std::env::var_os(key).map(|v| v.into_encoded_bytes().into_boxed_slice())
     }
 }
 

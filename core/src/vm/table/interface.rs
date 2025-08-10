@@ -26,6 +26,8 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use std::collections::{BTreeMap, HashMap};
+use std::hash::Hash;
 use crate::ffi::laux::luaL_checktype;
 use crate::ffi::lua::{
     lua_getfield, lua_gettop, lua_pushvalue, lua_rawgeti, lua_rawseti, lua_setfield, lua_type,
@@ -142,5 +144,77 @@ impl<T: AnyStr> SetTable for T {
     unsafe fn set_table(self, l: State, index: i32) -> crate::vm::Result<()> {
         lua_setfield(l, index, self.to_str()?.as_ptr());
         Ok(())
+    }
+}
+
+impl<'a, T: 'static> FromLua<'a> for Vec<T> where for<'b> T: FromLua<'b> {
+    unsafe fn from_lua_unchecked(vm: &'a Vm, index: i32) -> Self {
+        let mut tbl = Table::from_lua_unchecked(vm, index);
+        let mut vec = Vec::new();
+        for (_, v) in tbl.iter() {
+            let vv = v.get_unchecked();
+            vec.push(vv);
+        }
+        vec
+    }
+
+    fn from_lua(vm: &'a Vm, index: i32) -> crate::vm::Result<Self> {
+        let mut tbl = Table::from_lua(vm, index)?;
+        let mut vec = Vec::new();
+        for (_, v) in tbl.iter() {
+            let vv = v.get()?;
+            vec.push(vv);
+        }
+        Ok(vec)
+    }
+}
+
+impl<'a, K: 'static, V: 'static> FromLua<'a> for HashMap<K, V> where for<'b> K: FromLua<'b> + Hash + Eq,
+                                                                     for<'b> V: FromLua<'b> {
+    unsafe fn from_lua_unchecked(vm: &'a Vm, index: i32) -> Self {
+        let mut tbl = Table::from_lua_unchecked(vm, index);
+        let mut map = HashMap::new();
+        for (k, v) in tbl.iter() {
+            let kk = k.get_unchecked();
+            let vv = v.get_unchecked();
+            map.insert(kk, vv);
+        }
+        map
+    }
+
+    fn from_lua(vm: &'a Vm, index: i32) -> crate::vm::Result<Self> {
+        let mut tbl = Table::from_lua(vm, index)?;
+        let mut map = HashMap::new();
+        for (k, v) in tbl.iter() {
+            let kk = k.get()?;
+            let vv = v.get()?;
+            map.insert(kk, vv);
+        }
+        Ok(map)
+    }
+}
+
+impl<'a, K: 'static, V: 'static> FromLua<'a> for BTreeMap<K, V> where for<'b> K: FromLua<'b> + Ord,
+                                                                     for<'b> V: FromLua<'b> {
+    unsafe fn from_lua_unchecked(vm: &'a Vm, index: i32) -> Self {
+        let mut tbl = Table::from_lua_unchecked(vm, index);
+        let mut map = BTreeMap::new();
+        for (k, v) in tbl.iter() {
+            let kk = k.get_unchecked();
+            let vv = v.get_unchecked();
+            map.insert(kk, vv);
+        }
+        map
+    }
+
+    fn from_lua(vm: &'a Vm, index: i32) -> crate::vm::Result<Self> {
+        let mut tbl = Table::from_lua(vm, index)?;
+        let mut map = BTreeMap::new();
+        for (k, v) in tbl.iter() {
+            let kk = k.get()?;
+            let vv = v.get()?;
+            map.insert(kk, vv);
+        }
+        Ok(map)
     }
 }

@@ -32,7 +32,7 @@ use bp3d_lua::vm::table::Table;
 use bp3d_lua::vm::RootVm;
 
 #[test]
-fn test_tables() {
+fn test_vm_tables() {
     let mut vm = RootVm::new();
     let top = vm.top();
     vm.scope(|vm| {
@@ -80,4 +80,34 @@ fn test_tables() {
     })
     .unwrap();
     assert_eq!(vm.top(), new_top);
+}
+
+#[test]
+fn test_vm_tables_collect_simple() {
+    let vm = RootVm::new();
+    let top = vm.top();
+    let mut tbl = Table::new(&vm);
+    tbl.push("Hello").unwrap();
+    tbl.push("world").unwrap();
+    let res: Vec<String> = tbl.collect().unwrap();
+    assert_eq!(res, vec!["Hello", "world"]);
+    assert_eq!(vm.top(), top + 1); // One value on the stack (the original table 'tbl')
+}
+
+#[test]
+fn test_vm_tables_collect_complex() {
+    let vm = RootVm::new();
+    let top = vm.top();
+    let mut tbl = Table::new(&vm);
+    let mut sub = Table::new(&vm);
+    sub.push("Hello").unwrap();
+    sub.push("World").unwrap();
+    tbl.push(sub).unwrap();
+    let mut sub2 = Table::new(&vm);
+    sub2.push("Hello").unwrap();
+    sub2.push("World").unwrap();
+    tbl.push(sub2).unwrap();
+    let res: Vec<Vec<String>> = tbl.collect().unwrap();
+    assert_eq!(res, vec![vec!["Hello", "World"], vec!["Hello", "World"]]);
+    assert_eq!(vm.top(), top + 1); // One value on the stack (the original table 'tbl')
 }

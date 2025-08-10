@@ -193,4 +193,8 @@ impl<'a> Table<'a> {
         }
         Ok(())
     }
+
+    pub fn collect<T: FromLua<'a>>(self) -> crate::vm::Result<T> {
+        T::from_lua(self.vm, self.index)
+    }
 }
