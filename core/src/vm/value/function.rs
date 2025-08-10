@@ -37,6 +37,7 @@ use crate::vm::value::util::{check_type_equals, check_value_top};
 use crate::vm::value::{FromLua, IntoLua};
 use crate::vm::Vm;
 use std::fmt::{Debug, Display};
+use crate::impl_registry_value;
 
 pub struct Function<'a> {
     vm: &'a Vm,
@@ -144,21 +145,4 @@ impl<'a> FromLua<'a> for Function<'a> {
     }
 }
 
-impl crate::vm::registry::Value for crate::vm::registry::types::Function {
-    type Value<'a> = Function<'a>;
-
-    #[inline(always)]
-    unsafe fn from_registry(vm: &Vm, index: i32) -> Self::Value<'_> {
-        unsafe { Function::from_lua_unchecked(vm, index) }
-    }
-
-    #[inline(always)]
-    fn push_registry<R: FromIndex>(value: Self::Value<'_>) -> R {
-        unsafe { R::from_index(value.vm, value.index()) }
-    }
-
-    #[inline(always)]
-    unsafe fn set_registry(key: &impl Set, value: Self::Value<'_>) {
-        key.set(value.vm, value.index())
-    }
-}
+impl_registry_value!(crate::vm::registry::types::Function => Function);

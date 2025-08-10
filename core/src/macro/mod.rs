@@ -49,6 +49,30 @@ macro_rules! impl_simple_registry_value_static {
     };
 }
 
+#[macro_export]
+macro_rules! impl_registry_value {
+    ($reg_ty: ty => $value_ty: ident) => {
+        impl $crate::vm::registry::Value for $reg_ty {
+            type Value<'a> = $value_ty<'a>;
+
+            #[inline(always)]
+            unsafe fn from_registry(vm: &Vm, index: i32) -> Self::Value<'_> {
+                unsafe { $value_ty::from_lua_unchecked(vm, index) }
+            }
+
+            #[inline(always)]
+            fn push_registry<R: FromIndex>(value: Self::Value<'_>) -> R {
+                unsafe { R::from_index(value.vm, value.index()) }
+            }
+
+            #[inline(always)]
+            unsafe fn set_registry(key: &impl Set, value: Self::Value<'_>) {
+                key.set(value.vm, value.index())
+            }
+        }
+    };
+}
+
 /// This macro is unsafe and should not be used from safe code directly. It is intended as a
 /// building block for other macros.
 #[macro_export]

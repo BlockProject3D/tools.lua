@@ -33,6 +33,7 @@ use crate::ffi::lua::{
     lua_getfield, lua_rawgeti, lua_rawseti, lua_setfield, lua_type,
     State, Type,
 };
+use crate::impl_registry_value;
 use crate::util::core::{AnyStr, SimpleDrop};
 use crate::vm::function::{FromParam, IntoParam};
 use crate::vm::registry::{FromIndex, Set};
@@ -88,24 +89,7 @@ unsafe impl IntoLua for Table<'_> {
 
 impl LuaType for Table<'_> {}
 
-impl crate::vm::registry::Value for crate::vm::registry::types::Table {
-    type Value<'a> = Table<'a>;
-
-    #[inline(always)]
-    unsafe fn from_registry(vm: &Vm, index: i32) -> Self::Value<'_> {
-        unsafe { Table::from_lua_unchecked(vm, index) }
-    }
-
-    #[inline(always)]
-    fn push_registry<R: FromIndex>(value: Self::Value<'_>) -> R {
-        unsafe { R::from_index(value.vm, value.index()) }
-    }
-
-    #[inline(always)]
-    unsafe fn set_registry(key: &impl Set, value: Self::Value<'_>) {
-        key.set(value.vm, value.index())
-    }
-}
+impl_registry_value!(crate::vm::registry::types::Table => Table);
 
 impl<T: AnyStr> GetTable for T {
     unsafe fn get_table(self, l: State, index: i32) -> crate::vm::Result<()> {

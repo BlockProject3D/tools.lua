@@ -28,6 +28,7 @@
 
 use crate::ffi::laux::luaL_checktype;
 use crate::ffi::lua::Type;
+use crate::impl_registry_value;
 use crate::util::core::SimpleDrop;
 use crate::vm::function::{FromParam, IntoParam};
 use crate::vm::registry::{FromIndex, Set};
@@ -78,18 +79,4 @@ unsafe impl IntoLua for Thread<'_> {
     }
 }
 
-impl crate::vm::registry::Value for crate::vm::registry::types::Thread {
-    type Value<'a> = Thread<'a>;
-
-    unsafe fn from_registry(vm: &Vm, index: i32) -> Self::Value<'_> {
-        unsafe { Thread::from_lua_unchecked(vm, index) }
-    }
-
-    fn push_registry<R: FromIndex>(value: Self::Value<'_>) -> R {
-        unsafe { R::from_index(value.vm, value.index()) }
-    }
-
-    unsafe fn set_registry(key: &impl Set, value: Self::Value<'_>) {
-        key.set(value.vm, value.index())
-    }
-}
+impl_registry_value!(crate::vm::registry::types::Thread => Thread);

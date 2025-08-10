@@ -106,7 +106,7 @@ impl<'a, T: SimpleValue<'a>> LuaRef<'a, T> {
     /// the object on the stack at the given index is already of type `T`. If any of
     /// these assumptions are not respected, this function is UB.
     #[inline(always)]
-    pub unsafe fn from_raw(vm: &'a Vm, index: i32) -> Self {
+    pub unsafe fn from_lua_unchecked(vm: &'a Vm, index: i32) -> Self {
         Self {
             vm,
             index,
@@ -138,7 +138,7 @@ impl<T: SimpleRegistryValue + 'static> super::Value for super::types::LuaRef<T> 
     type Value<'a> = LuaRef<'a, T::Value<'a>>;
 
     unsafe fn from_registry(vm: &Vm, index: i32) -> Self::Value<'_> {
-        LuaRef::from_raw(vm, vm.get_absolute_index(index))
+        LuaRef::from_lua_unchecked(vm, vm.get_absolute_index(index))
     }
 
     fn push_registry<R: FromIndex>(value: Self::Value<'_>) -> R {
