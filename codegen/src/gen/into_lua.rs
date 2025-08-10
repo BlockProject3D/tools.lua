@@ -34,8 +34,8 @@ use quote::quote;
 use syn::{Generics, Index};
 
 pub struct IntoLua {
-    name: Ident,
-    generics: Generics,
+    pub name: Ident,
+    pub generics: Generics,
 }
 
 impl IntoLua {

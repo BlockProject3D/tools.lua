@@ -31,16 +31,14 @@ use crate::parser::structs::StructField;
 use crate::parser::Parser;
 use proc_macro2::{Ident, TokenStream};
 use quote::quote;
-use syn::{Generics, Index};
+use syn::Generics;
+use crate::gen::IntoLua;
 
-pub struct IntoParam {
-    name: Ident,
-    generics: Generics,
-}
+pub struct IntoParam(IntoLua);
 
 impl IntoParam {
     pub fn new(name: Ident, generics: Generics) -> Self {
-        Self { name, generics }
+        Self(IntoLua::new(name, generics))
     }
 }
 
@@ -49,19 +47,7 @@ impl Parser for IntoParam {
     type ParsedVariant = TokenStream;
 
     fn parse_field(&mut self, field: StructField) -> Self::ParsedField {
-        if field.unique_name_is_index {
-            let name_idx = Index::from(field.index);
-            // Table indices starts at 1 rather than 0 in Lua.
-            let index = (field.index + 1) as i32;
-            quote! {
-                tbl.set(#index, self.#name_idx).unwrap();
-            }
-        } else {
-            let name = field.unique_name;
-            quote! {
-                tbl.set(bp3d_lua::c_stringify!(#name), self.#name).unwrap();
-            }
-        }
+        self.0.parse_field(field)
     }
 
     fn parse_variant(&mut self, variant: EnumVariant) -> Self::ParsedVariant {
@@ -84,8 +70,8 @@ impl Parser for IntoParam {
     }
 
     fn gen_struct(self, parsed: Vec<Self::ParsedField>) -> TokenStream {
-        let name = self.name;
-        let generics = self.generics;
+        let name = self.0.name;
+        let generics = self.0.generics;
         quote! {
             unsafe impl #generics bp3d_lua::vm::function::IntoParam for #name #generics {
                 fn into_param(self, vm: &bp3d_lua::vm::Vm) -> i32 {
@@ -98,8 +84,8 @@ impl Parser for IntoParam {
     }
 
     fn gen_enum(self, parsed: Vec<Self::ParsedVariant>) -> TokenStream {
-        let name = self.name;
-        let generics = self.generics;
+        let name = self.0.name;
+        let generics = self.0.generics;
         quote! {
             unsafe impl #generics bp3d_lua::vm::function::IntoParam for #name #generics {
                 fn into_param(self, vm: &bp3d_lua::vm::Vm) -> i32 {
