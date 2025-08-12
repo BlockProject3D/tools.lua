@@ -26,13 +26,35 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-mod any;
-pub mod case;
-pub mod core;
-mod error;
-mod interface;
-pub mod util;
+use crate::ffi::lua::{lua_getfield, lua_replace, lua_settop, lua_type, Type, REGISTRYINDEX};
+use crate::vm::table::Table;
+use crate::vm::userdata::UserData;
+use crate::vm::Vm;
 
-pub use any::AnyUserData;
-pub use error::Error;
-pub use interface::*;
+/// Returns the static table attached to the given UserData type.
+///
+/// The static table contains all static fields and functions added to the type at registration
+/// time.
+///
+/// This function returns None when the UserData identified with type `T` does not have any static
+/// members.
+///
+/// # Arguments
+///
+/// * `vm`: the [Vm] the UserData type is attached to.
+///
+/// returns: Option<Table>
+pub fn get_static_table<T: UserData>(vm: &Vm) -> Option<Table> {
+    let val = unsafe {
+        lua_getfield(vm.as_ptr(), REGISTRYINDEX, T::CLASS_NAME.as_ptr());
+        lua_getfield(vm.as_ptr(), -1, c"__static".as_ptr());
+        lua_replace(vm.as_ptr(), -2);
+        if lua_type(vm.as_ptr(), -1) == Type::Nil {
+            // No static table exists on the given userdata object, skip...
+            lua_settop(vm.as_ptr(), -2);
+            return None;
+        }
+        Table::from_raw(vm, vm.top())
+    };
+    Some(val)
+}

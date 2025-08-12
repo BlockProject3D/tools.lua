@@ -104,6 +104,7 @@ pub struct Registry<'a, T: UserData, C: NameConvert> {
     useless: PhantomData<T>,
     has_gc: OnceCell<()>,
     has_index: OnceCell<()>,
+    has_static: OnceCell<()>,
     case: C,
 }
 
@@ -137,6 +138,7 @@ impl<'a, T: UserData, C: NameConvert> Registry<'a, T, C> {
             useless: PhantomData,
             has_gc: OnceCell::new(),
             has_index: OnceCell::new(),
+            has_static: OnceCell::new(),
             case,
         };
         reg.add_field(c"__metatable", T::CLASS_NAME.to_str().unwrap_unchecked())
@@ -157,6 +159,7 @@ impl<'a, T: UserData, C: NameConvert> Registry<'a, T, C> {
     }
 
     pub fn add_static_field(&self, name: &'static CStr, value: impl IntoLua) -> Result<(), Error> {
+        let _ = self.has_static.set(());
         let mut static_table = unsafe { Table::from_raw(self.vm, -3) };
         static_table.set(&*self.case.name_convert(name), value).map_err(|_| Error::MultiValueField)?;
         Ok(())
@@ -300,9 +303,10 @@ impl<T: UserData, C: NameConvert> Drop for Registry<'_, T, C> {
                 lua_pushvalue(self.vm.as_ptr(), -1);
                 lua_setfield(self.vm.as_ptr(), -2, c"__index".as_ptr());
             }
-            //TODO: The __static should only exist if at least 1 static was registered
-            lua_pushvalue(self.vm.as_ptr(), -2); // Push the static table.
-            lua_setfield(self.vm.as_ptr(), -2, c"__static".as_ptr());
+            if self.has_static.get().is_some() {
+                lua_pushvalue(self.vm.as_ptr(), -2); // Push the static table.
+                lua_setfield(self.vm.as_ptr(), -2, c"__static".as_ptr());
+            }
             // Pop the userdata metatable alongside its statics table from the stack.
             lua_settop(self.vm.as_ptr(), -3);
         }

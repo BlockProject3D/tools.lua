@@ -27,13 +27,13 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use bp3d_debug::info;
-use crate::ffi::lua::{lua_getfield, lua_replace, lua_settop, REGISTRYINDEX};
+use crate::ffi::lua::lua_settop;
 use crate::util::core::AnyStr;
 use crate::vm::registry::core::Key;
 use crate::vm::table::Table;
 use crate::vm::userdata::{NameConvert, UserData};
+use crate::vm::userdata::util::get_static_table;
 use crate::vm::value::IntoLua;
-use crate::vm::value::types::Unknown;
 use crate::vm::Vm;
 
 pub struct Namespace<'a> {
@@ -95,13 +95,7 @@ impl<'a> Namespace<'a> {
     pub fn add_userdata<T: UserData>(&mut self, name: impl AnyStr, case: impl NameConvert) -> crate::vm::Result<()> {
         info!("Adding userdata type {:?} as {:?}", T::CLASS_NAME, name.to_str()?);
         self.vm.register_userdata::<T>(case)?;
-        let val = unsafe {
-            lua_getfield(self.vm.as_ptr(), REGISTRYINDEX, T::CLASS_NAME.as_ptr());
-            lua_getfield(self.vm.as_ptr(), -1, c"__static".as_ptr());
-            lua_replace(self.vm.as_ptr(), -2);
-            Unknown::from_raw(self.vm, self.vm.top())
-        };
-        self.table.set(name, val)?;
+        self.table.set(name, get_static_table::<T>(self.vm))?;
         Ok(())
     }
 
