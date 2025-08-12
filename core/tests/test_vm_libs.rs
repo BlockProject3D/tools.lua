@@ -62,8 +62,7 @@ fn test_vm_lib_lua() {
         .into_runtime()
         .unwrap();
     assert_eq!(err.msg(), "rust error: unknown source name not");
-    vm.run_code::<()>(
-        c"
+    vm.run_code::<()>(c"
         local function test()
             bp3d.lua.require \"not.existing.file\"
         end
@@ -71,8 +70,7 @@ fn test_vm_lib_lua() {
         assert(not flag)
         print(err)
         assert(err ~= '')
-    ",
-    )
+    ")
     .unwrap();
     let err = vm
         .run_code::<()>(c"MODULES:load('broken', 'broken2')")
@@ -284,21 +282,28 @@ fn test_vm_lib_os() {
     )
     .unwrap();
     std::thread::sleep(std::time::Duration::from_millis(500));
-    vm.run_code::<()>(
-        c"
+    vm.run_code::<()>(c"
         local now = os.clock()
         assert((clock - now) < 0.1)
-    ",
-    )
-    .unwrap();
-    let s = vm
-        .run_code::<&str>(
-            c"
+    ").unwrap();
+    let s = vm.run_code::<&str>(c"
         return os.date('!%H:%M:%S')
-    ",
-        )
-        .unwrap();
+    ").unwrap();
     assert!(s.contains(":"));
     assert!(!s.contains("["));
     assert!(!s.contains("]"));
+}
+
+#[test]
+fn test_vm_lib_debug() {
+    let mut vm = RootVm::new();
+    bp3d_lua::libs::lua::Debug.register(&mut vm).unwrap();
+    vm.run_code::<()>(c"
+        local debug = bp3d.lua.debug
+        local libs = debug.dumpLibs();
+        assert(#libs == 1)
+        assert(libs[1] == 'bp3d_lua::libs::lua::debug::Debug: bp3d.lua.debug')
+        local classes = debug.dumpClasses();
+        assert(#classes == 0)
+    ").unwrap();
 }
