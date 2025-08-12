@@ -51,12 +51,6 @@ bp3d.os.time.nowUtc = function() end
 --- @return OffsetDateTime
 bp3d.os.time.nowLocal = function() end
 
---- Constructs a new OffsetDateTime from a unix timestamp in seconds.
----
---- @param timestamp integer the unix timestamp in seconds.
---- @return OffsetDateTime
-bp3d.os.time.fromUnixTimestamp = function(timestamp) end
-
 --- @class Offset
 --- @field hours    integer
 --- @field minutes  integer
@@ -85,11 +79,19 @@ Date = {}
 --- @field offset   Offset?
 RawComponents = {}
 
+bp3d.os.time.OffsetDateTime = {}
+
 --- Creates a new OffsetDateTime from its raw components.
 ---
 --- @param table RawComponents manual definition of a date time with an optional offset.
 --- @return OffsetDateTime
-bp3d.os.time.new = function(table) end
+bp3d.os.time.OffsetDateTime.new = function(table) end
+
+--- Constructs a new OffsetDateTime from a unix timestamp in seconds.
+---
+--- @param timestamp integer the unix timestamp in seconds.
+--- @return OffsetDateTime
+bp3d.os.time.OffsetDateTime.fromUnixTimestamp = function(timestamp) end
 
 --- @class OffsetDateTime
 OffsetDateTime = {}
