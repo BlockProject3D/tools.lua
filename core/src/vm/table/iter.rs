@@ -73,8 +73,8 @@ impl<'a> Iterator for Iter<'a> {
         self.last_top = self.vm.top();
         self.has_started = true;
         if ret != 0 {
-            let value = Unknown::from_vm(self.vm, -2);
-            let key = Unknown::from_vm(self.vm, -1);
+            let value = unsafe { Unknown::from_lua_unchecked(self.vm, self.last_top - 1) };
+            let key = unsafe { Unknown::from_lua_unchecked(self.vm, self.last_top) };
             Some((value, key))
         } else {
             self.has_ended = true;

@@ -30,6 +30,7 @@ use std::fmt::Debug;
 use crate::ffi::lua::{lua_replace, lua_type, Type};
 use crate::vm::value::{FromLua, IntoLua};
 use crate::vm::value::any::Any;
+use crate::vm::value::util::check_value_top;
 use crate::vm::Vm;
 
 pub struct Unknown<'a> {
@@ -44,7 +45,19 @@ impl Debug for Unknown<'_> {
 }
 
 impl<'a> Unknown<'a> {
-    pub fn from_vm(vm: &'a Vm, index: i32) -> Self {
+    /// Attempts to create an [Unknown] typed value from a specific index on the stack.
+    ///
+    /// # Arguments
+    ///
+    /// * `vm`: the [Vm] object this value is attached to.
+    /// * `index`: the index of the value on the stack.
+    ///
+    /// returns: Unknown
+    ///
+    /// # Safety
+    ///
+    /// The given stack index must be absolute, if not this is UB.
+    pub unsafe fn from_lua_unchecked(vm: &'a Vm, index: i32) -> Self {
         Self {
             vm,
             index
@@ -81,5 +94,14 @@ impl<'a> Unknown<'a> {
 
     pub fn index(&self) -> i32 {
         self.index
+    }
+}
+
+unsafe impl IntoLua for Unknown<'_> {
+    fn into_lua(self, vm: &Vm) -> u16 {
+        if self.ty() == Type::None { // None is not a value, do not operate the stack or UB.
+            return 0; // No value exists on the stack so IntoLua returns 0 values.
+        }
+        check_value_top(self.vm, vm, self.index)
     }
 }
