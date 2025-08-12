@@ -39,6 +39,7 @@ use bp3d_debug::{debug, warning};
 use std::cell::OnceCell;
 use std::ffi::CStr;
 use std::marker::PhantomData;
+use crate::vm::table::Table;
 
 #[derive(Copy, Clone)]
 pub struct Function {
@@ -129,9 +130,11 @@ impl<'a, T: UserData, C: NameConvert> Registry<'a, T, C> {
         if align_of::<T>() > 8 {
             return Err(Error::Alignment(align_of::<T>()));
         }
+        Table::new(vm);
         let res = unsafe { luaL_newmetatable(vm.as_ptr(), T::CLASS_NAME.as_ptr()) };
+        // Pop the userdata metatable alongside its statics table from the stack.
         if res != 1 {
-            unsafe { lua_settop(vm.as_ptr(), -2) };
+            unsafe { lua_settop(vm.as_ptr(), -3) };
             return Err(Error::AlreadyRegistered(T::CLASS_NAME));
         }
         let reg = Registry {
@@ -145,7 +148,7 @@ impl<'a, T: UserData, C: NameConvert> Registry<'a, T, C> {
         Ok(reg)
     }
 
-    pub fn add_field(&self, name: &'static CStr, value: impl IntoLua) -> Result<(), Error> {
+    fn add_field(&self, name: &'static CStr, value: impl IntoLua) -> Result<(), Error> {
         let num = value.into_lua(self.vm);
         if num > 1 {
             unsafe { lua_settop(self.vm.as_ptr(), -(num as i32) - 1) };
@@ -154,6 +157,12 @@ impl<'a, T: UserData, C: NameConvert> Registry<'a, T, C> {
         unsafe {
             lua_setfield(self.vm.as_ptr(), -2, self.case.name_convert(name).as_ptr());
         }
+        Ok(())
+    }
+
+    pub fn add_static_field(&self, name: &'static CStr, value: impl IntoLua) -> Result<(), Error> {
+        let mut static_table = unsafe { Table::from_raw(self.vm, -3) };
+        static_table.set(&*self.case.name_convert(name), value).map_err(|_| Error::MultiValueField)?;
         Ok(())
     }
 
@@ -263,8 +272,10 @@ impl<T: UserData, C: NameConvert> Drop for Registry<'_, T, C> {
         unsafe {
             lua_pushvalue(self.vm.as_ptr(), -1);
             lua_setfield(self.vm.as_ptr(), -2, c"__index".as_ptr());
-            // Pop the userdata metatable from the stack.
-            lua_settop(self.vm.as_ptr(), -2);
+            lua_pushvalue(self.vm.as_ptr(), -2); // Push the static table.
+            lua_setfield(self.vm.as_ptr(), -2, c"__static".as_ptr());
+            // Pop the userdata metatable alongside its statics table from the stack.
+            lua_settop(self.vm.as_ptr(), -3);
         }
     }
 }

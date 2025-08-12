@@ -27,7 +27,7 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use bp3d_debug::info;
-use crate::ffi::lua::{lua_getfield, lua_settop, REGISTRYINDEX};
+use crate::ffi::lua::{lua_getfield, lua_replace, lua_settop, REGISTRYINDEX};
 use crate::util::core::AnyStr;
 use crate::vm::registry::core::Key;
 use crate::vm::table::Table;
@@ -97,6 +97,8 @@ impl<'a> Namespace<'a> {
         self.vm.register_userdata::<T>(case)?;
         let val = unsafe {
             lua_getfield(self.vm.as_ptr(), REGISTRYINDEX, T::CLASS_NAME.as_ptr());
+            lua_getfield(self.vm.as_ptr(), -1, c"__static".as_ptr());
+            lua_replace(self.vm.as_ptr(), -2);
             Unknown::from_raw(self.vm, self.vm.top())
         };
         self.table.set(name, val)?;

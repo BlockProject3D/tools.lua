@@ -32,7 +32,7 @@ macro_rules! _impl_userdata_static {
         $registry.add_field($crate::c_stringify!($field_name), $field_value)?;
     };
     ($registry: ident fn $function_name: ident) => {
-        $registry.add_field($crate::c_stringify!($function_name), $crate::vm::function::types::RFunction::wrap($function_name))?;
+        $registry.add_static_field($crate::c_stringify!($function_name), $crate::vm::function::types::RFunction::wrap($function_name))?;
     };
 }
 

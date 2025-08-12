@@ -105,6 +105,11 @@ decl_userdata! {
             Ok(table)
         }
     }
+
+    static {
+        [fn new];
+        [fn from_unix_timestamp];
+    }
 }
 
 unsafe impl IntoParam for OffsetDateTime {
@@ -177,14 +182,10 @@ impl Lib for Time {
     const NAMESPACE: &'static str = "bp3d.os.time";
 
     fn load(&self, namespace: &mut Namespace) -> crate::vm::Result<()> {
-        namespace
-            .vm()
-            .register_userdata::<OffsetDateTimeWrapper>(crate::vm::userdata::case::Camel)?;
+        namespace.add_userdata::<OffsetDateTimeWrapper>(c"OffsetDateTime", crate::vm::userdata::case::Camel)?;
         namespace.add([
             ("nowUtc", RFunction::wrap(now_utc)),
-            ("nowLocal", RFunction::wrap(now_local)),
-            ("fromUnixTimestamp", RFunction::wrap(from_unix_timestamp)),
-            ("new", RFunction::wrap(new)),
+            ("nowLocal", RFunction::wrap(now_local))
         ])
     }
 }

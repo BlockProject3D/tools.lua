@@ -240,6 +240,19 @@ fn test_vm_lib_os_time() {
 }
 
 #[test]
+fn test_vm_lib_os_time_2() {
+    let mut vm = RootVm::new();
+    bp3d_lua::libs::os::Time.register(&mut vm).unwrap();
+    Util.register(&mut vm).unwrap();
+    vm.run_code::<()>(c"
+        local OffsetDateTime = bp3d.os.time.OffsetDateTime
+        local dt = OffsetDateTime.new({year = 1900, month = 12, day = 1})
+        print(bp3d.util.table.tostring(dt:getDate()))
+        assert(bp3d.util.table.tostring(dt:getDate()) == 'month: 12\\nday: 1\\nyear: 1900')
+    ").unwrap();
+}
+
+#[test]
 fn test_vm_lib_os_instant() {
     let mut vm = RootVm::new();
     bp3d_lua::libs::os::Instant.register(&mut vm).unwrap();
