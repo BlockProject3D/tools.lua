@@ -33,6 +33,7 @@ pub mod load;
 #[cfg(feature = "root-vm")]
 mod root_vm;
 pub mod util;
+pub mod debug;
 mod vm;
 
 #[cfg(feature = "root-vm")]

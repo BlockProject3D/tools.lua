@@ -35,6 +35,7 @@ use crate::vm::Vm;
 use bp3d_util::simple_error;
 use std::collections::HashMap;
 use std::sync::Mutex;
+use crate::vm::core::debug::DebugRegistry;
 
 simple_error! {
     pub Error {
@@ -91,6 +92,7 @@ impl Lib for Require {
     }
 
     fn register(&self, vm: &Vm) -> crate::vm::Result<()> {
+        DebugRegistry::add::<Require, _>(vm);
         let rc = Arc::from_rust(vm, self.0.clone());
         let mut namespace = Namespace::new(vm, "bp3d.lua")?;
         namespace.add([("require", require(rc))])

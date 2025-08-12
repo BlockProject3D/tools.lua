@@ -28,6 +28,7 @@
 
 use bp3d_debug::info;
 use crate::util::Namespace;
+use crate::vm::core::debug::DebugRegistry;
 use crate::vm::Vm;
 
 pub trait Lib {
@@ -37,6 +38,7 @@ pub trait Lib {
 
     fn register(&self, vm: &Vm) -> crate::vm::Result<()> {
         info!("Adding lib '{}'...", Self::NAMESPACE);
+        DebugRegistry::add::<Self, crate::vm::core::debug::Lib>(vm);
         let mut namespace = Namespace::new(vm, Self::NAMESPACE)?;
         self.load(&mut namespace)?;
         Ok(())

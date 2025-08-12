@@ -31,6 +31,7 @@ use crate::ffi::lua::{lua_getfield, lua_gettop, lua_isyieldable, lua_pushnil, lu
 use crate::util::core::AnyStr;
 use crate::vm::core::util::{handle_syntax_error, pcall, push_error_handler};
 use crate::vm::core::{Load, LoadString};
+use crate::vm::core::debug::DebugRegistry;
 use crate::vm::error::Error;
 use crate::vm::thread::core::Thread;
 use crate::vm::userdata::core::Registry;
@@ -72,6 +73,7 @@ impl Vm {
 
     pub fn register_userdata<T: UserData>(&self, case: impl NameConvert) -> crate::vm::Result<()> {
         info!("Adding userdata type {:?}", T::CLASS_NAME);
+        DebugRegistry::add::<T, _>(self);
         let reg = unsafe { Registry::<T, _>::new(self, case) }.map_err(Error::UserData)?;
         let res = T::register(&reg).map_err(Error::UserData);
         match res {

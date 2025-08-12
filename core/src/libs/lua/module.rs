@@ -34,6 +34,7 @@ use crate::util::Namespace;
 use crate::vm::Vm;
 use bp3d_os::module::library::types::VirtualLibrary;
 use std::path::PathBuf;
+use crate::vm::core::debug::DebugRegistry;
 
 pub struct Module {
     builtins: &'static [&'static VirtualLibrary],
@@ -72,6 +73,7 @@ impl Lib for Module {
     }
 
     fn register(&self, vm: &Vm) -> crate::vm::Result<()> {
+        DebugRegistry::add::<Module, _>(vm);
         vm.register_userdata::<ModuleManagerWrapper>(crate::vm::userdata::case::Camel)?;
         let mut manager = ModuleManager::new(self.builtins);
         for search_path in &self.search_paths {
