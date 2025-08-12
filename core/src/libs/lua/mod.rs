@@ -34,11 +34,13 @@ pub mod require;
 
 #[cfg(feature = "util-module")]
 mod module;
+mod debug;
 
 pub use base::Base;
 pub use call::Call;
 pub use load::Load;
 pub use require::Require;
+pub use debug::Debug;
 
 pub use options::Lua;
 
