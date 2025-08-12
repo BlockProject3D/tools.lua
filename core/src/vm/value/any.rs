@@ -234,7 +234,7 @@ impl UncheckedAnyReturn {
     /// # Safety
     ///
     /// It is UB to run any operation which may alter the lua stack after constructing this
-    /// primitive.
+    /// primitive. Using this to return the metatable of an UserData is also UB.
     pub unsafe fn new(vm: &Vm, count: i32) -> Self {
         let top = vm.top();
         if count > top as _ {

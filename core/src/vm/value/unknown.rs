@@ -28,6 +28,7 @@
 
 use std::fmt::Debug;
 use crate::ffi::lua::{lua_replace, lua_type, Type};
+use crate::vm::function::IntoParam;
 use crate::vm::value::{FromLua, IntoLua};
 use crate::vm::value::any::Any;
 use crate::vm::value::util::check_value_top;
@@ -56,7 +57,8 @@ impl<'a> Unknown<'a> {
     ///
     /// # Safety
     ///
-    /// The given stack index must be absolute, if not this is UB.
+    /// The given stack index must be absolute, if not this is UB. Using this to return the
+    /// metatable of an UserData is also UB.
     pub unsafe fn from_raw(vm: &'a Vm, index: i32) -> Self {
         Self {
             vm,
@@ -103,5 +105,12 @@ unsafe impl IntoLua for Unknown<'_> {
             return 0; // No value exists on the stack so IntoLua returns 0 values.
         }
         check_value_top(self.vm, vm, self.index)
+    }
+}
+
+unsafe impl IntoParam for Unknown<'_> {
+    #[inline(always)]
+    fn into_param(self, vm: &Vm) -> i32 {
+        IntoLua::into_lua(self, vm) as _
     }
 }
