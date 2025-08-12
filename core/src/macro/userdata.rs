@@ -27,8 +27,18 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #[macro_export]
+macro_rules! _impl_userdata_static {
+    ($registry: ident field $field_name: ident = $field_value: expr) => {
+        $registry.add_field($crate::c_stringify!($field_name), $field_value)?;
+    };
+    ($registry: ident fn $function_name: ident) => {
+        $registry.add_field($crate::c_stringify!($function_name), $crate::vm::function::types::RFunction::wrap($function_name))?;
+    };
+}
+
+#[macro_export]
 macro_rules! _impl_userdata {
-    ($obj_name: ident, $($fn_name: ident),*) => {
+    ($obj_name: ident, $($fn_name: ident),* { $([$($static_registry_tokens: tt)*];)* }) => {
         impl $crate::vm::userdata::UserData for $obj_name {
             const CLASS_NAME: &'static std::ffi::CStr = $crate::c_stringify!($obj_name);
 
@@ -39,6 +49,9 @@ macro_rules! _impl_userdata {
                 )*
                 use $crate::vm::userdata::AddGcMethod;
                 (&$crate::vm::userdata::core::AddGcMethodAuto::<$obj_name>::default()).add_gc_method(registry);
+                $(
+                    $crate::_impl_userdata_static!(registry $($static_registry_tokens)*);
+                )*
                 Ok(())
             }
         }
@@ -53,6 +66,8 @@ macro_rules! decl_userdata {
                 $vis: vis fn $fn_name: ident $(<$lifetime: lifetime>)? ($this: ident: &$obj_name2: ident $($tokens: tt)*) -> $ret_ty: ty $code: block
             )*
         }
+
+        $(static { $([$($static_registry_tokens: tt)*];)* })?
     ) => {
         $(
             $crate::decl_userdata_func! {
@@ -60,7 +75,7 @@ macro_rules! decl_userdata {
             }
         )*
 
-        $crate::_impl_userdata!($obj_name, $($fn_name),*);
+        $crate::_impl_userdata!($obj_name, $($fn_name),* { $($([$($static_registry_tokens)*];)*)? });
 
         unsafe impl $crate::vm::userdata::UserDataImmutable for $obj_name {}
     };
@@ -74,6 +89,8 @@ macro_rules! decl_userdata_mut {
                 $vis: vis fn $fn_name: ident $(<$lifetime: lifetime>)? ($($tokens: tt)*) -> $ret_ty: ty $code: block
             )*
         }
+
+        $(static { $([$($static_registry_tokens: tt)*];)* })?
     ) => {
         $(
             $crate::decl_userdata_func! {
@@ -81,6 +98,6 @@ macro_rules! decl_userdata_mut {
             }
         )*
 
-        $crate::_impl_userdata!($obj_name, $($fn_name),*);
+        $crate::_impl_userdata!($obj_name, $($fn_name),* { $($([$($static_registry_tokens)*];)*)? });
     };
 }
