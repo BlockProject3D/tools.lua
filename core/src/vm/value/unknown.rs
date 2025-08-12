@@ -57,7 +57,7 @@ impl<'a> Unknown<'a> {
     /// # Safety
     ///
     /// The given stack index must be absolute, if not this is UB.
-    pub unsafe fn from_lua_unchecked(vm: &'a Vm, index: i32) -> Self {
+    pub unsafe fn from_raw(vm: &'a Vm, index: i32) -> Self {
         Self {
             vm,
             index

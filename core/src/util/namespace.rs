@@ -97,7 +97,7 @@ impl<'a> Namespace<'a> {
         self.vm.register_userdata::<T>(case)?;
         let val = unsafe {
             lua_getfield(self.vm.as_ptr(), REGISTRYINDEX, T::CLASS_NAME.as_ptr());
-            Unknown::from_lua_unchecked(self.vm, self.vm.top())
+            Unknown::from_raw(self.vm, self.vm.top())
         };
         self.table.set(name, val)?;
         Ok(())
