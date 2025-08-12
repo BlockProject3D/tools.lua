@@ -34,6 +34,7 @@ use bp3d_lua::vm::userdata::{AnyUserData, LuaDrop};
 use bp3d_lua::vm::{RootVm, Vm};
 use bp3d_lua::{decl_lib_func, decl_userdata, decl_userdata_mut};
 use std::sync::Mutex;
+use bp3d_lua::util::Namespace;
 
 static MUTEX: Mutex<()> = Mutex::new(());
 
@@ -84,6 +85,10 @@ decl_userdata! {
             MyInt(this.0 + other.0)
         }
     }
+
+    static {
+        [fn new];
+    }
 }
 
 #[derive(Debug)]
@@ -133,6 +138,12 @@ decl_lib_func! {
     }
 }
 
+decl_lib_func! {
+    fn new(i: i64) -> MyInt {
+        MyInt(i)
+    }
+}
+
 #[test]
 fn test_vm_userdata_forgot_reg() {
     let vm = RootVm::new();
@@ -172,6 +183,7 @@ fn test_vm_userdata_error_handling() {
     assert_eq!(msg, "userdata: __gc meta-method is reserved for internal use, if you need Vm access in drop, please use LuaDrop");
     assert_eq!(top, vm.top());
     let res = vm.register_userdata::<MyInt>(bp3d_lua::vm::userdata::case::Snake);
+    assert_eq!(top, vm.top());
     assert!(res.is_err());
     let msg = res.unwrap_err().to_string();
     assert_eq!(
@@ -200,6 +212,41 @@ fn test_vm_userdata_base(vm: &Vm) {
     vm.run_code::<()>(c"a = MyInt(123)").unwrap();
     vm.run_code::<()>(c"b = MyInt(456)").unwrap();
     vm.run_code::<()>(c"c = MyInt(456)").unwrap();
+    assert_eq!(vm.run_code::<bool>(c"return a == b").unwrap(), false);
+    assert_eq!(vm.run_code::<bool>(c"return b == c").unwrap(), true);
+    assert_eq!(vm.run_code::<bool>(c"return a < b").unwrap(), true);
+    assert_eq!(vm.run_code::<bool>(c"return b > a").unwrap(), true);
+    assert_eq!(vm.run_code::<&MyInt>(c"return a + b").unwrap().0, 579);
+    assert_eq!(
+        vm.run_code::<&str>(c"return (a + b):tostring()").unwrap(),
+        "579"
+    );
+    assert_eq!(
+        vm.run_code::<RawNumber>(c"return (a + b):tonumber()")
+            .unwrap(),
+        579.0
+    );
+    assert_eq!(
+        vm.run_code::<RawNumber>(c"return a.tonumber(b)").unwrap(),
+        456.0
+    );
+    assert_eq!(top + 8, vm.top());
+}
+
+fn test_vm_userdata_base2(vm: &Vm) {
+    unsafe {
+        DROP_COUNTER = 0;
+        LUA_DROP_COUNTER = 0;
+    }
+    let top = vm.top();
+    {
+        let mut namespace = Namespace::new(vm, "_G").unwrap();
+        namespace.add_userdata::<MyInt>("MyInt", bp3d_lua::vm::userdata::case::Snake).unwrap();
+    }
+    assert_eq!(top, vm.top());
+    vm.run_code::<()>(c"a = MyInt.new(123)").unwrap();
+    vm.run_code::<()>(c"b = MyInt.new(456)").unwrap();
+    vm.run_code::<()>(c"c = MyInt.new(456)").unwrap();
     assert_eq!(vm.run_code::<bool>(c"return a == b").unwrap(), false);
     assert_eq!(vm.run_code::<bool>(c"return b == c").unwrap(), true);
     assert_eq!(vm.run_code::<bool>(c"return a < b").unwrap(), true);
@@ -335,4 +382,22 @@ fn test_vm_userdata_display() {
     let s = ud.to_string();
     assert_eq!(s, "MyInt(123456)");
     assert_eq!(vm.top(), top + 1);
+}
+
+#[test]
+fn test_vm_userdata_statics() {
+    let _guard = MUTEX.lock();
+    {
+        let vm = RootVm::new();
+        test_vm_userdata_base2(&vm);
+        vm.run_code::<()>(c"
+            MyInt.__gc = function() print(\"Lua has hacked Rust\") end
+            MyInt.__metatable = function() print(\"Lua has hacked Rust\") end
+        ").unwrap();
+        let ud: AnyUserData = vm.get_global("a").unwrap();
+        let s = ud.to_string();
+        assert_eq!(s, "MyInt(123)");
+    }
+    assert_eq!(unsafe { DROP_COUNTER }, 6);
+    assert_eq!(unsafe { LUA_DROP_COUNTER }, 6);
 }
