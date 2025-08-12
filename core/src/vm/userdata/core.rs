@@ -188,6 +188,8 @@ impl<'a, T: UserData, C: NameConvert> Registry<'a, T, C> {
                 func: run_drop::<T>,
             });
             debug!({UD=?T::CLASS_NAME}, "Type registered with simple Drop");
+        } else {
+            debug!({UD=?T::CLASS_NAME}, "Type does not need any drop behavior");
         }
         self.has_gc.set(()).unwrap();
     }
@@ -254,7 +256,7 @@ impl<T: UserData> AddGcMethod<T> for &AddGcMethodAuto<T> {
 impl<T: UserData, C: NameConvert> Drop for Registry<'_, T, C> {
     fn drop(&mut self) {
         if std::mem::needs_drop::<T>() && self.has_gc.get().is_none() {
-            warning!("No __gc method registered on a drop userdata type!");
+            warning!("No __gc method registered on a userdata type which needs drop!");
             // No __gc method found in object that needs it force add it before finishing it.
             self.add_gc_method();
         }

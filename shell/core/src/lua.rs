@@ -112,24 +112,20 @@ impl Lua {
         let (signal, handle) = spawn_interruptible(move |vm| {
             let logger = DataOut::new(logger);
             let scheduler = Rc::new(SchedulerPtr::new());
-            debug!("Loading VM libraries...");
-            debug!("Loading OS library...");
+            info!("Loading VM libraries...");
             if let Err(e) = (libs::os::Compat, libs::os::Instant, libs::os::Time).register(vm) {
                 error!("Failed to load OS library: {}", e);
             }
-            debug!("Loading string library...");
             if let Err(e) = (libs::util::String, libs::util::Table, libs::util::Utf8).register(vm) {
                 error!("Failed to load util library: {}", e);
             }
-            debug!("Loading lua library...");
             if let Err(e) = libs::lua::Lua::new().load_chroot_path(&args.data).build().register(vm) {
                 error!("Failed to load base library: {}", e);
             }
-            debug!("Loading bp3d-lua-shell::autocomplete library...");
+            info!("Loading bp3d-lua-shell libraries...");
             if let Err(e) = Autocomplete::new(logger.clone()).register(vm) {
                 error!("Failed to register autocomplete library: {}", e);
             }
-            debug!("Loading bp3d-lua-shell::scheduler library...");
             if let Err(e) = SchedulerApi::new(scheduler.clone()).register(vm) {
                 error!("Failed to register scheduler library: {}", e);
             }

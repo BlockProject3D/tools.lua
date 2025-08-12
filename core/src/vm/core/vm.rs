@@ -26,6 +26,7 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use bp3d_debug::{info, warning};
 use crate::ffi::lua::{lua_getfield, lua_gettop, lua_isyieldable, lua_pushnil, lua_remove, lua_setfield, lua_settop, State, ThreadStatus, GLOBALSINDEX, REGISTRYINDEX};
 use crate::util::core::AnyStr;
 use crate::vm::core::util::{handle_syntax_error, pcall, push_error_handler};
@@ -70,11 +71,13 @@ impl Vm {
     }
 
     pub fn register_userdata<T: UserData>(&self, case: impl NameConvert) -> crate::vm::Result<()> {
+        info!("Adding userdata type {:?}", T::CLASS_NAME);
         let reg = unsafe { Registry::<T, _>::new(self, case) }.map_err(Error::UserData)?;
         let res = T::register(&reg).map_err(Error::UserData);
         match res {
             Ok(_) => Ok(()),
             Err(e) => {
+                warning!("Failed to register userdata type {:?}: {}", T::CLASS_NAME, e);
                 unsafe {
                     lua_pushnil(self.l);
                     lua_setfield(self.l, REGISTRYINDEX, T::CLASS_NAME.as_ptr());

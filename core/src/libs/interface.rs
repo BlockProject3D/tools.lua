@@ -26,6 +26,7 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use bp3d_debug::info;
 use crate::util::Namespace;
 use crate::vm::Vm;
 
@@ -35,6 +36,7 @@ pub trait Lib {
     fn load(&self, namespace: &mut Namespace) -> crate::vm::Result<()>;
 
     fn register(&self, vm: &Vm) -> crate::vm::Result<()> {
+        info!("Adding lib '{}'...", Self::NAMESPACE);
         let mut namespace = Namespace::new(vm, Self::NAMESPACE)?;
         self.load(&mut namespace)?;
         Ok(())
