@@ -105,9 +105,6 @@ unsafe fn convert_module_error_to_vm_error(
             crate::vm::userdata::Error::MutViolation(CStr::from_ptr(err.static_string.data)),
         ),
         ErrorType::UserDataGc => crate::vm::error::Error::UserData(crate::vm::userdata::Error::Gc),
-        ErrorType::UserDataIndex => {
-            crate::vm::error::Error::UserData(crate::vm::userdata::Error::Index)
-        }
         ErrorType::UserDataMetatable => {
             crate::vm::error::Error::UserData(crate::vm::userdata::Error::Metatable)
         }

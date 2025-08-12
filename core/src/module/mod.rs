@@ -91,7 +91,6 @@ pub fn run_lua_register(
                         error.static_string.data = e.as_ptr();
                     }
                     crate::vm::userdata::Error::Gc => error.ty = error::ErrorType::UserDataGc,
-                    crate::vm::userdata::Error::Index => error.ty = error::ErrorType::UserDataIndex,
                     crate::vm::userdata::Error::Metatable => {
                         error.ty = error::ErrorType::UserDataMetatable
                     }

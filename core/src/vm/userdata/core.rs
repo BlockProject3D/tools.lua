@@ -27,17 +27,14 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::ffi::laux::{luaL_checkudata, luaL_newmetatable};
-use crate::ffi::lua::{
-    lua_pushcclosure, lua_pushnil, lua_pushvalue, lua_setfield, lua_setmetatable, lua_settop,
-    CFunction, State,
-};
+use crate::ffi::lua::{lua_getmetatable, lua_pushcclosure, lua_pushlightuserdata, lua_pushnil, lua_pushvalue, lua_rawget, lua_setfield, lua_setmetatable, lua_settop, lua_touserdata, lua_type, CFunction, State, Type, GLOBALSINDEX};
 use crate::vm::userdata::{AddGcMethod, Error, LuaDrop, NameConvert, UserData};
 use crate::vm::util::{LuaType, TypeName};
 use crate::vm::value::IntoLua;
 use crate::vm::Vm;
 use bp3d_debug::{debug, warning};
 use std::cell::OnceCell;
-use std::ffi::CStr;
+use std::ffi::{c_void, CStr};
 use std::marker::PhantomData;
 use crate::vm::table::Table;
 
@@ -87,9 +84,6 @@ impl Builder {
         if self.f.name == c"__gc" {
             return Err(Error::Gc);
         }
-        if self.f.name == c"__index" {
-            return Err(Error::Index);
-        }
         if self.f.name == c"__metatable" {
             return Err(Error::Metatable);
         }
@@ -109,6 +103,7 @@ pub struct Registry<'a, T: UserData, C: NameConvert> {
     vm: &'a Vm,
     useless: PhantomData<T>,
     has_gc: OnceCell<()>,
+    has_index: OnceCell<()>,
     case: C,
 }
 
@@ -141,6 +136,7 @@ impl<'a, T: UserData, C: NameConvert> Registry<'a, T, C> {
             vm,
             useless: PhantomData,
             has_gc: OnceCell::new(),
+            has_index: OnceCell::new(),
             case,
         };
         reg.add_field(c"__metatable", T::CLASS_NAME.to_str().unwrap_unchecked())
@@ -166,7 +162,37 @@ impl<'a, T: UserData, C: NameConvert> Registry<'a, T, C> {
         Ok(())
     }
 
+    fn add_index_metamethod(&self, f: CFunction) {
+        warning!({UD=?T::CLASS_NAME}, "Overriding __index on an UserData object may worsen performance of method calls by introducing an additional indirection on the __index metamethod");
+        extern "C-unwind" fn __index(l: State) -> i32 {
+            unsafe {
+                lua_getmetatable(l, 1);
+                lua_pushvalue(l, 2);
+                lua_rawget(l, -2);
+                let ty = lua_type(l, -1);
+                if ty != Type::Nil {
+                    return 1;
+                }
+                // Pop both the metatatble and the rawget value from the stack before running the
+                // custom __index method.
+                lua_settop(l, -3);
+                let f: CFunction = std::mem::transmute(lua_touserdata(l, GLOBALSINDEX - 1));
+                f(l)
+            }
+        }
+        unsafe {
+            lua_pushlightuserdata(self.vm.as_ptr(), f as *mut c_void);
+            lua_pushcclosure(self.vm.as_ptr(), __index, 1);
+            lua_setfield(self.vm.as_ptr(), -2, c"__index".as_ptr());
+        }
+        self.has_index.set(()).unwrap();
+    }
+
     pub fn add_method(&self, f: Function) {
+        if &f.name.to_bytes() == b"__index" {
+            self.add_index_metamethod(f.func);
+            return;
+        }
         unsafe {
             lua_pushcclosure(self.vm.as_ptr(), f.func, 0);
             if &f.name.to_bytes()[..2] == b"__" {
@@ -270,8 +296,11 @@ impl<T: UserData, C: NameConvert> Drop for Registry<'_, T, C> {
             self.add_gc_method();
         }
         unsafe {
-            lua_pushvalue(self.vm.as_ptr(), -1);
-            lua_setfield(self.vm.as_ptr(), -2, c"__index".as_ptr());
+            if self.has_index.get().is_none() {
+                lua_pushvalue(self.vm.as_ptr(), -1);
+                lua_setfield(self.vm.as_ptr(), -2, c"__index".as_ptr());
+            }
+            //TODO: The __static should only exist if at least 1 static was registered
             lua_pushvalue(self.vm.as_ptr(), -2); // Push the static table.
             lua_setfield(self.vm.as_ptr(), -2, c"__static".as_ptr());
             // Pop the userdata metatable alongside its statics table from the stack.

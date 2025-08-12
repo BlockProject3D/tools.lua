@@ -53,7 +53,6 @@ pub enum ErrorType {
     UserDataArgsEmpty = 1,
     UserDataMutViolation = 2,
     UserDataGc = 3,
-    UserDataIndex = 4,
     UserDataMetatable = 5,
     UserDataMultiValueField = 6,
     UserDataAlreadyRegistered = 7,

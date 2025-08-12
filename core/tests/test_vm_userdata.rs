@@ -84,6 +84,14 @@ decl_userdata! {
         fn __add(this: &MyInt, other: &MyInt) -> MyInt {
             MyInt(this.0 + other.0)
         }
+
+        fn __index(this: &MyInt, other: u8) -> Option<RawNumber> {
+            if other == 0 {
+                Some(this.0 as _)
+            } else {
+                None
+            }
+        }
     }
 
     static {
@@ -126,7 +134,7 @@ pub struct BrokenObject4;
 
 decl_userdata! {
     impl BrokenObject4 {
-        fn __index(this: &BrokenObject3) -> () {
+        fn __metatable(this: &BrokenObject3) -> () {
             println!("{:?}", this);
         }
     }
@@ -194,7 +202,7 @@ fn test_vm_userdata_error_handling() {
     let res = vm.register_userdata::<BrokenObject4>(bp3d_lua::vm::userdata::case::Snake);
     assert!(res.is_err());
     let msg = res.unwrap_err().to_string();
-    assert_eq!(msg, "userdata: __index meta-method is required to be surrendered to luaL_newmetatable, it is impossible to bind custom code to __index");
+    assert_eq!(msg, "userdata: __metatable is set for security reasons and cannot be altered");
     assert_eq!(top, vm.top());
 }
 
@@ -397,6 +405,22 @@ fn test_vm_userdata_statics() {
         let ud: AnyUserData = vm.get_global("a").unwrap();
         let s = ud.to_string();
         assert_eq!(s, "MyInt(123)");
+    }
+    assert_eq!(unsafe { DROP_COUNTER }, 6);
+    assert_eq!(unsafe { LUA_DROP_COUNTER }, 6);
+}
+
+#[test]
+fn test_vm_userdata_statics_2() {
+    let _guard = MUTEX.lock();
+    {
+        let vm = RootVm::new();
+        test_vm_userdata_base2(&vm);
+        vm.run_code::<()>(c"
+            assert(a[0] == 123)
+            assert(a[1] == nil)
+            assert(b[0] == 456)
+        ").unwrap();
     }
     assert_eq!(unsafe { DROP_COUNTER }, 6);
     assert_eq!(unsafe { LUA_DROP_COUNTER }, 6);
