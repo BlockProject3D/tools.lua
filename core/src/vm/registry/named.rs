@@ -27,9 +27,9 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use std::collections::BTreeSet;
-use crate::ffi::lua::{lua_insert, lua_pushlightuserdata, lua_rawget, lua_rawset, State, Type, REGISTRYINDEX};
+use crate::ffi::lua::{lua_insert, lua_pushlightuserdata, lua_rawget, lua_rawset, lua_settop, lua_type, State, Type, REGISTRYINDEX};
 use crate::vm::registry::{Set, Value};
-use crate::vm::value::util::{check_type_equals, move_value_top};
+use crate::vm::value::util::move_value_top;
 use crate::vm::Vm;
 use std::ffi::c_void;
 use std::marker::PhantomData;
@@ -185,8 +185,11 @@ impl<T: Value> Key<T> {
     pub fn push<'a>(&self, vm: &'a Vm) -> Option<T::Value<'a>> {
         unsafe {
             self.raw.push(vm);
-            check_type_equals(vm, -1, Type::LightUserdata)
-                .map(|_| T::from_registry(vm, -1)).ok()
+            if lua_type(vm.as_ptr(), -1) == Type::Nil {
+                lua_settop(vm.as_ptr(), -2); // Pop the nil from the stack.
+                return None;
+            }
+            Some(T::from_registry(vm, -1))
         }
     }
 
