@@ -26,13 +26,17 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use std::ffi::CString;
+use std::str::FromStr;
 use crate::decl_lib_func;
 use crate::libs::Lib;
 use crate::util::Namespace;
 use crate::vm::core::debug::DebugRegistry;
 use crate::vm::core::iter::start;
+use crate::vm::error::Error;
 use crate::vm::function::types::RFunction;
 use crate::vm::table::Table;
+use crate::vm::userdata::util::{get_metatable_by_name, get_static_table_by_name};
 use crate::vm::value::any::Any;
 
 decl_lib_func! {
@@ -73,7 +77,31 @@ decl_lib_func! {
     }
 }
 
-//TODO: debugger to dump userdata metatable, static table and namespace content
+decl_lib_func! {
+    fn dump_static_table<'a>(vm: &Vm, class: &str) -> crate::vm::Result<Table<'a>> {
+        let str = CString::from_str(class).map_err(|_| Error::Null)?;
+        let mut tbl = get_static_table_by_name(vm, &str).ok_or(Error::Unknown)?;
+        let mut out = Table::new(vm);
+        for (k, _) in tbl.iter() {
+            let name = k.get::<&str>()?;
+            out.push(name)?;
+        }
+        Ok(out)
+    }
+}
+
+decl_lib_func! {
+    fn dump_meta_table<'a>(vm: &Vm, class: &str) -> crate::vm::Result<Table<'a>> {
+        let str = CString::from_str(class).map_err(|_| Error::Null)?;
+        let mut tbl = get_metatable_by_name(vm, &str).ok_or(Error::Unknown)?;
+        let mut out = Table::new(vm);
+        for (k, _) in tbl.iter() {
+            let name = k.get::<&str>()?;
+            out.push(name)?;
+        }
+        Ok(out)
+    }
+}
 
 pub struct Debug;
 
@@ -84,7 +112,9 @@ impl Lib for Debug {
         namespace.add([
             ("dumpStack", RFunction::wrap(dump_stack)),
             ("dumpLibs", RFunction::wrap(dump_libs)),
-            ("dumpClasses", RFunction::wrap(dump_classes))
+            ("dumpClasses", RFunction::wrap(dump_classes)),
+            ("dumpStaticTable", RFunction::wrap(dump_static_table)),
+            ("dumpMetaTable", RFunction::wrap(dump_meta_table)),
         ])
     }
 }

@@ -305,5 +305,7 @@ fn test_vm_lib_debug() {
         assert(libs[1] == 'bp3d_lua::libs::lua::debug::Debug: bp3d.lua.debug')
         local classes = debug.dumpClasses();
         assert(#classes == 0)
+        local stack = debug.dumpStack(0);
+        assert(#stack > 0)
     ").unwrap();
 }

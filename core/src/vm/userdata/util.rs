@@ -78,6 +78,14 @@ pub fn get_static_table_by_name<'a>(vm: &'a Vm, name: &CStr) -> Option<Immutable
     Some(val)
 }
 
+/// Returns the metatable attached to the given UserData type.
+///
+/// # Arguments
+///
+/// * `vm`: the [Vm] the UserData type is attached to.
+/// * `name`: the name of the UserData type.
+///
+/// returns: Option<ImmutableTable>
 pub fn get_metatable<T: UserData>(vm: &Vm) -> Option<ImmutableTable> {
     get_metatable_by_name(vm, T::CLASS_NAME)
 }
