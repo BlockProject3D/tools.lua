@@ -32,7 +32,7 @@ use crate::ffi::lua::{lua_newuserdata, lua_pushboolean, lua_pushinteger, lua_pus
 use crate::vm::error::{Error, TypeError};
 use crate::vm::userdata::{UserData, UserDataImmutable};
 use crate::vm::value::util::check_type_equals;
-use crate::vm::value::{FromLua, IntoLua};
+use crate::vm::value::{FromLua, ImmutableValue, IntoLua};
 use crate::vm::value::types::{Boolean, Integer, Number};
 use crate::vm::Vm;
 
@@ -64,6 +64,8 @@ impl<'a> FromLua<'a> for &'a str {
     }
 }
 
+unsafe impl ImmutableValue for &str {}
+
 impl<'a> FromLua<'a> for &'a [u8] {
     unsafe fn from_lua_unchecked(vm: &'a Vm, index: i32) -> Self {
         let mut len: usize = 0;
@@ -92,6 +94,8 @@ impl<'a> FromLua<'a> for &'a [u8] {
     }
 }
 
+unsafe impl ImmutableValue for &[u8] {}
+
 impl FromLua<'_> for String {
     unsafe fn from_lua_unchecked(vm: &'_ Vm, index: i32) -> Self {
         let s: &str = FromLua::from_lua_unchecked(vm, index);
@@ -104,6 +108,8 @@ impl FromLua<'_> for String {
     }
 }
 
+unsafe impl ImmutableValue for String {}
+
 impl FromLua<'_> for Box<[u8]> {
     unsafe fn from_lua_unchecked(vm: &'_ Vm, index: i32) -> Self {
         let bytes: &[u8] = FromLua::from_lua_unchecked(vm, index);
@@ -115,6 +121,8 @@ impl FromLua<'_> for Box<[u8]> {
         Ok(bytes.into())
     }
 }
+
+unsafe impl ImmutableValue for Box<[u8]> {}
 
 macro_rules! impl_from_lua {
     ($t: ty, $expected: ident, $func: ident, $push_func: ident, $($ret: tt)*) => {
@@ -139,6 +147,8 @@ macro_rules! impl_from_lua {
                 }
             }
         }
+
+        unsafe impl ImmutableValue for $t {}
     };
 }
 
@@ -175,6 +185,8 @@ impl FromLua<'_> for () {
     }
 }
 
+unsafe impl ImmutableValue for () {}
+
 impl<'a, T: UserDataImmutable> FromLua<'a> for &'a T {
     #[inline(always)]
     unsafe fn from_lua_unchecked(vm: &'a Vm, index: i32) -> Self {
@@ -194,8 +206,12 @@ impl<'a, T: UserDataImmutable> FromLua<'a> for &'a T {
     }
 }
 
+unsafe impl<T: UserDataImmutable> ImmutableValue for &T {}
+
 macro_rules! impl_from_lua_tuple {
     ($($name: ident: $name2: ident ($name3: tt)),*) => {
+        unsafe impl<$($name: ImmutableValue),*> ImmutableValue for ($($name),*) {}
+
         impl<'a, $($name: FromLua<'a>),*> FromLua<'a> for ($($name),*) {
             #[inline(always)]
             fn num_values() -> i16 {
@@ -283,6 +299,8 @@ impl<'a, T: FromLua<'a>> FromLua<'a> for Option<T> {
     }
 }
 
+unsafe impl<T: ImmutableValue> ImmutableValue for Option<T> {}
+
 unsafe impl<T: UserData> IntoLua for T {
     fn into_lua(self, vm: &Vm) -> u16 {
         let userdata = unsafe { lua_newuserdata(vm.as_ptr(), size_of::<T>()) } as *mut T;
@@ -369,6 +387,8 @@ impl FromLua<'_> for Integer {
     }
 }
 
+unsafe impl ImmutableValue for Integer {}
+
 impl FromLua<'_> for Number {
     #[inline(always)]
     unsafe fn from_lua_unchecked(vm: &'_ Vm, index: i32) -> Self {
@@ -386,6 +406,8 @@ impl FromLua<'_> for Number {
     }
 }
 
+unsafe impl ImmutableValue for Number {}
+
 impl FromLua<'_> for Boolean {
     unsafe fn from_lua_unchecked(vm: &'_ Vm, index: i32) -> Self {
         Boolean(unsafe { lua_toboolean(vm.as_ptr(), index) == 1 })
@@ -395,6 +417,8 @@ impl FromLua<'_> for Boolean {
         Ok(Boolean(unsafe { lua_toboolean(vm.as_ptr(), index) == 1 }))
     }
 }
+
+unsafe impl ImmutableValue for Boolean {}
 
 unsafe impl IntoLua for Number {
     #[inline(always)]

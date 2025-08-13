@@ -38,10 +38,10 @@ use crate::util::core::{AnyStr, SimpleDrop};
 use crate::vm::function::{FromParam, IntoParam};
 use crate::vm::registry::{FromIndex, Set};
 use crate::vm::table::traits::{GetTable, SetTable};
-use crate::vm::table::Table;
+use crate::vm::table::{ImmutableTable, Table};
 use crate::vm::util::LuaType;
 use crate::vm::value::util::{check_type_equals, check_value_top};
-use crate::vm::value::{FromLua, IntoLua};
+use crate::vm::value::{FromLua, ImmutableValue, IntoLua};
 use crate::vm::Vm;
 
 unsafe impl SimpleDrop for Table<'_> {}
@@ -70,6 +70,33 @@ impl<'a> FromLua<'a> for Table<'a> {
     fn from_lua(vm: &'a Vm, index: i32) -> crate::vm::Result<Self> {
         check_type_equals(vm, index, Type::Table)?;
         Ok(unsafe { Table::from_raw(vm, vm.get_absolute_index(index)) })
+    }
+}
+
+impl LuaType for ImmutableTable<'_> {}
+unsafe impl SimpleDrop for ImmutableTable<'_> {}
+unsafe impl ImmutableValue for ImmutableTable<'_> {}
+
+impl<'a> FromLua<'a> for ImmutableTable<'a> {
+    unsafe fn from_lua_unchecked(vm: &'a Vm, index: i32) -> Self {
+        Self::from_raw(vm, vm.get_absolute_index(index))
+    }
+
+    #[inline(always)]
+    fn from_lua(vm: &'a Vm, index: i32) -> crate::vm::Result<Self> {
+        Table::from_lua(vm, index).map(Into::into)
+    }
+}
+
+impl<'a> FromParam<'a> for ImmutableTable<'a> {
+    #[inline(always)]
+    unsafe fn from_param(vm: &'a Vm, index: i32) -> Self {
+        Table::from_param(vm, index).into()
+    }
+
+    #[inline(always)]
+    fn try_from_param(vm: &'a Vm, index: i32) -> Option<Self> {
+        Table::try_from_param(vm, index).map(Into::into)
     }
 }
 
@@ -149,6 +176,8 @@ impl<'a, T: 'static> FromLua<'a> for Vec<T> where for<'b> T: FromLua<'b> {
     }
 }
 
+unsafe impl<T: ImmutableValue> ImmutableValue for Vec<T> {}
+
 impl<'a, K: 'static, V: 'static> FromLua<'a> for HashMap<K, V> where for<'b> K: FromLua<'b> + Hash + Eq,
                                                                      for<'b> V: FromLua<'b> {
     unsafe fn from_lua_unchecked(vm: &'a Vm, index: i32) -> Self {
@@ -174,6 +203,8 @@ impl<'a, K: 'static, V: 'static> FromLua<'a> for HashMap<K, V> where for<'b> K: 
     }
 }
 
+unsafe impl<K: ImmutableValue, V: ImmutableValue> ImmutableValue for HashMap<K, V> {}
+
 impl<'a, K: 'static, V: 'static> FromLua<'a> for BTreeMap<K, V> where for<'b> K: FromLua<'b> + Ord,
                                                                      for<'b> V: FromLua<'b> {
     unsafe fn from_lua_unchecked(vm: &'a Vm, index: i32) -> Self {
@@ -198,3 +229,5 @@ impl<'a, K: 'static, V: 'static> FromLua<'a> for BTreeMap<K, V> where for<'b> K:
         Ok(map)
     }
 }
+
+unsafe impl<K: ImmutableValue, V: ImmutableValue> ImmutableValue for BTreeMap<K, V> {}

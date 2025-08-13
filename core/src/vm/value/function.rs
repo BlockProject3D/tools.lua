@@ -34,7 +34,7 @@ use crate::vm::function::{FromParam, IntoParam};
 use crate::vm::registry::{FromIndex, Set};
 use crate::vm::util::LuaType;
 use crate::vm::value::util::{check_type_equals, check_value_top};
-use crate::vm::value::{FromLua, IntoLua};
+use crate::vm::value::{FromLua, ImmutableValue, IntoLua};
 use crate::vm::Vm;
 use std::fmt::{Debug, Display};
 use crate::impl_registry_value;
@@ -146,3 +146,5 @@ impl<'a> FromLua<'a> for Function<'a> {
 }
 
 impl_registry_value!(crate::vm::registry::types::Function => Function);
+
+unsafe impl ImmutableValue for Function<'_> {}

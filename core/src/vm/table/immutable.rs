@@ -30,7 +30,7 @@ use std::fmt::Display;
 use crate::vm::table::iter::Iter;
 use crate::vm::table::Table;
 use crate::vm::table::traits::GetTable;
-use crate::vm::value::{FromLua, IntoLua};
+use crate::vm::value::{FromLua, ImmutableValue, IntoLua};
 use crate::vm::Vm;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -106,17 +106,17 @@ impl<'a> ImmutableTable<'a> {
     }
 
     #[inline(always)]
-    pub fn get<'b, T: FromLua<'b>>(&'b self, key: impl GetTable) -> crate::vm::Result<T> {
+    pub fn get<'b, T: FromLua<'b> + ImmutableValue>(&'b self, key: impl GetTable) -> crate::vm::Result<T> {
         self.0.get(key)
     }
 
     #[inline(always)]
-    pub fn get_any<'b, T: FromLua<'b>>(&'b self, key: impl IntoLua) -> crate::vm::Result<T> {
+    pub fn get_any<'b, T: FromLua<'b> + ImmutableValue>(&'b self, key: impl IntoLua) -> crate::vm::Result<T> {
         self.0.get_any(key)
     }
 
     #[inline(always)]
-    pub fn collect<T: FromLua<'a>>(self) -> crate::vm::Result<T> {
+    pub fn collect<T: FromLua<'a> + ImmutableValue>(self) -> crate::vm::Result<T> {
         self.0.collect()
     }
 

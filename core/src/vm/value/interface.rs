@@ -87,3 +87,6 @@ pub unsafe trait IntoLua: Sized {
     /// returns: u16 number of elements pushed onto the Lua stack.
     fn into_lua(self, vm: &Vm) -> u16;
 }
+
+/// Marker trait that represents a value which cannot be mutated.
+pub unsafe trait ImmutableValue {}

@@ -33,6 +33,6 @@ mod error;
 mod interface;
 pub mod util;
 
-pub use any::AnyUserData;
+pub use any::{AnyUserData, ImmutableAnyUserData};
 pub use error::Error;
 pub use interface::*;

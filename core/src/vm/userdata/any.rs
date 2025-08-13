@@ -30,12 +30,13 @@ use crate::ffi::laux::luaL_testudata;
 use crate::ffi::lua::{lua_pushvalue, lua_replace, lua_settop, lua_topointer, lua_touserdata, lua_type, Type};
 use crate::vm::error::{Error, TypeError};
 use crate::vm::userdata::{UserData, UserDataImmutable};
-use crate::vm::value::{FromLua, IntoLua};
+use crate::vm::value::{FromLua, ImmutableValue, IntoLua};
 use crate::vm::Vm;
 use std::fmt::{Debug, Display};
-use crate::util::core::AnyStr;
+use crate::util::core::{AnyStr, SimpleDrop};
 use crate::util::LuaFunction;
 use crate::vm::table::ImmutableTable;
+use crate::vm::util::LuaType;
 use crate::vm::value::types::Function;
 use crate::vm::value::util::{check_get_metatable, check_push_value};
 
@@ -62,27 +63,32 @@ impl PartialEq for AnyUserData<'_> {
 
 impl Eq for AnyUserData<'_> {}
 
+//Stupid fmt name in Rust which causes conflicts...
+fn internal_display(ud: &AnyUserData, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    let res = ud.vm.scope(|_| {
+        let res: crate::vm::Result<&str> = ud.call_method("__tostring", ())
+            .or_else(|_| ud.call_method("tostring", ()));
+        match res {
+            Ok(v) => {
+                let type_name = ud.get_type_name()?;
+                Ok(write!(f, "{}({})", type_name, v))
+            },
+            Err(e) => Err(e)
+        }
+    });
+    match res {
+        Ok(v) => v,
+        Err(_) => write!(
+            f,
+            "userdata@{:X}",
+            unsafe { lua_touserdata(ud.vm.as_ptr(), ud.index) } as usize
+        )
+    }
+}
+
 impl Display for AnyUserData<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let res = self.vm.scope(|_| {
-            let res: crate::vm::Result<&str> = self.call_method("__tostring", ())
-                .or_else(|_| self.call_method("tostring", ()));
-            match res {
-                Ok(v) => {
-                    let type_name = self.get_type_name()?;
-                    Ok(write!(f, "{}({})", type_name, v))
-                },
-                Err(e) => Err(e)
-            }
-        });
-        match res {
-            Ok(v) => v,
-            Err(_) => write!(
-                f,
-                "userdata@{:X}",
-                unsafe { lua_touserdata(self.vm.as_ptr(), self.index) } as usize
-            )
-        }
+        internal_display(self, f)
     }
 }
 
@@ -197,3 +203,85 @@ unsafe impl IntoLua for &AnyUserData<'_> {
         check_push_value(self.vm, vm, self.index)
     }
 }
+
+#[derive(Debug, Clone, Eq, PartialEq)]
+pub struct ImmutableAnyUserData<'a>(AnyUserData<'a>);
+
+impl Display for ImmutableAnyUserData<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        internal_display(&self.0, f)
+    }
+}
+
+impl<'a> From<AnyUserData<'a>> for ImmutableAnyUserData<'a> {
+    #[inline(always)]
+    fn from(value: AnyUserData<'a>) -> Self {
+        Self(value)
+    }
+}
+
+impl<'a> ImmutableAnyUserData<'a> {
+    /// Creates an AnyUserData from a raw Vm and index.
+    ///
+    /// # Arguments
+    ///
+    /// * `vm`: the vm to link to.
+    /// * `index`: the index on the lua stack.
+    ///
+    /// returns: Table
+    ///
+    /// # Safety
+    ///
+    /// Must ensure that index points to a UserData and is absolute. If index is not absolute then
+    /// using the produced object is UB. If the index points to any other type then using the produced
+    /// object is also UB.
+    #[inline(always)]
+    pub unsafe fn from_raw(vm: &'a Vm, index: i32) -> Self {
+        Self(AnyUserData::from_raw(vm, index))
+    }
+
+    /// Returns a unique identifier to that table across the Vm it is attached to.
+    #[inline(always)]
+    pub fn uid(&self) -> usize {
+        self.0.uid()
+    }
+
+    /// Returns a reference to this UserData value cast to `T`.
+    #[inline(always)]
+    pub fn get<T: UserData + UserDataImmutable>(&self) -> crate::vm::Result<&T> {
+        self.0.get()
+    }
+
+    #[inline(always)]
+    pub fn get_metatable(&self) -> Option<ImmutableTable> {
+        self.0.get_metatable()
+    }
+
+    #[inline(always)]
+    pub fn get_type_name(&self) -> crate::vm::Result<&str> {
+        self.0.get_type_name()
+    }
+
+    #[inline(always)]
+    pub fn call_method<'b, T: FromLua<'b> + ImmutableValue>(&'b self, name: impl AnyStr, args: impl IntoLua) -> crate::vm::Result<T> {
+        self.0.call_method(name, args)
+    }
+}
+
+unsafe impl ImmutableValue for ImmutableAnyUserData<'_> {}
+
+impl<'a> FromLua<'a> for ImmutableAnyUserData<'a> {
+    unsafe fn from_lua_unchecked(vm: &'a Vm, index: i32) -> Self {
+        Self::from_raw(vm, vm.get_absolute_index(index))
+    }
+
+    #[inline(always)]
+    fn from_lua(vm: &'a Vm, index: i32) -> crate::vm::Result<Self> {
+        AnyUserData::from_lua(vm, index).map(Into::into)
+    }
+}
+
+unsafe impl SimpleDrop for ImmutableAnyUserData<'_> {}
+unsafe impl SimpleDrop for AnyUserData<'_> {}
+impl LuaType for AnyUserData<'_> {}
+impl LuaType for ImmutableAnyUserData<'_> {}

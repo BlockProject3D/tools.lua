@@ -32,11 +32,24 @@ use crate::impl_registry_value;
 use crate::util::core::SimpleDrop;
 use crate::vm::function::{FromParam, IntoParam};
 use crate::vm::registry::{FromIndex, Set};
-use crate::vm::thread::value::Thread;
+use crate::vm::thread::value::{ImmutableThread, Thread};
 use crate::vm::util::LuaType;
-use crate::vm::value::{FromLua, IntoLua};
+use crate::vm::value::{FromLua, ImmutableValue, IntoLua};
 use crate::vm::value::util::{check_type_equals, check_value_top};
 use crate::vm::Vm;
+
+unsafe impl ImmutableValue for ImmutableThread<'_> {}
+
+impl<'a> FromLua<'a> for ImmutableThread<'a> {
+    unsafe fn from_lua_unchecked(vm: &'a Vm, index: i32) -> Self {
+        ImmutableThread::from_raw(vm, vm.get_absolute_index(index))
+    }
+
+    #[inline(always)]
+    fn from_lua(vm: &'a Vm, index: i32) -> crate::vm::Result<Self> {
+        Thread::from_lua(vm, index).map(Into::into)
+    }
+}
 
 impl<'a> FromLua<'a> for Thread<'a> {
     #[inline(always)]
@@ -54,14 +67,31 @@ unsafe impl SimpleDrop for Thread<'_> {}
 
 impl LuaType for Thread<'_> {}
 
+unsafe impl SimpleDrop for ImmutableThread<'_> {}
+
+impl LuaType for ImmutableThread<'_> {}
+
 impl<'a> FromParam<'a> for Thread<'a> {
     unsafe fn from_param(vm: &'a Vm, index: i32) -> Self {
         luaL_checktype(vm.as_ptr(), index, Type::Thread);
         Thread::from_raw(vm, vm.get_absolute_index(index))
     }
 
+    #[inline(always)]
     fn try_from_param(vm: &'a Vm, index: i32) -> Option<Self> {
         Thread::from_lua(vm, index).ok()
+    }
+}
+
+impl<'a> FromParam<'a> for ImmutableThread<'a> {
+    #[inline(always)]
+    unsafe fn from_param(vm: &'a Vm, index: i32) -> Self {
+        Thread::from_param(vm, index).into()
+    }
+
+    #[inline(always)]
+    fn try_from_param(vm: &'a Vm, index: i32) -> Option<Self> {
+        ImmutableThread::from_lua(vm, index).ok()
     }
 }
 

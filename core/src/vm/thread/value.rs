@@ -127,3 +127,53 @@ impl<'a> Thread<'a> {
         &self.thread
     }
 }
+
+/// Represents a thread object value on a lua stack.
+#[derive(Clone, Eq, PartialEq, Debug)]
+pub struct ImmutableThread<'a>(Thread<'a>);
+
+impl Display for ImmutableThread<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "thread@{:X}", self.0.thread.uid())
+    }
+}
+
+impl<'a> From<Thread<'a>> for ImmutableThread<'a> {
+    #[inline(always)]
+    fn from(value: Thread<'a>) -> Self {
+        Self(value)
+    }
+}
+
+impl<'a> ImmutableThread<'a> {
+    /// Creates a thread value from a raw Vm and index on `vm` stack.
+    ///
+    /// # Arguments
+    ///
+    /// * `vm`: the vm to link to.
+    /// * `index`: the index on the lua stack.
+    ///
+    /// returns: Table
+    ///
+    /// # Safety
+    ///
+    /// Must ensure that index points to a thread value and is absolute. If index is not absolute
+    /// then using the produced thread value is UB. If the index points to any other type then
+    /// using the produced thread value is also UB.
+    #[inline(always)]
+    pub unsafe fn from_raw(vm: &'a Vm, index: i32) -> Self {
+        Self(Thread::from_raw(vm, index))
+    }
+
+    /// Returns the absolute index of this table on the Lua stack.
+    #[inline(always)]
+    pub fn index(&self) -> i32 {
+        self.0.index
+    }
+
+    /// Returns the thread stack object attached to this thread value.
+    #[inline(always)]
+    pub fn as_thread(&self) -> &core::Thread {
+        &self.0.thread
+    }
+}

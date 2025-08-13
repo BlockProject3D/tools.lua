@@ -28,7 +28,7 @@
 
 use crate::ffi::lua::{lua_pushlightuserdata, lua_touserdata};
 use crate::util::core::SimpleDrop;
-use crate::vm::value::IntoLua;
+use crate::vm::value::{ImmutableValue, IntoLua};
 use crate::vm::Vm;
 
 #[derive(Debug)]
@@ -88,3 +88,5 @@ unsafe impl<T> IntoLua for RawPtr<T> {
         1
     }
 }
+
+unsafe impl<T: ImmutableValue> ImmutableValue for RawPtr<T> {}
