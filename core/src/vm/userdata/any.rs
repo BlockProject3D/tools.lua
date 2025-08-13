@@ -35,7 +35,7 @@ use crate::vm::Vm;
 use std::fmt::{Debug, Display};
 use crate::util::core::AnyStr;
 use crate::util::LuaFunction;
-use crate::vm::table::Table;
+use crate::vm::table::ImmutableTable;
 use crate::vm::value::types::Function;
 use crate::vm::value::util::{check_get_metatable, check_push_value};
 
@@ -143,8 +143,8 @@ impl<'a> AnyUserData<'a> {
         Ok(unsafe { &mut *this_ptr })
     }
 
-    pub fn get_metatable(&self) -> Option<Table> {
-        check_get_metatable(self.vm, self.index)
+    pub fn get_metatable(&self) -> Option<ImmutableTable> {
+        unsafe { check_get_metatable(self.vm, self.index).map(ImmutableTable::from) }
     }
 
     pub fn get_type_name(&self) -> crate::vm::Result<&str> {

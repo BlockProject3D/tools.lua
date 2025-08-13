@@ -95,6 +95,7 @@ impl<'a> Table<'a> {
     }
 
     /// Returns a unique identifier to that table across the Vm it is attached to.
+    #[inline(always)]
     pub fn uid(&self) -> usize {
         unsafe { lua_topointer(self.vm.as_ptr(), self.index) as _ }
     }
@@ -126,7 +127,7 @@ impl<'a> Table<'a> {
     }
 
     pub fn get_metatable(&self) -> Option<Table> {
-        check_get_metatable(self.vm, self.index)
+        unsafe { check_get_metatable(self.vm, self.index) }
     }
 
     /// Returns the absolute index of this table on the Lua stack.

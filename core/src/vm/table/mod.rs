@@ -30,5 +30,8 @@ mod core;
 mod interface;
 mod iter;
 pub mod traits;
+mod immutable;
 
 pub use core::Table;
+
+pub use immutable::ImmutableTable;

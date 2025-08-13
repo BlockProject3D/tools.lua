@@ -91,7 +91,12 @@ pub fn check_push_single(vm: &Vm, value: impl IntoLua) -> crate::vm::Result<()> 
 /// * `index`: the object index inside the `vm` [Vm].
 ///
 /// returns: Option<Table>
-pub fn check_get_metatable(vm: &Vm, index: i32) -> Option<Table> {
+///
+/// # Safety
+///
+/// This should never be used to pass the metatable of a [userdata](crate::vm::userdata) type to
+/// Lua or even modify the returned metatable. If any of these are not maintained this is UB.
+pub unsafe fn check_get_metatable(vm: &Vm, index: i32) -> Option<Table> {
     unsafe { lua_getmetatable(vm.as_ptr(), index) };
     let ty = unsafe { lua_type(vm.as_ptr(), -1) };
     if ty == Type::Table {

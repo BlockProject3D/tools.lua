@@ -95,7 +95,8 @@ impl<'a> Namespace<'a> {
     pub fn add_userdata<T: UserData>(&mut self, name: impl AnyStr, case: impl NameConvert) -> crate::vm::Result<()> {
         info!("Adding userdata type {:?} as {:?}", T::CLASS_NAME, name.to_str()?);
         self.vm.register_userdata::<T>(case)?;
-        self.table.set(name, get_static_table::<T>(self.vm))?;
+        self.table.set(name, get_static_table::<T>(self.vm)
+            .map(|v| unsafe { v.to_table() }))?;
         Ok(())
     }
 
