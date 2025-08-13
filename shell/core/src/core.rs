@@ -34,6 +34,7 @@ use bp3d_net::ipc::util::Message;
 use bp3d_proto::message::FromBytes;
 use crate::lua::{Args, Lua};
 use bp3d_util::result::ResultExt;
+use tokio::io::{AsyncBufReadExt, BufReader};
 use bp3d_lua_shell_proto::send;
 
 async fn client_task(lua: &mut Lua, client: Client) -> bp3d_proto::message::Result<bool> {
@@ -79,6 +80,36 @@ pub async fn run(args: Args, name: &str) {
                 if flag {
                     break;
                 }
+            }
+        }
+    }
+    info!("terminating lua VM...");
+    lua.exit().await;
+}
+
+pub async fn run_interactive(args: Args) {
+    info!("starting lua VM");
+    let mut lua = Lua::new(args);
+    let mut reader = BufReader::new(tokio::io::stdin()).lines();
+    loop {
+        tokio::select! {
+            res = reader.next_line() => {
+                match res {
+                    Err(e) => {
+                        error!("error reading from stdin: {}", e);
+                        break;
+                    },
+                    Ok(line) => match line {
+                        Some(v) => lua.send(send::RunCode {
+                            name: None,
+                            code: &v
+                        }).await,
+                        None => break
+                    }
+                }
+            }
+            Some(b) = lua.next_msg() => {
+                debug!("{:?}", b);
             }
         }
     }

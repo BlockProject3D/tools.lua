@@ -26,11 +26,12 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use std::fmt::Debug;
 use bp3d_lua::vm::Vm;
 use crate::data::DataOut;
 use crate::lua::Args;
 
-pub trait InData: Send {
+pub trait InData: Send + Debug {
     fn handle(&mut self, args: &Args, vm: &Vm, out: &DataOut) -> bool;
 }
 
@@ -38,11 +39,13 @@ pub trait NetInData {
     fn to_in_data(self) -> Box<dyn InData>;
 }
 
+#[derive(Debug)]
 pub struct RunCode {
     pub name: Option<String>,
     pub code: String,
 }
 
+#[derive(Debug)]
 pub struct RunFile {
     pub path: String,
 }
@@ -64,6 +67,7 @@ impl<'a> NetInData for bp3d_lua_shell_proto::send::RunCode<'a> {
     }
 }
 
+#[derive(Debug)]
 pub struct Exit;
 
 impl InData for Exit {

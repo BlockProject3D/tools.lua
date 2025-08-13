@@ -50,6 +50,9 @@ struct Cli {
     #[arg(short = 'm', long = "modules", help = "Path to modules directory.")]
     pub modules: Option<PathBuf>,
 
+    #[arg(long = "it", help = "Run in interactive mode.")]
+    pub interactive: bool,
+
     #[arg(help = "Path to main script to start at Vm startup in the root directory.")]
     pub main_script: Option<String>
 }
@@ -63,10 +66,15 @@ async fn main() {
         modules.push(path);
     }
     modules.push(PathBuf::from("./target/debug"));
-    core::run(lua::Args {
+    let largs = lua::Args {
         data: root.join("data"),
         lua: root.join("src"),
         modules,
         main_script: args.main_script,
-    }, args.name.as_ref().map(|v| &**v).unwrap_or("bp3d-lua-shell")).await;
+    };
+    if args.interactive {
+        core::run_interactive(largs).await;
+    } else {
+        core::run(largs, args.name.as_ref().map(|v| &**v).unwrap_or("bp3d-lua-shell")).await;
+    }
 }

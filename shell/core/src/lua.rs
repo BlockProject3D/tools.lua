@@ -34,7 +34,7 @@ use std::time::Duration;
 use bp3d_lua::vm::core::interrupt::{spawn_interruptible, Signal};
 use bp3d_lua::libs;
 use bp3d_lua::libs::Lib;
-use bp3d_debug::{debug, error, info};
+use bp3d_debug::{debug, error, info, trace};
 use bp3d_lua::vm::core::jit::JitOptions;
 use bp3d_lua::vm::core::load::{Code, Script};
 use bp3d_lua::vm::value::any::Any;
@@ -150,12 +150,16 @@ impl Lua {
             if let Some(main_script) = &args.main_script {
                 vm.scope(|vm| Ok(RunFile { path: main_script.clone() }.handle(&args, vm, &logger))).unwrap();
             }
-            loop {
+            let mut running = true;
+            while running {
                 // First handle IPC events
                 while let Some(command) = receiver.try_recv().ok() {
                     // Nice type-inference breakage with this box.
+                    trace!("received command: {:?}", command);
                     let ret = vm.scope(|vm| Ok((command as Box<dyn InData>).handle(&args, vm, &logger))).unwrap();
+                    trace!({ret}, "command handled");
                     if ret {
+                        running = false;
                         break;
                     }
                 }

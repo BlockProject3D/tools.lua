@@ -35,6 +35,7 @@ use bp3d_lua::vm::table::ImmutableTable;
 use bp3d_lua::vm::value::any::Any;
 use crate::data::DataOut;
 
+#[derive(Debug)]
 pub enum Mode {
     AddUpdate(Vec<Completions>),
     Delete(Vec<String>)
@@ -46,6 +47,7 @@ pub enum Type {
     Attribute
 }
 
+#[derive(Debug)]
 pub struct Item {
     pub name: String,
     pub ty: Type
@@ -60,6 +62,7 @@ impl Item {
     }
 }
 
+#[derive(Debug)]
 pub struct Completions {
     pub path: String,
     pub items: Vec<Item>

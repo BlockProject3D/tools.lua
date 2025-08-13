@@ -26,16 +26,18 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use std::fmt::Debug;
 use bp3d_net::ipc::util::Message;
 use bp3d_proto::message::WriteSelf;
 use bp3d_lua_shell_proto::recv;
 use bp3d_lua_shell_proto::completion;
 use crate::autocomplete::{Mode, Type};
 
-pub trait OutData: Send {
+pub trait OutData: Send + Debug {
     fn write(&self, msg: &mut Message) -> bp3d_proto::message::Result<()>;
 }
 
+#[derive(Debug)]
 pub struct Log(pub &'static str, pub String);
 
 impl OutData for Log {
@@ -47,6 +49,7 @@ impl OutData for Log {
     }
 }
 
+#[derive(Debug)]
 pub struct Autocomplete(pub Mode);
 
 impl OutData for Autocomplete {
