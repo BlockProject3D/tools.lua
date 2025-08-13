@@ -47,3 +47,15 @@ bp3d.lua.debug.dumpLibs = function() end
 ---
 --- @return [string]
 bp3d.lua.debug.dumpClasses = function() end
+
+--- Dump the static members of the given UserData type..
+---
+--- @param className string the UserData class name to dump.
+--- @return [string]
+bp3d.lua.debug.dumpStaticTable = function(className) end
+
+--- Dump the instance members of the given UserData type..
+---
+--- @param className string the UserData class name to dump.
+--- @return [string]
+bp3d.lua.debug.dumpMetaTable = function(className) end
