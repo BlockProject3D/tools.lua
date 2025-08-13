@@ -113,6 +113,9 @@ impl Lua {
             let logger = DataOut::new(logger);
             let scheduler = Rc::new(SchedulerPtr::new());
             info!("Loading VM libraries...");
+            if let Err(e) = libs::lua::Debug.register(vm) {
+                error!("Failed to load debug library: {}", e);
+            }
             if let Err(e) = (libs::os::Compat, libs::os::Instant, libs::os::Time).register(vm) {
                 error!("Failed to load OS library: {}", e);
             }
