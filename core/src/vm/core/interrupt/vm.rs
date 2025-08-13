@@ -30,16 +30,16 @@ use std::marker::PhantomData;
 use std::ops::{Deref, DerefMut};
 use std::sync::Arc;
 use std::sync::atomic::AtomicBool;
-use crate::vm::{RootVm, Vm};
+use crate::vm::Vm;
 
-pub struct InterruptibleRootVm {
-    vm: RootVm,
+pub struct InterruptibleRootVm<T> {
+    vm: T,
     alive: Arc<AtomicBool>,
     useless: PhantomData<*const ()>, // This is to ensure InterruptibleVm is never Send nor Sync.
 }
 
-impl InterruptibleRootVm {
-    pub fn new(vm: RootVm) -> Self {
+impl<T> InterruptibleRootVm<T> {
+    pub fn new(vm: T) -> Self {
         Self {
             vm,
             alive: Arc::new(AtomicBool::new(true)),
@@ -52,7 +52,7 @@ impl InterruptibleRootVm {
     }
 }
 
-impl Deref for InterruptibleRootVm {
+impl<T: Deref<Target = Vm>> Deref for InterruptibleRootVm<T> {
     type Target = Vm;
 
     #[inline(always)]
@@ -61,14 +61,14 @@ impl Deref for InterruptibleRootVm {
     }
 }
 
-impl DerefMut for InterruptibleRootVm {
+impl<T: DerefMut<Target = Vm>> DerefMut for InterruptibleRootVm<T> {
     #[inline(always)]
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.vm
     }
 }
 
-impl Drop for InterruptibleRootVm {
+impl<T> Drop for InterruptibleRootVm<T> {
     fn drop(&mut self) {
         self.alive.store(false, std::sync::atomic::Ordering::SeqCst);
     }

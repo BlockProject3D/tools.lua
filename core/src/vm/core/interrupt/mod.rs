@@ -60,11 +60,11 @@ simple_error! {
 }
 
 pub fn spawn_interruptible<R: Send + 'static>(
-    f: impl FnOnce(&mut InterruptibleRootVm) -> R + Send + 'static,
+    f: impl FnOnce(&mut InterruptibleRootVm<crate::vm::core::UnSendRootVm>) -> R + Send + 'static,
 ) -> (Signal, JoinHandle<R>) {
     let (send, recv) = std::sync::mpsc::channel();
     let handle = std::thread::spawn(move || {
-        let mut vm = InterruptibleRootVm::new(crate::vm::RootVm::new());
+        let mut vm = InterruptibleRootVm::new(crate::vm::core::UnSendRootVm::new());
         send.send(Signal::create(&mut vm)).unwrap();
         f(&mut vm)
     });

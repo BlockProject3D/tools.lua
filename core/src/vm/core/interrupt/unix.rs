@@ -34,10 +34,12 @@ use crate::vm::core::interrupt::{Error, InterruptibleRootVm};
 use bp3d_debug::{error, warning};
 use libc::{c_int, pthread_kill, pthread_self, pthread_t, SIGUSR1};
 use std::mem::MaybeUninit;
+use std::ops::Deref;
 use std::sync::{Arc, Mutex, Once};
 use std::sync::atomic::AtomicBool;
 use std::thread::ThreadId;
 use std::time::Duration;
+use crate::vm::Vm;
 
 pub struct Signal {
     l: State,
@@ -104,7 +106,7 @@ extern "C" fn signal_handler(_: c_int) {
 static SIG_BOUND: Once = Once::new();
 
 impl Signal {
-    pub fn create(vm: &mut InterruptibleRootVm) -> Self {
+    pub fn create<T: Deref<Target = Vm>>(vm: &mut InterruptibleRootVm<T>) -> Self {
         let alive = InterruptibleRootVm::get_alive(vm).clone();
         let th = unsafe { pthread_self() };
         let l = vm.as_ptr();

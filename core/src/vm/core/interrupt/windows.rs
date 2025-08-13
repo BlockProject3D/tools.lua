@@ -26,6 +26,7 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use std::ops::Deref;
 use super::{Error, InterruptibleRootVm};
 use crate::ffi::ext::lua_ext_ccatch_error;
 use crate::ffi::lua::{
@@ -38,6 +39,7 @@ use std::time::Duration;
 use windows_sys::Win32::Foundation::HANDLE;
 use windows_sys::Win32::System::Diagnostics::Debug::{GetThreadContext, CONTEXT};
 use windows_sys::Win32::System::Threading::{GetCurrentThread, ResumeThread, SuspendThread};
+use crate::vm::Vm;
 
 static SIG_STATE: Mutex<Option<std::sync::mpsc::Sender<()>>> = Mutex::new(None);
 
@@ -64,7 +66,7 @@ pub struct Signal {
 }
 
 impl Signal {
-    pub fn create(vm: &mut InterruptibleRootVm) -> Self {
+    pub fn create<T: Deref<Target = Vm>>(vm: &mut InterruptibleRootVm<T>) -> Self {
         let alive = InterruptibleRootVm::get_alive(vm).clone();
         let th = unsafe { GetCurrentThread() };
         let l = vm.as_ptr();
