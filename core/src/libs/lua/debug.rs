@@ -78,15 +78,18 @@ decl_lib_func! {
 }
 
 decl_lib_func! {
-    fn dump_static_table<'a>(vm: &Vm, class: &str) -> crate::vm::Result<Table<'a>> {
+    fn dump_static_table<'a>(vm: &Vm, class: &str) -> crate::vm::Result<Option<Table<'a>>> {
         let str = CString::from_str(class).map_err(|_| Error::Null)?;
-        let mut tbl = get_static_table_by_name(vm, &str).ok_or(Error::Unknown)?;
+        let mut tbl = match get_static_table_by_name(vm, &str) {
+            Some(tbl) => tbl,
+            None => return Ok(None),
+        };
         let mut out = Table::new(vm);
         for (k, _) in tbl.iter() {
             let name = k.get::<&str>()?;
             out.push(name)?;
         }
-        Ok(out)
+        Ok(Some(out))
     }
 }
 
