@@ -31,7 +31,7 @@ use bp3d_lua::decl_closure;
 use bp3d_lua::libs::Lib;
 use bp3d_lua::util::Namespace;
 use bp3d_lua::vm::closure::rc::{Rc, Shared};
-use bp3d_lua::vm::table::Table;
+use bp3d_lua::vm::table::ImmutableTable;
 use bp3d_lua::vm::value::any::Any;
 use crate::data::DataOut;
 
@@ -74,7 +74,7 @@ fn get_capacity(val: &Any) -> usize {
     }
 }
 
-fn list_table_completions(set: &mut HashSet<usize>, path: Vec<String>, root: &mut Vec<Completions>, mut value: Table, metatables: bool) -> bp3d_lua::vm::Result<()> {
+fn list_table_completions(set: &mut HashSet<usize>, path: Vec<String>, root: &mut Vec<Completions>, mut value: ImmutableTable, metatables: bool) -> bp3d_lua::vm::Result<()> {
     if set.contains(&value.uid()) {
         return Ok(());
     }
@@ -110,7 +110,7 @@ fn list_table_completions(set: &mut HashSet<usize>, path: Vec<String>, root: &mu
 
 fn list_completions(set: &mut HashSet<usize>, path: Vec<String>, root: &mut Vec<Completions>, value: Any, metatables: bool) -> bp3d_lua::vm::Result<()> {
     match value {
-        Any::Table(v) => list_table_completions(set, path, root, v, metatables),
+        Any::Table(v) => list_table_completions(set, path, root, v.into(), metatables),
         Any::UserData(v) => {
             if let Some(tbl) = v.get_metatable() {
                 // We assume userdata have a single metatable (following current bp3d-lua pattern).
