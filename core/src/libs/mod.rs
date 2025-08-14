@@ -40,7 +40,7 @@ pub mod os;
 
 #[cfg(feature = "libs-core")]
 mod interface;
-//TODO: maybe add a stack debug function which prints the content of the lua stack
+
 //TODO: threading (sandbox with max number of threads)
 //      make sure thread join is time-limited.
 
