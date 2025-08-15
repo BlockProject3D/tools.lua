@@ -31,12 +31,12 @@ use clap::Parser;
 
 mod lua;
 mod core;
-mod autocomplete;
 mod data_out;
 mod data_in;
 mod data;
 mod scheduler;
-mod scheduler_api;
+mod lib1;
+mod autocomplete;
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]

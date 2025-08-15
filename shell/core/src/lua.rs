@@ -26,6 +26,7 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use std::cell::Cell;
 use std::path::PathBuf;
 use std::rc::Rc;
 use tokio::sync::mpsc;
@@ -39,12 +40,11 @@ use bp3d_lua::vm::core::jit::JitOptions;
 use bp3d_lua::vm::core::load::{Code, Script};
 use bp3d_lua::vm::value::any::Any;
 use bp3d_lua::vm::Vm;
-use crate::autocomplete::Autocomplete;
 use crate::data::DataOut;
 use crate::data_in::{Exit, InData, NetInData, RunCode, RunFile};
 use crate::data_out::{Log, OutData};
+use crate::lib1::Shell;
 use crate::scheduler::SchedulerPtr;
-use crate::scheduler_api::SchedulerApi;
 
 const CHANNEL_BUFFER: usize = 32;
 
@@ -112,6 +112,7 @@ impl Lua {
         let (signal, handle) = spawn_interruptible(move |vm| {
             let logger = DataOut::new(logger);
             let scheduler = Rc::new(SchedulerPtr::new());
+            let running = Rc::new(Cell::new(true));
             info!("Loading VM libraries...");
             if let Err(e) = libs::lua::Debug.register(vm) {
                 error!("Failed to load debug library: {}", e);
@@ -125,12 +126,9 @@ impl Lua {
             if let Err(e) = libs::lua::Lua::new().load_chroot_path(&args.data).build().register(vm) {
                 error!("Failed to load base library: {}", e);
             }
-            info!("Loading bp3d-lua-shell libraries...");
-            if let Err(e) = Autocomplete::new(logger.clone()).register(vm) {
-                error!("Failed to register autocomplete library: {}", e);
-            }
-            if let Err(e) = SchedulerApi::new(scheduler.clone()).register(vm) {
-                error!("Failed to register scheduler library: {}", e);
+            info!("Loading bp3d-lua-shell library...");
+            if let Err(e) = Shell::new(logger.clone(), scheduler.clone(), running.clone()).register(vm) {
+                error!("Failed to load shell library: {}", e);
             }
             let mut modules = libs::lua::Module::new(&[]);
             for path in &args.modules {
@@ -150,8 +148,7 @@ impl Lua {
             if let Some(main_script) = &args.main_script {
                 vm.scope(|vm| Ok(RunFile { path: main_script.clone() }.handle(&args, vm, &logger))).unwrap();
             }
-            let mut running = true;
-            while running {
+            while running.get() {
                 // First handle IPC events
                 while let Some(command) = receiver.try_recv().ok() {
                     // Nice type-inference breakage with this box.
@@ -159,7 +156,7 @@ impl Lua {
                     let ret = vm.scope(|vm| Ok((command as Box<dyn InData>).handle(&args, vm, &logger))).unwrap();
                     trace!({ret}, "command handled");
                     if ret {
-                        running = false;
+                        running.set(false);
                         break;
                     }
                 }

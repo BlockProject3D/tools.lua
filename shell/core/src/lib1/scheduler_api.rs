@@ -27,41 +27,18 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use bp3d_lua::decl_closure;
-use bp3d_lua::libs::Lib;
-use bp3d_lua::util::Namespace;
-use bp3d_lua::vm::closure::rc::{Rc, Shared};
+use bp3d_lua::vm::closure::rc::Rc;
 use bp3d_lua::vm::thread::value::Thread;
 use crate::scheduler::SchedulerPtr;
 
 decl_closure! {
-    fn schedule_in |scheduler: Rc<SchedulerPtr>| (thread: Thread, after_ms: u32) -> () {
+    pub fn schedule_in |scheduler: Rc<SchedulerPtr>| (thread: Thread, after_ms: u32) -> () {
         scheduler.schedule_in(thread, after_ms);
     }
 }
 
 decl_closure! {
-    fn schedule_periodically |scheduler: Rc<SchedulerPtr>| (thread: Thread, period_ms: u32) -> () {
+    pub fn schedule_periodically |scheduler: Rc<SchedulerPtr>| (thread: Thread, period_ms: u32) -> () {
         scheduler.schedule_periodically(thread, period_ms);
-    }
-}
-
-pub struct SchedulerApi(Shared<SchedulerPtr>);
-
-impl SchedulerApi {
-    pub fn new(ptr: Shared<SchedulerPtr>) -> Self {
-        Self(ptr)
-    }
-}
-
-impl Lib for SchedulerApi {
-    const NAMESPACE: &'static str = "bp3d.lua.shell";
-
-    fn load(&self, namespace: &mut Namespace) -> bp3d_lua::vm::Result<()> {
-        let r1 = Rc::from_rust(namespace.vm(), self.0.clone());
-        let r2 = Rc::from_rust(namespace.vm(), self.0.clone());
-        namespace.add([
-            ("scheduleIn", schedule_in(r1)),
-            ("schedulePeriodically", schedule_periodically(r2))
-        ])
     }
 }
