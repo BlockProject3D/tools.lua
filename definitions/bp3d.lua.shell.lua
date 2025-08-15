@@ -68,3 +68,6 @@ bp3d.lua.shell.bindEvent = function(name, func) end
 ---
 ---@param name string the name of the event to unbind the lua function from.
 bp3d.lua.shell.unbindEvent = function(name) end
+
+--- Requests exit of the shell application from lua code.
+bp3d.lua.shell.requestExit = function() end
