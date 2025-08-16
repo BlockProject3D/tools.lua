@@ -27,6 +27,7 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use std::path::PathBuf;
+use bp3d_debug::trace;
 use clap::Parser;
 
 mod lua;
@@ -77,4 +78,5 @@ async fn main() {
     } else {
         core::run(largs, args.name.as_ref().map(|v| &**v).unwrap_or("bp3d-lua-shell")).await;
     }
+    trace!("Application end");
 }

@@ -110,9 +110,12 @@ pub async fn run_interactive(args: Args) {
             }
             Some(b) = lua.next_msg() => {
                 debug!("{:?}", b);
+                if b.has_exited() {
+                    break;
+                }
             }
         }
     }
-    info!("terminating lua VM...");
+    info!("Terminating lua VM...");
     lua.exit().await;
 }

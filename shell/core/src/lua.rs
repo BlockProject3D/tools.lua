@@ -35,14 +35,14 @@ use std::time::Duration;
 use bp3d_lua::vm::core::interrupt::{spawn_interruptible, Signal};
 use bp3d_lua::libs;
 use bp3d_lua::libs::Lib;
-use bp3d_debug::{debug, error, info, trace};
+use bp3d_debug::{debug, error, info, trace, warning};
 use bp3d_lua::vm::core::jit::JitOptions;
 use bp3d_lua::vm::core::load::{Code, Script};
 use bp3d_lua::vm::value::any::Any;
 use bp3d_lua::vm::Vm;
 use crate::data::DataOut;
 use crate::data_in::{Exit, InData, NetInData, RunCode, RunFile};
-use crate::data_out::{Log, OutData};
+use crate::data_out::{End, Log, OutData};
 use crate::lib1::Shell;
 use crate::scheduler::SchedulerPtr;
 
@@ -69,7 +69,11 @@ impl Lua {
     }
 
     pub async fn exit(self) {
-        self.exec_queue.send(Box::new(Exit)).await.unwrap();
+        if let Err(_) = self.exec_queue.send(Box::new(Exit)).await {
+            self.handle.join().unwrap();
+            warning!("Attempt to exit already exited Lua thread");
+            return;
+        }
         // Leave 50ms for the thread to terminate nominally before killing the VM.
         tokio::time::sleep(Duration::from_millis(50)).await;
         // This call will either immediately return because the thread is already dead (expected),
@@ -165,6 +169,7 @@ impl Lua {
                 // Wait for next cycle
                 std::thread::sleep(Duration::from_millis(1));
             }
+            logger.send(End);
         });
         Self {
             signal,

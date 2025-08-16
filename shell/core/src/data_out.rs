@@ -35,6 +35,21 @@ use crate::autocomplete::{Mode, Type};
 
 pub trait OutData: Send + Debug {
     fn write(&self, msg: &mut Message) -> bp3d_proto::message::Result<()>;
+    fn has_exited(&self) -> bool { false }
+}
+
+#[derive(Debug)]
+pub struct End;
+
+impl OutData for End {
+    fn write(&self, msg: &mut Message) -> bp3d_proto::message::Result<()> {
+        recv::Main {
+            hdr: recv::Header::new().set_type(recv::Type::End).to_ref(),
+            msg: recv::Message::End
+        }.write_self(msg)
+    }
+
+    fn has_exited(&self) -> bool { true }
 }
 
 #[derive(Debug)]
