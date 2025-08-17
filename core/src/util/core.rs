@@ -33,11 +33,11 @@ use std::ffi::{CStr, CString, OsStr};
 use std::path::Path;
 
 pub trait AnyStr {
-    fn to_str(&self) -> crate::vm::Result<Cow<CStr>>;
+    fn to_str(&self) -> crate::vm::Result<Cow<'_, CStr>>;
 }
 
 impl AnyStr for &str {
-    fn to_str(&self) -> crate::vm::Result<Cow<CStr>> {
+    fn to_str(&self) -> crate::vm::Result<Cow<'_, CStr>> {
         Ok(Cow::Owned(
             CString::new(&**self).map_err(|_| crate::vm::error::Error::Null)?,
         ))
@@ -46,7 +46,7 @@ impl AnyStr for &str {
 
 impl AnyStr for &CStr {
     #[inline(always)]
-    fn to_str(&self) -> crate::vm::Result<Cow<CStr>> {
+    fn to_str(&self) -> crate::vm::Result<Cow<'_, CStr>> {
         Ok(Cow::Borrowed(&**self))
     }
 }

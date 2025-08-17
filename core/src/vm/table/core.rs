@@ -126,7 +126,7 @@ impl<'a> Table<'a> {
         unsafe { lua_setmetatable(self.vm.as_ptr(), self.index) };
     }
 
-    pub fn get_metatable(&self) -> Option<Table> {
+    pub fn get_metatable(&self) -> Option<Table<'_>> {
         unsafe { check_get_metatable(self.vm, self.index) }
     }
 
@@ -144,7 +144,7 @@ impl<'a> Table<'a> {
     /// Creates a new iterator for this table.
     ///
     /// This function borrows mutably to avoid messing up the Lua stack while iterating.
-    pub fn iter(&mut self) -> Iter {
+    pub fn iter(&mut self) -> Iter<'_> {
         Iter::from_raw(self.vm, self.index)
     }
 

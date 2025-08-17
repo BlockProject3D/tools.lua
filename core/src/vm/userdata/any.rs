@@ -149,7 +149,7 @@ impl<'a> AnyUserData<'a> {
         Ok(unsafe { &mut *this_ptr })
     }
 
-    pub fn get_metatable(&self) -> Option<ImmutableTable> {
+    pub fn get_metatable(&self) -> Option<ImmutableTable<'_>> {
         unsafe { check_get_metatable(self.vm, self.index).map(ImmutableTable::from) }
     }
 
@@ -253,7 +253,7 @@ impl<'a> ImmutableAnyUserData<'a> {
     }
 
     #[inline(always)]
-    pub fn get_metatable(&self) -> Option<ImmutableTable> {
+    pub fn get_metatable(&self) -> Option<ImmutableTable<'_>> {
         self.0.get_metatable()
     }
 

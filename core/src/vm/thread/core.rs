@@ -60,13 +60,13 @@ impl PartialEq for Thread<'_> {
 impl Eq for Thread<'_> {}
 
 impl Display for Thread<'_> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(f, "thread@{:X}", self.uid())
     }
 }
 
 impl Debug for Thread<'_> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         f.write_str("Thread")
     }
 }

@@ -56,7 +56,7 @@ decl_lib_func! {
 }
 
 decl_lib_func! {
-    fn test2(name: &str) -> Test2 {
+    fn test2(name: &str) -> Test2<'_> {
         Test2 { name, value: 42 }
     }
 }

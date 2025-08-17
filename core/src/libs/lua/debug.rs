@@ -40,7 +40,7 @@ use crate::vm::userdata::util::{get_metatable_by_name, get_static_table_by_name}
 use crate::vm::value::any::Any;
 
 decl_lib_func! {
-    fn dump_stack(vm: &Vm, start_index: i32) -> crate::vm::Result<Table> {
+    fn dump_stack(vm: &Vm, start_index: i32) -> crate::vm::Result<Table<'_>> {
         let mut tbl = Table::new(vm);
         let iter = start::<Any>(vm, start_index);
         for value in iter {
@@ -54,7 +54,7 @@ decl_lib_func! {
 }
 
 decl_lib_func! {
-    fn dump_libs(vm: &Vm) -> crate::vm::Result<Table> {
+    fn dump_libs(vm: &Vm) -> crate::vm::Result<Table<'_>> {
         let mut tbl = Table::new(vm);
         if let Some(vv) = DebugRegistry::list(vm, crate::vm::core::debug::Lib) {
             for v in vv {
@@ -66,7 +66,7 @@ decl_lib_func! {
 }
 
 decl_lib_func! {
-    fn dump_classes(vm: &Vm) -> crate::vm::Result<Table> {
+    fn dump_classes(vm: &Vm) -> crate::vm::Result<Table<'_>> {
         let mut tbl = Table::new(vm);
         if let Some(vv) = DebugRegistry::list(vm, crate::vm::core::debug::Class) {
             for v in vv {

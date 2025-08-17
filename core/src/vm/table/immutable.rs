@@ -82,7 +82,7 @@ impl<'a> ImmutableTable<'a> {
     }
 
     #[inline(always)]
-    pub fn get_metatable(&self) -> Option<ImmutableTable> {
+    pub fn get_metatable(&self) -> Option<ImmutableTable<'_>> {
         self.0.get_metatable().map(ImmutableTable)
     }
 
@@ -101,7 +101,7 @@ impl<'a> ImmutableTable<'a> {
     ///
     /// This function borrows mutably to avoid messing up the Lua stack while iterating.
     #[inline(always)]
-    pub fn iter(&mut self) -> Iter {
+    pub fn iter(&mut self) -> Iter<'_> {
         self.0.iter()
     }
 

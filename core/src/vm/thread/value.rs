@@ -123,7 +123,9 @@ impl<'a> Thread<'a> {
 
     /// Returns the thread stack object attached to this thread value.
     #[inline(always)]
-    pub fn as_thread(&self) -> &core::Thread {
+    pub fn as_thread(&self) -> &core::Thread<'a> {
+        //TODO: Check if this is safe as thread lifetime duration should be as long as thread value
+        // on the Lua stack; the same goes for ImmutableThread.
         &self.thread
     }
 }
@@ -133,7 +135,7 @@ impl<'a> Thread<'a> {
 pub struct ImmutableThread<'a>(Thread<'a>);
 
 impl Display for ImmutableThread<'_> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(f, "thread@{:X}", self.0.thread.uid())
     }
 }
@@ -173,7 +175,7 @@ impl<'a> ImmutableThread<'a> {
 
     /// Returns the thread stack object attached to this thread value.
     #[inline(always)]
-    pub fn as_thread(&self) -> &core::Thread {
+    pub fn as_thread(&self) -> &core::Thread<'a> {
         &self.0.thread
     }
 }

@@ -56,13 +56,13 @@ decl_lib_func! {
 }
 
 decl_lib_func! {
-    fn capitalise(src: &[u8]) -> Cow<[u8]> {
+    fn capitalise(src: &[u8]) -> Cow<'_, [u8]> {
         src.capitalise_ascii()
     }
 }
 
 decl_lib_func! {
-    fn decapitalise(src: &[u8]) -> Cow<[u8]> {
+    fn decapitalise(src: &[u8]) -> Cow<'_, [u8]> {
         src.decapitalise_ascii()
     }
 }

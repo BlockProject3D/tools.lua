@@ -150,7 +150,7 @@ impl Vm {
         FromLua::from_lua(self, -(R::num_values() as i32))
     }
 
-    pub fn load_code(&self, code: impl LoadString) -> crate::vm::Result<Function> {
+    pub fn load_code(&self, code: impl LoadString) -> crate::vm::Result<Function<'_>> {
         let l = self.as_ptr();
         unsafe {
             // Push the lua code.
@@ -175,7 +175,7 @@ impl Vm {
         FromLua::from_lua(self, -(R::num_values() as i32))
     }
 
-    pub fn load(&self, obj: impl Load) -> crate::vm::Result<Function> {
+    pub fn load(&self, obj: impl Load) -> crate::vm::Result<Function<'_>> {
         let l = self.as_ptr();
         let res = obj.load(l);
         unsafe {

@@ -43,8 +43,9 @@ impl LuaThread {
         }
     }
 
+    //TODO: Check if this is indeed safe.
     #[inline(always)]
-    pub fn as_thread(&self) -> &crate::vm::thread::core::Thread {
+    pub fn as_thread(&self) -> &crate::vm::thread::core::Thread<'static> {
         &self.thread
     }
 

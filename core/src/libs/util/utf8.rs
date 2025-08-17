@@ -71,25 +71,25 @@ decl_lib_func! {
 }
 
 decl_lib_func! {
-    fn from_string<'a>(src: &'a [u8]) -> Option<&'a str> {
+    fn from_string(src: &[u8]) -> Option<&str> {
         std::str::from_utf8(src).ok()
     }
 }
 
 decl_lib_func! {
-    fn from_string_lossy(src: &[u8]) -> Cow<str> {
+    fn from_string_lossy(src: &[u8]) -> Cow<'_, str> {
         String::from_utf8_lossy(src)
     }
 }
 
 decl_lib_func! {
-    fn capitalise(src: &str) -> Cow<str> {
+    fn capitalise(src: &str) -> Cow<'_, str> {
         src.capitalise()
     }
 }
 
 decl_lib_func! {
-    fn decapitalise(src: &str) -> Cow<str> {
+    fn decapitalise(src: &str) -> Cow<'_, str> {
         src.decapitalise()
     }
 }
