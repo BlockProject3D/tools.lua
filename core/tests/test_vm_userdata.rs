@@ -425,3 +425,16 @@ fn test_vm_userdata_statics_2() {
     assert_eq!(unsafe { DROP_COUNTER }, 6);
     assert_eq!(unsafe { LUA_DROP_COUNTER }, 6);
 }
+
+#[test]
+fn test_vm_userdata_security6() {
+    let _guard = MUTEX.lock();
+    {
+        let vm = RootVm::new();
+        test_vm_userdata_base(&vm);
+        vm.run_code::<()>(c"a.__index.__gc = function() print(\"Lua has hacked Rust\") end")
+            .unwrap_err();
+    }
+    assert_eq!(unsafe { DROP_COUNTER }, 6);
+    assert_eq!(unsafe { LUA_DROP_COUNTER }, 6);
+}
