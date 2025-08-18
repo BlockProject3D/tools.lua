@@ -94,7 +94,7 @@ pub fn decl_lua_plugin(input: TokenStream) -> TokenStream {
         #[no_mangle]
         extern "C" fn #func(l: bp3d_lua::ffi::lua::State, error: *mut bp3d_lua::module::error::Error) -> bool {
             let vm = unsafe { bp3d_lua::vm::Vm::from_raw(l) };
-            unsafe { bp3d_lua::module::run_lua_register(&vm, #ident, *&mut error) }
+            unsafe { bp3d_lua::module::run_lua_register(&vm, #ident, &mut *error) }
         }
     };
     q.into()
