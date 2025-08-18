@@ -31,11 +31,12 @@ const MAX_SIZE: usize = 4096;
 use bp3d_debug::{debug, error, info};
 use bp3d_net::ipc::{Client, Server};
 use bp3d_net::ipc::util::Message;
+use bp3d_os::shell::{Event, SendChannel, Shell};
 use bp3d_proto::message::FromBytes;
 use crate::lua::{Args, Lua};
 use bp3d_util::result::ResultExt;
-use tokio::io::{AsyncBufReadExt, BufReader};
 use bp3d_lua_shell_proto::send;
+use tokio::sync::mpsc;
 
 async fn client_task(lua: &mut Lua, client: Client) -> bp3d_proto::message::Result<bool> {
     let mut msg = Message::new(MAX_SIZE);
@@ -87,24 +88,38 @@ pub async fn run(args: Args, name: &str) {
     lua.exit().await;
 }
 
+struct ChannelWrapper(mpsc::Sender<Event>);
+
+impl SendChannel for ChannelWrapper {
+    fn send(&self, event: Event) {
+        self.0.blocking_send(event).unwrap();
+    }
+}
+
 pub async fn run_interactive(args: Args) {
     info!("starting lua VM");
     let mut lua = Lua::new(args);
-    let mut reader = BufReader::new(tokio::io::stdin()).lines();
+    let (tx, mut rx) = mpsc::channel::<Event>(64);
+    let app = Shell::new("lua> ", ChannelWrapper(tx));
     loop {
         tokio::select! {
-            res = reader.next_line() => {
+            res = rx.recv() => {
                 match res {
-                    Err(e) => {
-                        error!("error reading from stdin: {}", e);
+                    None => {
+                        error!("Shell application has prematurely closed");
                         break;
                     },
-                    Ok(line) => match line {
-                        Some(v) => lua.send(send::RunCode {
-                            name: None,
-                            code: &v
-                        }).await,
-                        None => break
+                    Some(event) => match event {
+                        Event::CommandReceived(str) => {
+                            lua.send(send::RunCode {
+                                name: None,
+                                code: &str
+                            }).await;
+                        },
+                        Event::ExitRequested => {
+                            debug!("exit requested");
+                            break;
+                        }
                     }
                 }
             }
@@ -118,4 +133,6 @@ pub async fn run_interactive(args: Args) {
     }
     info!("Terminating lua VM...");
     lua.exit().await;
+    info!("Terminating shell application...");
+    app.exit();
 }

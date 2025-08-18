@@ -13,4 +13,4 @@ bp3d-util = { version = "2.2.0", features = ["result"] }
 bp3d-lua-shell-proto = { version = "0.1.0", path = "../proto" }
 bp3d-proto = "1.0.0-rc.5.0.1"
 clap = { version = "4.5.4", features = ["derive"] }
-bp3d-os = { version = "1.0.0-rc.4.4.0", features = ["time"] }
+bp3d-os = { version = "1.0.0-rc.4.5.1", features = ["time", "shell"] }
