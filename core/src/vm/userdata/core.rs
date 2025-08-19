@@ -32,7 +32,7 @@ use crate::vm::userdata::{AddGcMethod, Error, LuaDrop, NameConvert, UserData};
 use crate::vm::util::{LuaType, TypeName};
 use crate::vm::value::IntoLua;
 use crate::vm::Vm;
-use bp3d_debug::{debug, warning};
+use bp3d_debug::{debug, trace, warning};
 use std::cell::OnceCell;
 use std::ffi::{c_void, CStr};
 use std::marker::PhantomData;
@@ -147,13 +147,14 @@ impl<'a, T: UserData, C: NameConvert> Registry<'a, T, C> {
     }
 
     fn add_field(&self, name: &'static CStr, value: impl IntoLua) -> Result<(), Error> {
+        trace!("Set metatable field {:?}", name);
         let num = value.into_lua(self.vm);
         if num > 1 {
             unsafe { lua_settop(self.vm.as_ptr(), -(num as i32) - 1) };
             return Err(Error::MultiValueField);
         }
         unsafe {
-            lua_setfield(self.vm.as_ptr(), -2, self.case.name_convert(name).as_ptr());
+            lua_setfield(self.vm.as_ptr(), -2, name.as_ptr());
         }
         Ok(())
     }

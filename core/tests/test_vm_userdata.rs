@@ -276,6 +276,41 @@ fn test_vm_userdata_base2(vm: &Vm) {
     assert_eq!(top + 8, vm.top());
 }
 
+fn test_vm_userdata_base3(vm: &Vm) {
+    unsafe {
+        DROP_COUNTER = 0;
+        LUA_DROP_COUNTER = 0;
+    }
+    let top = vm.top();
+    {
+        let mut namespace = Namespace::new(vm, "_G").unwrap();
+        namespace.add_userdata::<MyInt>("MyInt", bp3d_lua::vm::userdata::case::Camel).unwrap();
+    }
+    assert_eq!(top, vm.top());
+    vm.run_code::<()>(c"a = MyInt.new(123)").unwrap();
+    vm.run_code::<()>(c"b = MyInt.new(456)").unwrap();
+    vm.run_code::<()>(c"c = MyInt.new(456)").unwrap();
+    assert_eq!(vm.run_code::<bool>(c"return a == b").unwrap(), false);
+    assert_eq!(vm.run_code::<bool>(c"return b == c").unwrap(), true);
+    assert_eq!(vm.run_code::<bool>(c"return a < b").unwrap(), true);
+    assert_eq!(vm.run_code::<bool>(c"return b > a").unwrap(), true);
+    assert_eq!(vm.run_code::<&MyInt>(c"return a + b").unwrap().0, 579);
+    assert_eq!(
+        vm.run_code::<&str>(c"return (a + b):tostring()").unwrap(),
+        "579"
+    );
+    assert_eq!(
+        vm.run_code::<RawNumber>(c"return (a + b):tonumber()")
+            .unwrap(),
+        579.0
+    );
+    assert_eq!(
+        vm.run_code::<RawNumber>(c"return a.tonumber(b)").unwrap(),
+        456.0
+    );
+    assert_eq!(top + 8, vm.top());
+}
+
 #[test]
 fn test_vm_userdata() {
     let _guard = MUTEX.lock();
@@ -433,6 +468,32 @@ fn test_vm_userdata_security6() {
         let vm = RootVm::new();
         test_vm_userdata_base(&vm);
         vm.run_code::<()>(c"a.__index.__gc = function() print(\"Lua has hacked Rust\") end")
+            .unwrap_err();
+    }
+    assert_eq!(unsafe { DROP_COUNTER }, 6);
+    assert_eq!(unsafe { LUA_DROP_COUNTER }, 6);
+}
+
+#[test]
+fn test_vm_userdata_security7() {
+    let _guard = MUTEX.lock();
+    {
+        let vm = RootVm::new();
+        test_vm_userdata_base2(&vm);
+        vm.run_code::<()>(c"getmetatable(a).__gc = function() print(\"Lua has hacked Rust\") end")
+            .unwrap_err();
+    }
+    assert_eq!(unsafe { DROP_COUNTER }, 6);
+    assert_eq!(unsafe { LUA_DROP_COUNTER }, 6);
+}
+
+#[test]
+fn test_vm_userdata_security8() {
+    let _guard = MUTEX.lock();
+    {
+        let vm = RootVm::new();
+        test_vm_userdata_base3(&vm);
+        vm.run_code::<()>(c"getmetatable(a).__gc = function() error(\"Lua has hacked Rust\") end")
             .unwrap_err();
     }
     assert_eq!(unsafe { DROP_COUNTER }, 6);
