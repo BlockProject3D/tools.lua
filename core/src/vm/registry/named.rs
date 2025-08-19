@@ -35,8 +35,7 @@ use std::ffi::c_void;
 use std::marker::PhantomData;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Mutex;
-use bp3d_debug::debug;
-use crate::ffi::ext::{lua_ext_keyreg_get, lua_ext_keyreg_ref, lua_ext_keyreg_unref};
+use crate::ffi::ext::lua_ext_keyreg_get;
 
 #[derive(Debug)]
 pub struct RawKey {
@@ -144,18 +143,23 @@ unsafe fn voidp_to_ref(p: *mut c_void) -> &'static NamedKeyRegistry
     unsafe { &*(p as *const NamedKeyRegistry) }
 }
 
+#[cfg(feature="root-vm")]
 unsafe fn voidp_to_ptr(p: *mut c_void) -> *mut NamedKeyRegistry
 {
     assert!(!p.is_null());
     p as *mut NamedKeyRegistry
 }
 
+#[cfg(feature="root-vm")]
 fn ref_to_voidp(r: &'static NamedKeyRegistry) -> *mut c_void
 {
     r as *const NamedKeyRegistry as *mut c_void
 }
 
+#[cfg(feature="root-vm")]
 pub(crate) fn handle_root_vm_init() {
+    use bp3d_debug::debug;
+    use crate::ffi::ext::lua_ext_keyreg_ref;
     let ptr = ref_to_voidp(Box::leak(Box::new(Mutex::new(HashMap::new()))));
     // Pointer set in lua_ext_keyreg_ref to avoid TOCTOU.
     let ptr = unsafe { lua_ext_keyreg_ref(ptr) };
@@ -167,7 +171,10 @@ pub(crate) fn handle_root_vm_init() {
     }
 }
 
+#[cfg(feature="root-vm")]
 pub(crate) fn handle_root_vm_uninit() {
+    use bp3d_debug::debug;
+    use crate::ffi::ext::lua_ext_keyreg_unref;
     // Pointer reset to NULL in lua_ext_keyreg_unref to avoid TOCTOU.
     let ptr = unsafe { lua_ext_keyreg_unref() };
     if !ptr.is_null() {
