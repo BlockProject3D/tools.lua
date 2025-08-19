@@ -26,7 +26,7 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::collections::BTreeSet;
+use std::collections::HashMap;
 use crate::ffi::lua::{lua_insert, lua_pushlightuserdata, lua_rawget, lua_rawset, lua_settop, lua_type, State, Type, REGISTRYINDEX};
 use crate::vm::registry::{Set, Value};
 use crate::vm::value::util::move_value_top;
@@ -41,6 +41,10 @@ use crate::ffi::ext::{lua_ext_keyreg_get, lua_ext_keyreg_ref, lua_ext_keyreg_unr
 #[derive(Debug)]
 pub struct RawKey {
     ptr: *const c_void,
+    // This may not always work, but unfortunately Rust TypeId is broken across modules.
+    // Fortunately, the generic type which is used with this is always a static lifetime
+    // which must implement the Value trait which limits the number of possible types.
+    ty: fn() -> &'static str,
     registered: AtomicBool,
     register_lock: Mutex<bool>
 }
@@ -70,7 +74,11 @@ impl RawKey {
         }
     }
 
-    pub const fn new(name: &str) -> Self {
+    pub fn ty(&self) -> &'static str {
+        (self.ty)()
+    }
+
+    pub const fn new(name: &str, ty: fn() -> &'static str) -> Self {
         // This is a re-write of https://github.com/BPXFormat/bpx-rs/blob/develop/src/hash.rs
         // in const context.
         let mut val: u64 = 5381;
@@ -86,6 +94,7 @@ impl RawKey {
         // And now a hack to turn u64 into ptr (btw, do NOT dereference it).
         Self {
             ptr: val as usize as *const c_void,
+            ty,
             registered: AtomicBool::new(false),
             register_lock: Mutex::new(false)
         }
@@ -117,34 +126,37 @@ fn check_register_key_unique(key: &RawKey) {
     }
     let registry = unsafe { voidp_to_ref(lua_ext_keyreg_get()) };
     let mut lock = registry.lock().unwrap();
-    if lock.contains(&(key.ptr as _)) {
-        panic!("Attempt to register a duplicate key");
-    } else {
-        lock.insert(key.ptr as _);
-        *registered = true;
-        key.registered.store(true, Ordering::Relaxed);
+    if let Some(ty) = lock.get(&(key.ptr as _)) {
+        if *ty != key.ty() {
+            panic!("Attempt to register a duplicate key");
+        }
     }
+    lock.insert(key.ptr as _, key.ty());
+    *registered = true;
+    key.registered.store(true, Ordering::Relaxed);
 }
 
-unsafe fn voidp_to_ref(p: *mut c_void) -> &'static Mutex<BTreeSet<usize>>
+type NamedKeyRegistry = Mutex<HashMap<usize, &'static str>>;
+
+unsafe fn voidp_to_ref(p: *mut c_void) -> &'static NamedKeyRegistry
 {
     assert!(!p.is_null());
-    unsafe { &*(p as *const Mutex<BTreeSet<usize>>) }
+    unsafe { &*(p as *const NamedKeyRegistry) }
 }
 
-unsafe fn voidp_to_ptr(p: *mut c_void) -> *mut Mutex<BTreeSet<usize>>
+unsafe fn voidp_to_ptr(p: *mut c_void) -> *mut NamedKeyRegistry
 {
     assert!(!p.is_null());
-    p as *mut Mutex<BTreeSet<usize>>
+    p as *mut NamedKeyRegistry
 }
 
-fn ref_to_voidp(r: &'static Mutex<BTreeSet<usize>>) -> *mut c_void
+fn ref_to_voidp(r: &'static NamedKeyRegistry) -> *mut c_void
 {
-    r as *const Mutex<BTreeSet<usize>> as *mut c_void
+    r as *const NamedKeyRegistry as *mut c_void
 }
 
 pub(crate) fn handle_root_vm_init() {
-    let ptr = ref_to_voidp(Box::leak(Box::new(Mutex::new(BTreeSet::new()))));
+    let ptr = ref_to_voidp(Box::leak(Box::new(Mutex::new(HashMap::new()))));
     // Pointer set in lua_ext_keyreg_ref to avoid TOCTOU.
     let ptr = unsafe { lua_ext_keyreg_ref(ptr) };
     if ptr.is_null() {
@@ -208,7 +220,7 @@ impl<T: Value> Key<T> {
     #[inline(always)]
     pub const fn new(name: &str) -> Key<T> {
         Key {
-            raw: RawKey::new(name),
+            raw: RawKey::new(name, std::any::type_name::<T>),
             useless: PhantomData,
         }
     }
