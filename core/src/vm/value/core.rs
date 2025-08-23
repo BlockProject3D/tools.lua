@@ -27,6 +27,7 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use std::borrow::Cow;
+use crate::ffi::ext::{lua_ext_getinteger64, lua_ext_getuinteger64, lua_ext_pushinteger64, lua_ext_pushuinteger64, lua_ext_tointeger64, lua_ext_touinteger64};
 use crate::ffi::laux::{luaL_setmetatable, luaL_testudata};
 use crate::ffi::lua::{lua_newuserdata, lua_pushboolean, lua_pushinteger, lua_pushlstring, lua_pushnil, lua_pushnumber, lua_settop, lua_toboolean, lua_tointeger, lua_tointegerx, lua_tolstring, lua_tonumber, lua_tonumberx, lua_touserdata, lua_type, Type};
 use crate::vm::error::{Error, TypeError};
@@ -152,11 +153,47 @@ macro_rules! impl_from_lua {
     };
 }
 
-#[cfg(target_pointer_width = "64")]
-impl_from_lua!(i64, Number, lua_tointeger, lua_pushinteger, as _);
+macro_rules! impl_from_lua_64 {
+    ($t: ty, $get_func: ident, $func: ident, $push_func: ident) => {
+        #[cfg(target_pointer_width = "64")]
+        impl FromLua<'_> for $t {
+            #[inline(always)]
+            unsafe fn from_lua_unchecked(vm: &'_ Vm, index: i32) -> Self {
+                $func(vm.as_ptr(), index) as _
+            }
 
-#[cfg(target_pointer_width = "64")]
-impl_from_lua!(u64, Number, lua_tointeger, lua_pushinteger, as _);
+            fn from_lua(vm: &'_ Vm, index: i32) -> crate::vm::Result<Self> {
+                let mut out = 0;
+                let val = unsafe { $get_func(vm.as_ptr(), index, &mut out) };
+                if val == 1 {
+                    Ok(out as _)
+                } else {
+                    Err(TypeError::from_stack(Type::Number, vm, index))
+                }
+            }
+        }
+
+        #[cfg(target_pointer_width = "64")]
+        unsafe impl IntoLua for $t {
+            #[inline(always)]
+            fn into_lua(self, vm: &Vm) -> u16 {
+                unsafe { $push_func(vm.as_ptr(), self as _) as _ }
+            }
+        }
+    }
+}
+
+impl_from_lua_64!(i64, lua_ext_getinteger64, lua_ext_tointeger64, lua_ext_pushinteger64);
+impl_from_lua_64!(u64, lua_ext_getuinteger64, lua_ext_touinteger64, lua_ext_pushuinteger64);
+
+impl_from_lua_64!(isize, lua_ext_getinteger64, lua_ext_tointeger64, lua_ext_pushinteger64);
+impl_from_lua_64!(usize, lua_ext_getuinteger64, lua_ext_touinteger64, lua_ext_pushuinteger64);
+
+#[cfg(target_pointer_width = "32")]
+impl_from_lua!(isize, Number, lua_tointeger, lua_pushinteger, as _);
+
+#[cfg(target_pointer_width = "32")]
+impl_from_lua!(usize, Number, lua_tointeger, lua_pushinteger, as _);
 
 impl_from_lua!(i8, Number, lua_tointeger, lua_pushinteger, as _);
 impl_from_lua!(u8, Number, lua_tointeger, lua_pushinteger, as _);

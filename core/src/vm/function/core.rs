@@ -26,7 +26,7 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use crate::ffi::ext::{lua_ext_fast_checkboolean, lua_ext_fast_checkinteger, lua_ext_fast_checknumber};
+use crate::ffi::ext::{lua_ext_checkinteger64, lua_ext_checkuinteger64, lua_ext_fast_checkboolean, lua_ext_fast_checkinteger, lua_ext_fast_checknumber, lua_ext_pushinteger64, lua_ext_pushuinteger64};
 use crate::ffi::laux::{luaL_checkinteger, luaL_checklstring, luaL_checknumber, luaL_checkudata, luaL_testudata};
 use crate::ffi::lua::{lua_isnumber, lua_pushboolean, lua_pushinteger, lua_pushnil, lua_pushnumber, lua_toboolean, lua_tointeger, lua_tonumber, lua_type, RawInteger, RawNumber, Type};
 use crate::util::core::SimpleDrop;
@@ -139,7 +139,7 @@ where
     }
 }
 
-macro_rules! impl_integer {
+macro_rules! impl_integer_ty {
     ($($t: ty),*) => {
         $(
             unsafe impl SimpleDrop for $t {}
@@ -149,7 +149,14 @@ macro_rules! impl_integer {
                     vec![TypeName::Some(std::any::type_name::<RawInteger>())]
                 }
             }
+        )*
+    };
+}
 
+macro_rules! impl_integer {
+    ($($t: ty),*) => {
+        impl_integer_ty!($($t),*);
+        $(
             impl FromParam<'_> for $t {
                 #[inline(always)]
                 unsafe fn from_param(vm: &Vm, index: i32) -> Self {
@@ -175,8 +182,42 @@ macro_rules! impl_integer {
     };
 }
 
-#[cfg(target_pointer_width = "64")]
-impl_integer!(i64, u64);
+macro_rules! impl_integer_64 {
+    ($t: ty, $func: ident, $push_func: ident) => {
+        #[cfg(target_pointer_width = "64")]
+        impl_integer_ty!($t);
+
+        #[cfg(target_pointer_width = "64")]
+        impl FromParam<'_> for $t {
+            #[inline(always)]
+            unsafe fn from_param(vm: &'_ Vm, index: i32) -> Self {
+                $func(vm.as_ptr(), index) as _
+            }
+
+            #[inline(always)]
+            fn try_from_param(vm: &'_ Vm, index: i32) -> Option<Self> {
+                FromLua::from_lua(vm, index).ok()
+            }
+        }
+
+        #[cfg(target_pointer_width = "64")]
+        unsafe impl IntoParam for $t {
+            #[inline(always)]
+            fn into_param(self, vm: &Vm) -> i32 {
+                unsafe { $push_func(vm.as_ptr(), self as _) }
+            }
+        }
+    }
+}
+
+impl_integer_64!(i64, lua_ext_checkinteger64, lua_ext_pushinteger64);
+impl_integer_64!(u64, lua_ext_checkuinteger64, lua_ext_pushuinteger64);
+
+impl_integer_64!(isize, lua_ext_checkinteger64, lua_ext_pushinteger64);
+impl_integer_64!(usize, lua_ext_checkuinteger64, lua_ext_pushuinteger64);
+
+#[cfg(target_pointer_width = "32")]
+impl_integer!(isize, usize);
 
 impl_integer!(i8, u8, i16, u16, i32, u32);
 
