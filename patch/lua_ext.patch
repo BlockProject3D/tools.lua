@@ -1,5 +1,5 @@
 diff --git a/src/lj_api.c b/src/lj_api.c
-index e9fc25b4..4559cdb5 100644
+index e9fc25b4..68996ee0 100644
 --- a/src/lj_api.c
 +++ b/src/lj_api.c
 @@ -9,6 +9,8 @@
@@ -11,7 +11,16 @@ index e9fc25b4..4559cdb5 100644
  #include "lj_obj.h"
  #include "lj_gc.h"
  #include "lj_err.h"
-@@ -1317,3 +1319,85 @@ LUA_API void lua_setallocf(lua_State *L, lua_Alloc f, void *ud)
+@@ -25,6 +27,8 @@
+ #include "lj_vm.h"
+ #include "lj_strscan.h"
+ #include "lj_strfmt.h"
++#include "lj_cdata.h"
++#include "lualib.h"
+ 
+ /* -- Common helper functions --------------------------------------------- */
+ 
+@@ -1317,3 +1321,191 @@ LUA_API void lua_setallocf(lua_State *L, lua_Alloc f, void *ud)
    g->allocf = f;
  }
  
@@ -67,33 +76,139 @@ index e9fc25b4..4559cdb5 100644
 +  }
 +}
 +
++#if LJ_64
++LUALIB_API int64_t lua_ext_checkinteger64(lua_State *L, int idx) {
++  cTValue *o = index2adr(L, idx);
++  if (LJ_LIKELY(tviscdata(o))) {
++    GCcdata *cd = cdataV(o);
++    if (LJ_LIKELY(cd->ctypeid == CTID_INT64)) {
++      return (int64_t)cdataptr(cd);
++    }
++  }
++  return (int64_t)lua_ext_fast_checkinteger(L, idx);
++}
++
++LUALIB_API uint64_t lua_ext_checkuinteger64(lua_State *L, int idx) {
++  cTValue *o = index2adr(L, idx);
++  if (LJ_LIKELY(tviscdata(o))) {
++    GCcdata *cd = cdataV(o);
++    if (LJ_LIKELY(cd->ctypeid == CTID_UINT64)) {
++      return (int64_t)cdataptr(cd);
++    }
++  }
++  return (uint64_t)lua_ext_fast_checkinteger(L, idx);
++}
++
++LUALIB_API int lua_ext_getinteger64(lua_State *L, int idx, int64_t *out) {
++  cTValue *o = index2adr(L, idx);
++  if (LJ_LIKELY(tviscdata(o))) {
++    GCcdata *cd = cdataV(o);
++    if (LJ_LIKELY(cd->ctypeid == CTID_INT64)) {
++      *out = *(int64_t*)cdataptr(cd);
++      return 1;
++    } else {
++      return 0;
++    }
++  } else if (LJ_LIKELY(tvisint(o))) {
++    *out = (int64_t)intV(o);
++    return 1;
++  } else if (LJ_LIKELY(tvisnum(o))) {
++    *out = (int64_t)numV(o);
++    return 1;
++  }
++  return 0;
++}
++
++LUALIB_API int lua_ext_getuinteger64(lua_State *L, int idx, uint64_t *out) {
++  cTValue *o = index2adr(L, idx);
++  if (LJ_LIKELY(tviscdata(o))) {
++    GCcdata *cd = cdataV(o);
++    if (LJ_LIKELY(cd->ctypeid == CTID_UINT64)) {
++      *out = *(uint64_t*)cdataptr(cd);
++      return 1;
++    } else {
++      return 0;
++    }
++  } else if (LJ_LIKELY(tvisint(o))) {
++    *out = (uint64_t)intV(o);
++    return 1;
++  } else if (LJ_LIKELY(tvisnum(o))) {
++    *out = (uint64_t)numV(o);
++    return 1;
++  }
++  return 0;
++}
++
++LUALIB_API int64_t lua_ext_tointeger64(lua_State *L, int idx) {
++  cTValue *o = index2adr(L, idx);
++  if (LJ_LIKELY(tviscdata(o))) {
++    GCcdata *cd = cdataV(o);
++    if (LJ_LIKELY(cd->ctypeid == CTID_INT64)) {
++      return *(int64_t*)cdataptr(cd);
++    }
++  }
++  return (int64_t)lua_tointeger(L, idx);
++}
++
++LUALIB_API uint64_t lua_ext_touinteger64(lua_State *L, int idx) {
++  cTValue *o = index2adr(L, idx);
++  if (LJ_LIKELY(tviscdata(o))) {
++    GCcdata *cd = cdataV(o);
++    if (LJ_LIKELY(cd->ctypeid == CTID_UINT64)) {
++      return *(uint64_t*)cdataptr(cd);
++    }
++  }
++  return (uint64_t)lua_tointeger(L, idx);
++}
++
++LUALIB_API int lua_ext_pushinteger64(lua_State *L, int64_t in) {
++  ctype_loadffi(L);
++  GCcdata *cd = lj_cdata_new_(L, CTID_INT64, 8);
++  *(int64_t*)cdataptr(cd) = in;
++  TValue *o = L->top;
++  setcdataV(L, o, cd);
++  incr_top(L);
++  return 1;
++}
++
++LUALIB_API int lua_ext_pushuinteger64(lua_State *L, uint64_t in) {
++  ctype_loadffi(L);
++  GCcdata *cd = lj_cdata_new_(L, CTID_UINT64, 8);
++  *(uint64_t*)cdataptr(cd) = in;
++  TValue *o = L->top;
++  setcdataV(L, o, cd);
++  incr_top(L);
++  return 1;
++}
++#endif
++
 +static atomic_intptr_t BP3D_LUA_EXT_KEYREG = 0;
 +static atomic_uint_fast32_t BP3D_LUA_EXT_KEYREG_REFS = 0;
 +
 +LUALIB_API void* lua_ext_keyreg_get() {
-+    return (void*)BP3D_LUA_EXT_KEYREG;
++  return (void*)BP3D_LUA_EXT_KEYREG;
 +}
 +
 +LUALIB_API void* lua_ext_keyreg_ref(void* ptr) {
-+    int flag = 0;
-+    if (BP3D_LUA_EXT_KEYREG_REFS == 0) {
-+        BP3D_LUA_EXT_KEYREG = (atomic_intptr_t)ptr;
-+        flag = 1;
-+    }
-+    (unsigned int)++BP3D_LUA_EXT_KEYREG_REFS;
-+    if (flag == 1) {
-+        return NULL;
-+    } else {
-+        return ptr;
-+    }
++  int flag = 0;
++  if (BP3D_LUA_EXT_KEYREG_REFS == 0) {
++    BP3D_LUA_EXT_KEYREG = (atomic_intptr_t)ptr;
++    flag = 1;
++  }
++  ++BP3D_LUA_EXT_KEYREG_REFS;
++  if (flag == 1) {
++    return NULL;
++  } else {
++    return ptr;
++  }
 +}
 +
 +LUALIB_API void* lua_ext_keyreg_unref() {
-+    unsigned int refs = (unsigned int)--BP3D_LUA_EXT_KEYREG_REFS;
-+    if (refs == 0) {
-+        void* ptr = (void*)BP3D_LUA_EXT_KEYREG;
-+        BP3D_LUA_EXT_KEYREG = 0;
-+        return ptr;
-+    }
-+    return NULL;
++  unsigned int refs = (unsigned int)--BP3D_LUA_EXT_KEYREG_REFS;
++  if (refs == 0) {
++    void* ptr = (void*)BP3D_LUA_EXT_KEYREG;
++    BP3D_LUA_EXT_KEYREG = 0;
++    return ptr;
++  }
++  return NULL;
 +}

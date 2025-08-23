@@ -40,6 +40,20 @@ extern "C" {
     pub fn lua_ext_fast_checkboolean(l: State, numarg: c_int) -> c_int;
 }
 
+//-----------------
+// 64 bit integers
+//-----------------
+extern "C" {
+    pub fn lua_ext_checkinteger64(l: State, numarg: c_int) -> i64;
+    pub fn lua_ext_checkuinteger64(l: State, numarg: c_int) -> u64;
+    pub fn lua_ext_getinteger64(l: State, numarg: c_int, out: *mut i64) -> c_int;
+    pub fn lua_ext_getuinteger64(l: State, numarg: c_int, out: *mut u64) -> c_int;
+    pub fn lua_ext_pushinteger64(l: State, value: i64) -> c_int;
+    pub fn lua_ext_pushuinteger64(l: State, value: u64) -> c_int;
+    pub fn lua_ext_tointeger64(l: State, numarg: c_int) -> i64;
+    pub fn lua_ext_touinteger64(l: State, numarg: c_int) -> u64;
+}
+
 //-------
 // Other
 //-------
