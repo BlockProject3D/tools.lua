@@ -88,7 +88,7 @@ decl_lib_func! {
 }
 
 decl_lib_func! {
-    fn count(src: LuaTable) -> u64 {
+    fn count(src: LuaTable) -> u32 {
         src.len() as _
     }
 }
