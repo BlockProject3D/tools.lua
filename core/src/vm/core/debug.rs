@@ -66,7 +66,7 @@ impl<T: crate::libs::Lib + ?Sized> DebugItem<Lib> for T {
 
 impl<T: UserData> DebugItem<Class> for T {
     fn describe() -> String {
-        T::CLASS_NAME.to_string_lossy().into()
+        T::FULL_TYPE.to_string_lossy().into()
     }
 }
 

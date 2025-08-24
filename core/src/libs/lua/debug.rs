@@ -106,6 +106,15 @@ decl_lib_func! {
     }
 }
 
+decl_lib_func! {
+    fn dump_class_name(vm: &Vm, class: &str) -> crate::vm::Result<String> {
+        let str = CString::from_str(class).map_err(|_| Error::Null)?;
+        let tbl = get_metatable_by_name(vm, &str).ok_or(Error::Unknown)?;
+        let class_name: &str = tbl.get(c"__metatable")?;
+        Ok(class_name.into())
+    }
+}
+
 pub struct Debug;
 
 impl Lib for Debug {
@@ -118,6 +127,7 @@ impl Lib for Debug {
             ("dumpClasses", RFunction::wrap(dump_classes)),
             ("dumpStaticTable", RFunction::wrap(dump_static_table)),
             ("dumpMetaTable", RFunction::wrap(dump_meta_table)),
+            ("dumpClassName", RFunction::wrap(dump_class_name))
         ])
     }
 }
