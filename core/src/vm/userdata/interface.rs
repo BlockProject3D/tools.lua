@@ -45,7 +45,13 @@ pub trait UserData: Sized + UserDataType {
     fn register<C: NameConvert>(registry: &Registry<Self, C>) -> Result<(), Error>;
 }
 
-pub trait UserDataType {
+/// This trait represents the type identification of an userdata in a Lua VM.
+///
+/// # Safety
+///
+/// This is UB if FULL_TYPE is duplicated with another userdata type. On the other hand no
+/// additional restriction is imposed on CLASS_NAME.
+pub unsafe trait UserDataType {
     const CLASS_NAME: &'static CStr;
     const FULL_TYPE: &'static CStr;
 }

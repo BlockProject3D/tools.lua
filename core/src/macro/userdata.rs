@@ -65,7 +65,7 @@ macro_rules! decl_userdata {
         $(#[$meta])*
         $vis struct $name;
 
-        impl $crate::vm::userdata::UserDataType for $name {
+        unsafe impl $crate::vm::userdata::UserDataType for $name {
             const CLASS_NAME: &'static std::ffi::CStr = $crate::c_stringify!($name);
             const FULL_TYPE: &'static std::ffi::CStr = unsafe { std::ffi::CStr::from_ptr(concat!(module_path!(), "::", stringify!($name), "\0").as_ptr() as _) };
         }
@@ -77,7 +77,7 @@ macro_rules! decl_userdata {
         $(#[$meta])*
         $vis struct $name { $($struct_decl)* }
 
-        impl $crate::vm::userdata::UserDataType for $name {
+        unsafe impl $crate::vm::userdata::UserDataType for $name {
             const CLASS_NAME: &'static std::ffi::CStr = $crate::c_stringify!($name);
             const FULL_TYPE: &'static std::ffi::CStr = unsafe { std::ffi::CStr::from_ptr(concat!(module_path!(), "::", stringify!($name), "\0").as_ptr() as _) };
         }
@@ -89,7 +89,7 @@ macro_rules! decl_userdata {
         $(#[$meta])*
         $vis struct $name($($struct_decl)*);
 
-        impl $crate::vm::userdata::UserDataType for $name {
+        unsafe impl $crate::vm::userdata::UserDataType for $name {
             const CLASS_NAME: &'static std::ffi::CStr = $crate::c_stringify!($name);
             const FULL_TYPE: &'static std::ffi::CStr = unsafe { std::ffi::CStr::from_ptr(concat!(module_path!(), "::", stringify!($name), "\0").as_ptr() as _) };
         }
