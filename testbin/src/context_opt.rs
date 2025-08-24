@@ -34,18 +34,18 @@ use mlua::{Function, Lua, UserDataMethods};
 use std::time::Duration;
 
 struct TestContext {
-    value3: Vec<u64>,
+    value3: Vec<u32>,
 }
 
 decl_closure! {
-    fn context_push |ctx: ContextMut<TestContext>| (val: u64) -> () {
+    fn context_push |ctx: ContextMut<TestContext>| (val: u32) -> () {
         let mut ctx = ctx;
         ctx.value3.push(val);
     }
 }
 
 decl_closure! {
-    fn context_pop |ctx: ContextMut<TestContext>| () -> Option<u64> {
+    fn context_pop |ctx: ContextMut<TestContext>| () -> Option<u32> {
         let mut ctx = ctx;
         ctx.value3.pop()
     }
@@ -54,7 +54,7 @@ decl_closure! {
 pub fn test_context_mlua() -> Duration {
     let lua = Lua::new();
     lua.register_userdata_type::<TestContext>(|reg| {
-        reg.add_method_mut("push", |_, this, val: u64| {
+        reg.add_method_mut("push", |_, this, val: u32| {
             this.value3.push(val);
             Ok(())
         });
