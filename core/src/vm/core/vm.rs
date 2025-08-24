@@ -82,7 +82,7 @@ impl Vm {
                 warning!("Failed to register userdata type {:?}: {}", T::CLASS_NAME, e);
                 unsafe {
                     lua_pushnil(self.l);
-                    lua_setfield(self.l, REGISTRYINDEX, T::CLASS_NAME.as_ptr());
+                    lua_setfield(self.l, REGISTRYINDEX, T::FULL_TYPE.as_ptr());
                 }
                 Err(e)
             }

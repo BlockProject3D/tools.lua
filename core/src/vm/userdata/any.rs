@@ -138,7 +138,7 @@ impl<'a> AnyUserData<'a> {
     /// code otherwise using this function is UB.
     pub unsafe fn get_mut<T: UserData>(&mut self) -> crate::vm::Result<&mut T> {
         let this_ptr =
-            unsafe { luaL_testudata(self.vm.as_ptr(), self.index, T::CLASS_NAME.as_ptr()) }
+            unsafe { luaL_testudata(self.vm.as_ptr(), self.index, T::FULL_TYPE.as_ptr()) }
                 as *mut T;
         if this_ptr.is_null() {
             return Err(Error::Type(TypeError {

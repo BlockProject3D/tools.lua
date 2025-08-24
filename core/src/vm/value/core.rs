@@ -232,7 +232,7 @@ impl<'a, T: UserDataImmutable> FromLua<'a> for &'a T {
 
     fn from_lua(vm: &'a Vm, index: i32) -> crate::vm::Result<Self> {
         let this_ptr =
-            unsafe { luaL_testudata(vm.as_ptr(), index, T::CLASS_NAME.as_ptr()) } as *const T;
+            unsafe { luaL_testudata(vm.as_ptr(), index, T::FULL_TYPE.as_ptr()) } as *const T;
         if this_ptr.is_null() {
             return Err(Error::Type(TypeError {
                 expected: Type::Userdata,
@@ -342,7 +342,7 @@ unsafe impl<T: UserData> IntoLua for T {
     fn into_lua(self, vm: &Vm) -> u16 {
         let userdata = unsafe { lua_newuserdata(vm.as_ptr(), size_of::<T>()) } as *mut T;
         unsafe { userdata.write(self) };
-        unsafe { luaL_setmetatable(vm.as_ptr(), T::CLASS_NAME.as_ptr()) };
+        unsafe { luaL_setmetatable(vm.as_ptr(), T::FULL_TYPE.as_ptr()) };
         1
     }
 }

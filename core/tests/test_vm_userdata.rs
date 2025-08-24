@@ -32,7 +32,7 @@ use bp3d_lua::ffi::lua::RawNumber;
 use bp3d_lua::vm::function::types::RFunction;
 use bp3d_lua::vm::userdata::{AnyUserData, LuaDrop};
 use bp3d_lua::vm::{RootVm, Vm};
-use bp3d_lua::{decl_lib_func, decl_userdata, decl_userdata_mut};
+use bp3d_lua::{decl_lib_func, decl_userdata, impl_userdata, impl_userdata_mut};
 use std::sync::Mutex;
 use bp3d_lua::util::Namespace;
 
@@ -41,7 +41,7 @@ static MUTEX: Mutex<()> = Mutex::new(());
 static mut DROP_COUNTER: i32 = 0;
 static mut LUA_DROP_COUNTER: i32 = 0;
 
-pub struct MyInt(i64);
+decl_userdata!(pub struct MyInt(i64));
 
 impl LuaDrop for MyInt {
     fn lua_drop(&self, _: &Vm) {
@@ -59,7 +59,7 @@ impl Drop for MyInt {
     }
 }
 
-decl_userdata! {
+impl_userdata! {
     impl MyInt {
         fn tonumber(this: &MyInt) -> RawNumber {
             this.0 as _
@@ -99,10 +99,12 @@ decl_userdata! {
     }
 }
 
-#[derive(Debug)]
-pub struct BrokenObject;
+decl_userdata! {
+    #[derive(Debug)]
+    pub struct BrokenObject
+}
 
-decl_userdata_mut! {
+impl_userdata_mut! {
     impl BrokenObject {
         // this should blow up at init time
         fn replace(this: &mut BrokenObject, other: &BrokenObject) -> () {
@@ -111,17 +113,19 @@ decl_userdata_mut! {
     }
 }
 
-pub struct BrokenObject2(pub u128);
+decl_userdata!(pub struct BrokenObject2(pub u128));
 
-decl_userdata! {
+impl_userdata! {
     impl BrokenObject2 {
     }
 }
 
-#[derive(Debug)]
-pub struct BrokenObject3;
-
 decl_userdata! {
+    #[derive(Debug)]
+    pub struct BrokenObject3
+}
+
+impl_userdata! {
     impl BrokenObject3 {
         fn __gc(this: &BrokenObject3) -> () {
             println!("{:?}", this);
@@ -129,10 +133,12 @@ decl_userdata! {
     }
 }
 
-#[derive(Debug)]
-pub struct BrokenObject4;
-
 decl_userdata! {
+    #[derive(Debug)]
+    pub struct BrokenObject4
+}
+
+impl_userdata! {
     impl BrokenObject4 {
         fn __metatable(this: &BrokenObject3) -> () {
             println!("{:?}", this);

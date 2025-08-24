@@ -40,8 +40,6 @@ macro_rules! _impl_userdata_static {
 macro_rules! _impl_userdata {
     ($obj_name: ident, $($fn_name: ident),* { $([$($static_registry_tokens: tt)*];)* }) => {
         impl $crate::vm::userdata::UserData for $obj_name {
-            const CLASS_NAME: &'static std::ffi::CStr = $crate::c_stringify!($obj_name);
-
             fn register<C: $crate::vm::userdata::NameConvert>(registry: &$crate::vm::userdata::core::Registry<Self, C>) -> std::result::Result<(), $crate::vm::userdata::Error> {
                 $(
                     let f = $obj_name::$fn_name()?;
@@ -60,6 +58,46 @@ macro_rules! _impl_userdata {
 
 #[macro_export]
 macro_rules! decl_userdata {
+    (
+        $(#[$meta: meta])*
+        $vis: vis struct $name:ident
+    ) => {
+        $(#[$meta])*
+        $vis struct $name;
+
+        impl $crate::vm::userdata::UserDataType for $name {
+            const CLASS_NAME: &'static std::ffi::CStr = $crate::c_stringify!($name);
+            const FULL_TYPE: &'static std::ffi::CStr = unsafe { std::ffi::CStr::from_ptr(concat!(module_path!(), "::", stringify!($name), "\0").as_ptr() as _) };
+        }
+    };
+    (
+        $(#[$meta: meta])*
+        $vis: vis struct $name:ident { $($struct_decl: tt)* }
+    ) => {
+        $(#[$meta])*
+        $vis struct $name { $($struct_decl)* }
+
+        impl $crate::vm::userdata::UserDataType for $name {
+            const CLASS_NAME: &'static std::ffi::CStr = $crate::c_stringify!($name);
+            const FULL_TYPE: &'static std::ffi::CStr = unsafe { std::ffi::CStr::from_ptr(concat!(module_path!(), "::", stringify!($name), "\0").as_ptr() as _) };
+        }
+    };
+    (
+        $(#[$meta: meta])*
+        $vis: vis struct $name:ident($($struct_decl: tt)*)
+    ) => {
+        $(#[$meta])*
+        $vis struct $name($($struct_decl)*);
+
+        impl $crate::vm::userdata::UserDataType for $name {
+            const CLASS_NAME: &'static std::ffi::CStr = $crate::c_stringify!($name);
+            const FULL_TYPE: &'static std::ffi::CStr = unsafe { std::ffi::CStr::from_ptr(concat!(module_path!(), "::", stringify!($name), "\0").as_ptr() as _) };
+        }
+    };
+}
+
+#[macro_export]
+macro_rules! impl_userdata {
     (
         impl $obj_name: ident {
             $(
@@ -82,7 +120,7 @@ macro_rules! decl_userdata {
 }
 
 #[macro_export]
-macro_rules! decl_userdata_mut {
+macro_rules! impl_userdata_mut {
     (
         impl $obj_name: ident {
             $(

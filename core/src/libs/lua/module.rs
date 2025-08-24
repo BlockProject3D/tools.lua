@@ -26,7 +26,7 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use crate::decl_userdata_mut;
+use crate::{decl_userdata, impl_userdata_mut};
 use crate::libs::Lib;
 use crate::util::module::ModuleManager;
 use crate::util::module::Result;
@@ -55,15 +55,19 @@ impl Module {
     }
 }
 
-struct ModuleManagerWrapper(ModuleManager);
+decl_userdata!(struct ModuleManagerWrapper(ModuleManager));
 
-decl_userdata_mut! {
+impl_userdata_mut! {
     impl ModuleManagerWrapper {
         fn load(this: &mut ModuleManagerWrapper, vm: &Vm, lib: &str, plugin: &str) -> Result<()> {
             this.0.load(lib, plugin, vm)
         }
     }
 }
+
+//TODO: Re-write as a global to avoid safety bug where multiple instances of the module manager
+// exists for the application.
+//TODO: Put libs as global to allow threads and maybe future unload.
 
 impl Lib for Module {
     const NAMESPACE: &'static str = "";

@@ -29,11 +29,11 @@
 use crate::libs::Lib;
 use crate::util::Namespace;
 use crate::vm::function::types::RFunction;
-use crate::{decl_lib_func, decl_userdata};
+use crate::{decl_lib_func, decl_userdata, impl_userdata};
 
-struct InstantWrapper(bp3d_os::time::Instant);
+decl_userdata!(struct InstantWrapper(bp3d_os::time::Instant));
 
-decl_userdata! {
+impl_userdata! {
     impl InstantWrapper {
         fn elapsed(this: &InstantWrapper) -> f64 {
             this.0.elapsed().as_secs_f64()

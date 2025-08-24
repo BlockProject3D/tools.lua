@@ -314,7 +314,7 @@ unsafe impl IntoParam for () {
 impl<T: UserData> LuaType for &T {
     fn lua_type() -> Vec<TypeName> {
         vec![TypeName::Some(unsafe {
-            T::CLASS_NAME.to_str().unwrap_unchecked()
+            T::FULL_TYPE.to_str().unwrap_unchecked()
         })]
     }
 }
@@ -322,13 +322,13 @@ impl<T: UserData> LuaType for &T {
 impl<'a, T: UserData> FromParam<'a> for &'a T {
     #[inline(always)]
     unsafe fn from_param(vm: &'a Vm, index: i32) -> &'a T {
-        let obj_ptr = luaL_checkudata(vm.as_ptr(), index, T::CLASS_NAME.as_ptr()) as *const T;
+        let obj_ptr = luaL_checkudata(vm.as_ptr(), index, T::FULL_TYPE.as_ptr()) as *const T;
         unsafe { &*obj_ptr }
     }
 
     #[inline(always)]
     fn try_from_param(vm: &'a Vm, index: i32) -> Option<Self> {
-        let ptr = unsafe { luaL_testudata(vm.as_ptr(), index, T::CLASS_NAME.as_ptr()) } as *const T;
+        let ptr = unsafe { luaL_testudata(vm.as_ptr(), index, T::FULL_TYPE.as_ptr()) } as *const T;
         if ptr.is_null() {
             None
         } else {

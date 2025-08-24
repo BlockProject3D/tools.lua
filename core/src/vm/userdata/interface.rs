@@ -34,19 +34,20 @@ use std::ffi::CStr;
 /// This trait represents all types of UserData. An UserData is a type with a maximum alignment of 8
 /// with its memory tied to the Lua GC.
 #[cfg(feature = "send")]
-pub trait UserData: Send + Sized {
-    const CLASS_NAME: &'static CStr;
-
+pub trait UserData: Send + Sized + UserDataType {
     fn register<C: NameConvert>(registry: &Registry<Self, C>) -> Result<(), Error>;
 }
 
 /// This trait represents all types of UserData. An UserData is a type with a maximum alignment of 8
 /// with its memory tied to the Lua GC.
 #[cfg(not(feature = "send"))]
-pub trait UserData: Sized {
-    const CLASS_NAME: &'static CStr;
-
+pub trait UserData: Sized + UserDataType {
     fn register<C: NameConvert>(registry: &Registry<Self, C>) -> Result<(), Error>;
+}
+
+pub trait UserDataType {
+    const CLASS_NAME: &'static CStr;
+    const FULL_TYPE: &'static CStr;
 }
 
 /// This trait represents an UserData which is never borrowed mutably (excluding interior mutability

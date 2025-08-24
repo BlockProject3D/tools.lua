@@ -46,7 +46,7 @@ use crate::vm::Vm;
 ///
 /// returns: Option<Table>
 pub fn get_static_table<T: UserData>(vm: &Vm) -> Option<ImmutableTable<'_>> {
-    get_static_table_by_name(vm, T::CLASS_NAME)
+    get_static_table_by_name(vm, T::FULL_TYPE)
 }
 
 /// Returns the static table attached to the given UserData type.
@@ -87,7 +87,7 @@ pub fn get_static_table_by_name<'a>(vm: &'a Vm, name: &CStr) -> Option<Immutable
 ///
 /// returns: Option<ImmutableTable>
 pub fn get_metatable<T: UserData>(vm: &Vm) -> Option<ImmutableTable<'_>> {
-    get_metatable_by_name(vm, T::CLASS_NAME)
+    get_metatable_by_name(vm, T::FULL_TYPE)
 }
 
 /// Returns the metatable attached to the given UserData type.

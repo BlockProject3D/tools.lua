@@ -32,7 +32,7 @@ use crate::vm::function::types::RFunction;
 use crate::vm::function::IntoParam;
 use crate::vm::table::Table;
 use crate::vm::Vm;
-use crate::{decl_lib_func, decl_userdata};
+use crate::{decl_lib_func, decl_userdata, impl_userdata};
 use bp3d_os::time::{LocalOffsetDateTime, MonthExt};
 use bp3d_util::simple_error;
 use time::error::{ComponentRange, Format, InvalidFormatDescription};
@@ -47,9 +47,9 @@ simple_error! {
     }
 }
 
-struct OffsetDateTimeWrapper(OffsetDateTime);
+decl_userdata!(struct OffsetDateTimeWrapper(OffsetDateTime));
 
-decl_userdata! {
+impl_userdata! {
     impl OffsetDateTimeWrapper {
         fn format(this: &OffsetDateTimeWrapper, format: &str) -> Result<String, FormatError> {
             let desc = parse(format)?;
