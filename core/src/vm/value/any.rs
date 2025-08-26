@@ -48,6 +48,8 @@ pub enum AnyValue<'a, T, U, R> {
     None,
     Nil,
     Number(f64),
+    Int64(i64),
+    UInt64(u64),
     Boolean(bool),
     String(&'a str),
     Buffer(&'a [u8]),
@@ -72,6 +74,8 @@ impl<T: Display, U: Display, R: Display> Display for AnyValue<'_, T, U, R> {
             AnyValue::Table(v) => write!(f, "{}", v),
             AnyValue::UserData(v) => write!(f, "{}", v),
             AnyValue::Thread(v) => write!(f, "{}", v),
+            AnyValue::Int64(v) => write!(f, "{}", v),
+            AnyValue::UInt64(v) => write!(f, "{}", v)
         }
     }
 }
@@ -89,6 +93,8 @@ impl<T, U, R> AnyValue<'_, T, U, R> {
             AnyValue::Table(_) => Type::Table,
             AnyValue::UserData(_) => Type::Userdata,
             AnyValue::Thread(_) => Type::Thread,
+            AnyValue::Int64(_) => Type::Cdata,
+            AnyValue::UInt64(_) => Type::Cdata
         }
     }
 
@@ -135,6 +141,8 @@ unsafe impl IntoLua for Any<'_> {
             AnyValue::Table(v) => v.into_lua(vm),
             AnyValue::UserData(_) => 0,
             AnyValue::Thread(_) => 0,
+            AnyValue::Int64(v) => v.into_lua(vm),
+            AnyValue::UInt64(v) => v.into_lua(vm)
         }
     }
 }
@@ -181,6 +189,11 @@ impl<'a, T: FromLua<'a>, U: FromLua<'a>, R: FromLua<'a>> FromLua<'a> for AnyValu
                 Ok(unsafe { AnyValue::UserData(FromLua::from_lua_unchecked(vm, index)) })
             }
             Type::Thread => Ok(unsafe { AnyValue::Thread(FromLua::from_lua_unchecked(vm, index)) }),
+            Type::Cdata => {
+                i64::from_lua(vm, index).map(AnyValue::Int64)
+                    .or_else(|_| u64::from_lua(vm, index).map(AnyValue::UInt64))
+                    .map_err(|_| Error::UnsupportedType(ty))
+            },
         }
     }
 }

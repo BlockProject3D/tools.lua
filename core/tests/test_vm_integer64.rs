@@ -28,6 +28,7 @@
 
 use bp3d_lua::ffi::lua::Type;
 use bp3d_lua::vm::RootVm;
+use bp3d_lua::vm::value::any::Any;
 use bp3d_lua::vm::value::util::check_type_equals;
 
 #[test]
@@ -64,5 +65,13 @@ fn test_vm_i64() {
 
 #[test]
 fn test_vm_i64_any() {
-
+    let vm = RootVm::new();
+    let top = vm.top();
+    let val: Any = vm.run_code(c"return 2ULL^64ULL-1ULL").unwrap();
+    let val2: Any = vm.run_code(c"return 2LL^63LL-1LL").unwrap();
+    assert_eq!(val.ty(), Type::Cdata);
+    assert_eq!(val, Any::UInt64(u64::MAX));
+    assert_eq!(val2.ty(), Type::Cdata);
+    assert_eq!(val2, Any::Int64(i64::MAX));
+    assert_eq!(top + 2, vm.top());
 }
