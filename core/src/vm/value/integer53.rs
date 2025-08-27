@@ -42,8 +42,8 @@ pub struct Int53(i64);
 pub struct UInt53(u64);
 
 impl Int53 {
-    pub const MIN: Int53 = Int53(-2^52);
-    pub const MAX: Int53 = Int53(2^52 - 1);
+    pub const MIN: Int53 = Int53(-(2 << 51));
+    pub const MAX: Int53 = Int53((2 << 51) - 1);
 
     #[inline(always)]
     pub const fn to_i64(self) -> i64 {
@@ -53,7 +53,7 @@ impl Int53 {
 
 impl UInt53 {
     pub const MIN: UInt53 = UInt53(0);
-    pub const MAX: UInt53 = UInt53(2^53 - 1);
+    pub const MAX: UInt53 = UInt53((2 << 52) - 1);
 
     #[inline(always)]
     pub const fn to_u64(self) -> u64 {
