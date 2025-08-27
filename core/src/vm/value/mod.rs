@@ -34,5 +34,6 @@ pub mod types;
 pub mod util;
 mod raw_ptr;
 mod unknown;
+mod integer53;
 
 pub use interface::*;

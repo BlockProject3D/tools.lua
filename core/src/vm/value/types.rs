@@ -34,6 +34,8 @@ pub use super::function::Function;
 pub use super::raw_ptr::RawPtr;
 pub use super::unknown::Unknown;
 
+pub use super::integer53::*;
+
 #[derive(Copy, Clone, PartialOrd, PartialEq, Debug)]
 pub struct Number(pub RawNumber);
 

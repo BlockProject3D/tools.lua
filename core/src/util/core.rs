@@ -28,8 +28,11 @@
 
 //! Core rust utilities module.
 
+use core::fmt;
 use std::borrow::Cow;
+use std::error::Error;
 use std::ffi::{CStr, CString, OsStr};
+use std::fmt::Display;
 use std::path::Path;
 
 pub trait AnyStr {
@@ -68,3 +71,14 @@ unsafe impl<T> SimpleDrop for &T {}
 unsafe impl SimpleDrop for &[u8] {}
 unsafe impl SimpleDrop for &OsStr {}
 unsafe impl SimpleDrop for &Path {}
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub struct TryFromIntError;
+
+impl Display for TryFromIntError {
+    fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt.write_str("out of range integral type conversion attempted")
+    }
+}
+
+impl Error for TryFromIntError { }
