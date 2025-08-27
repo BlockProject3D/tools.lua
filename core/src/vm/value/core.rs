@@ -180,6 +180,8 @@ macro_rules! impl_from_lua_64 {
                 unsafe { $push_func(vm.as_ptr(), self as _) as _ }
             }
         }
+
+        unsafe impl ImmutableValue for $t {}
     }
 }
 
