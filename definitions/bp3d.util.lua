@@ -33,6 +33,7 @@ bp3d.util = {}
 bp3d.util.string = {}
 bp3d.util.table = {}
 bp3d.util.utf8 = {}
+bp3d.util.num = {}
 
 --- Checks if the given sub string `needle` can be found in `src`.
 ---
@@ -211,3 +212,25 @@ bp3d.util.utf8.lower = function(src) end
 --- @param end1 integer end position in the input string.
 --- @return string
 bp3d.util.utf8.sub = function(src, start, end1) end
+
+--- @class bp3d.util.num
+--- @field INT53_MIN number -2^52
+--- @field INT53_MAX number 2^52-1
+--- @field UINT53_MIN number 0
+--- @field UINT53_MAX number 2^53-1
+--- @field INT64_MIN number -2^63; this is actually not a number but a special LuaJIT cdata type
+--- @field INT64_MAX number 2^63-1; this is actually not a number but a special LuaJIT cdata type
+--- @field UINT64_MIN number 0; this is actually not a number but a special LuaJIT cdata type
+--- @field UINT64_MAX number 2^64-1; this is actually not a number but a special LuaJIT cdata type
+
+--- Converts the input value to an integer string.
+---
+--- @param value any
+--- @return string
+bp3d.util.num.toistring = function(value) end
+
+--- Converts the input value to an unsigned integer string.
+---
+--- @param value any
+--- @return string
+bp3d.util.num.toustring = function(value) end
