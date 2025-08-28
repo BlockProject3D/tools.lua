@@ -26,16 +26,52 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-mod string;
-mod table;
-mod utf8;
-mod num;
+use crate::decl_lib_func;
+use crate::libs::Lib;
+use crate::util::Namespace;
+use crate::vm::function::types::RFunction;
+use crate::vm::value::any::Any;
+use crate::vm::value::types::{Int53, UInt53};
 
-pub use string::String;
-pub use table::Table;
-pub use utf8::Utf8;
-pub use num::Num;
+decl_lib_func! {
+    fn toistring(val: Any) -> crate::vm::Result<String> {
+        let val = val.to_integer()?;
+        Ok(val.to_string())
+    }
+}
 
-// Workaround for language defect #22259.
-#[allow(non_upper_case_globals)]
-pub const Util: (Table, String, Utf8, Num) = (Table, String, Utf8, Num);
+decl_lib_func! {
+    fn toustring(val: Any) -> crate::vm::Result<String> {
+        let val = val.to_uinteger()?;
+        Ok(val.to_string())
+    }
+}
+
+pub struct Num;
+
+impl Lib for Num {
+    const NAMESPACE: &'static str = "bp3d.util.num";
+
+    fn load(&self, namespace: &mut Namespace) -> crate::vm::Result<()> {
+        namespace.add([
+            ("UINT53_MAX", UInt53::MAX),
+            ("UINT53_MIN", UInt53::MIN)
+        ])?;
+        namespace.add([
+            ("INT53_MAX", Int53::MAX),
+            ("INT53_MIN", Int53::MIN)
+        ])?;
+        namespace.add([
+            ("UINT64_MAX", u64::MAX),
+            ("UINT64_MIN", u64::MIN)
+        ])?;
+        namespace.add([
+            ("INT64_MAX", i64::MAX),
+            ("INT64_MIN", i64::MIN)
+        ])?;
+        namespace.add([
+            ("toistring", RFunction::wrap(toistring)),
+            ("toustring", RFunction::wrap(toustring))
+        ])
+    }
+}

@@ -309,3 +309,21 @@ fn test_vm_lib_debug() {
         assert(#stack > 0)
     ").unwrap();
 }
+
+#[test]
+fn test_vm_lib_util_num() {
+    let mut vm = RootVm::new();
+    Util.register(&mut vm).unwrap();
+    let val = vm.run_code::<&str>(c"return bp3d.util.num.toistring(bp3d.util.num.INT53_MAX)").unwrap();
+    assert_eq!(val, "4503599627370495");
+    let val = vm.run_code::<&str>(c"return bp3d.util.num.toistring(bp3d.util.num.INT53_MIN)").unwrap();
+    assert_eq!(val, "-4503599627370496");
+    let val = vm.run_code::<&str>(c"return bp3d.util.num.toustring(bp3d.util.num.UINT53_MAX)").unwrap();
+    assert_eq!(val, "9007199254740991");
+    let val = vm.run_code::<&str>(c"return bp3d.util.num.toistring(bp3d.util.num.INT64_MIN)").unwrap();
+    assert_eq!(val, "-9223372036854775808");
+    let val = vm.run_code::<&str>(c"return bp3d.util.num.toistring(bp3d.util.num.INT64_MAX)").unwrap();
+    assert_eq!(val, "9223372036854775807");
+    let val = vm.run_code::<&str>(c"return bp3d.util.num.toustring(bp3d.util.num.UINT64_MAX)").unwrap();
+    assert_eq!(val, "18446744073709551615");
+}
