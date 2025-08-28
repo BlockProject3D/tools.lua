@@ -111,12 +111,29 @@ impl<T, U, R> AnyValue<'_, T, U, R> {
         }
     }
 
-    pub fn to_integer(&self) -> Result<crate::ffi::lua::RawInteger, Error> {
+    pub fn to_integer(&self) -> Result<i64, Error> {
         match self {
             AnyValue::Number(v) => Ok(*v as _),
             AnyValue::String(v) => {
-                crate::ffi::lua::RawInteger::from_str(v).map_err(|_| Error::ParseInt)
+                i64::from_str(v).map_err(|_| Error::ParseInt)
             }
+            AnyValue::Int64(v) => Ok(*v),
+            AnyValue::UInt64(v) => Ok(*v as _),
+            _ => Err(Error::Type(TypeError {
+                expected: Type::Number,
+                actual: self.ty(),
+            })),
+        }
+    }
+
+    pub fn to_uinteger(&self) -> Result<u64, Error> {
+        match self {
+            AnyValue::Number(v) => Ok(*v as _),
+            AnyValue::String(v) => {
+                u64::from_str(v).map_err(|_| Error::ParseInt)
+            }
+            AnyValue::Int64(v) => Ok(*v as _),
+            AnyValue::UInt64(v) => Ok(*v),
             _ => Err(Error::Type(TypeError {
                 expected: Type::Number,
                 actual: self.ty(),
