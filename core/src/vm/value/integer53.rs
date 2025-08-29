@@ -45,6 +45,16 @@ impl Int53 {
     pub const MIN: Int53 = Int53(-(2 << 51));
     pub const MAX: Int53 = Int53((2 << 51) - 1);
 
+    pub const fn from_i64_lossy(value: i64) -> Int53 {
+        if value < Self::MIN.0 {
+            Self::MIN
+        } else if value > Self::MAX.0 {
+            Self::MAX
+        } else {
+            Int53(value)
+        }
+    }
+
     #[inline(always)]
     pub const fn to_i64(self) -> i64 {
         self.0
@@ -54,6 +64,11 @@ impl Int53 {
 impl UInt53 {
     pub const MIN: UInt53 = UInt53(0);
     pub const MAX: UInt53 = UInt53((2 << 52) - 1);
+
+    #[inline(always)]
+    pub const fn from_u64_lossy(value: u64) -> UInt53 {
+        UInt53(value & Self::MAX.0)
+    }
 
     #[inline(always)]
     pub const fn to_u64(self) -> u64 {
