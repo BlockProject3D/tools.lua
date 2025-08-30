@@ -124,7 +124,7 @@ impl Lua {
             if let Err(e) = (libs::os::Compat, libs::os::Instant, libs::os::Time).register(vm) {
                 error!("Failed to load OS library: {}", e);
             }
-            if let Err(e) = (libs::util::String, libs::util::Table, libs::util::Utf8).register(vm) {
+            if let Err(e) = libs::util::Util.register(vm) {
                 error!("Failed to load util library: {}", e);
             }
             if let Err(e) = libs::lua::Lua::new().load_chroot_path(&args.data).build().register(vm) {
