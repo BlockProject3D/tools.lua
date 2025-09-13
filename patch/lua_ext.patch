@@ -192,7 +192,7 @@ index e9fc25b4..68996ee0 100644
 +LUALIB_API void* lua_ext_keyreg_ref(void* ptr) {
 +  int flag = 0;
 +  if (BP3D_LUA_EXT_KEYREG_REFS == 0) {
-+    BP3D_LUA_EXT_KEYREG = (atomic_intptr_t)ptr;
++    BP3D_LUA_EXT_KEYREG = (atomic_intptr_t)(uintptr_t)ptr;
 +    flag = 1;
 +  }
 +  ++BP3D_LUA_EXT_KEYREG_REFS;
