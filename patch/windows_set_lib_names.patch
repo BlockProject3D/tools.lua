@@ -1,7 +1,16 @@
 diff --git a/src/msvcbuild.bat b/src/msvcbuild.bat
-index 69c0c61a..0665eaa3 100644
+index 69c0c61a..f06df5e9 100644
 --- a/src/msvcbuild.bat
 +++ b/src/msvcbuild.bat
+@@ -16,7 +16,7 @@
+ @setlocal
+ @rem Add more debug flags here, e.g. DEBUGCFLAGS=/DLUA_USE_ASSERT
+ @set DEBUGCFLAGS=
+-@set LJCOMPILE=cl /nologo /c /O2 /W3 /D_CRT_SECURE_NO_DEPRECATE /D_CRT_STDIO_INLINE=__declspec(dllexport)__inline
++@set LJCOMPILE=cl /nologo /c /std:c11 /O2 /W3 /D_CRT_SECURE_NO_DEPRECATE /D_CRT_STDIO_INLINE=__declspec(dllexport)__inline
+ @set LJDYNBUILD=/DLUA_BUILD_AS_DLL /MD
+ @set LJDYNBUILD_DEBUG=/DLUA_BUILD_AS_DLL /MDd 
+ @set LJCOMPILETARGET=/Zi
 @@ -29,8 +29,6 @@
  @set DASMDIR=..\dynasm
  @set DASM=%DASMDIR%\dynasm.lua
