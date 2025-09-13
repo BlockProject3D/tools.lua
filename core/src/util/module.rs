@@ -206,8 +206,11 @@ impl ModuleManager {
 
     pub fn new(builtins: &'static [&'static VirtualLibrary]) -> Self {
         let mut loader = ModuleLoader::new(builtins);
-        loader.add_public_dependency("bp3d-lua", VERSION);
-        loader.add_public_dependency("time", TIME_VERSION);
+        #[cfg(feature = "send")]
+        loader.add_public_dependency("bp3d-lua", VERSION, ["send"]);
+        #[cfg(not(feature = "send"))]
+        loader.add_public_dependency("bp3d-lua", VERSION, ["-send"]);
+        loader.add_public_dependency("time", TIME_VERSION, ["*"]);
         Self {
             set: Default::default(),
             loader,
