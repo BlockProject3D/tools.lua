@@ -7,6 +7,8 @@ on:
 jobs:
   Test:
     uses: BlockProject3D/workflows/.github/workflows/Build_Test.yml@main
+    with:
+      rust_components: rust-src
 
   Analyze:
     uses: BlockProject3D/workflows/.github/workflows/Analyze.yml@main
@@ -14,6 +16,8 @@ jobs:
 
   Coverage:
     uses: BlockProject3D/workflows/.github/workflows/Coverage.yml@main
+    with:
+      rust_components: rust-src
 
   Release:
     uses: BlockProject3D/workflows/.github/workflows/Release.yml@main
