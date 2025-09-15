@@ -31,6 +31,7 @@ use crate::util::Namespace;
 use crate::vm::function::types::RFunction;
 use crate::vm::function::IntoParam;
 use crate::vm::table::Table;
+use crate::vm::value::IntoLua;
 use crate::vm::Vm;
 use crate::{decl_lib_func, decl_userdata, impl_userdata};
 use bp3d_os::time::{LocalOffsetDateTime, MonthExt};
@@ -38,7 +39,6 @@ use bp3d_util::simple_error;
 use time::error::{ComponentRange, Format, InvalidFormatDescription};
 use time::format_description::parse;
 use time::{Date, Duration, Month, OffsetDateTime, PrimitiveDateTime, UtcOffset};
-use crate::vm::value::IntoLua;
 
 simple_error! {
     FormatError {
@@ -182,10 +182,13 @@ impl Lib for Time {
     const NAMESPACE: &'static str = "bp3d.os.time";
 
     fn load(&self, namespace: &mut Namespace) -> crate::vm::Result<()> {
-        namespace.add_userdata::<OffsetDateTimeWrapper>(c"OffsetDateTime", crate::vm::userdata::case::Camel)?;
+        namespace.add_userdata::<OffsetDateTimeWrapper>(
+            c"OffsetDateTime",
+            crate::vm::userdata::case::Camel,
+        )?;
         namespace.add([
             ("nowUtc", RFunction::wrap(now_utc)),
-            ("nowLocal", RFunction::wrap(now_local))
+            ("nowLocal", RFunction::wrap(now_local)),
         ])
     }
 }

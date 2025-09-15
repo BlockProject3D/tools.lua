@@ -26,22 +26,22 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use crate::data::DataOut;
+use crate::data_out::Log;
+use bp3d_debug::{error, warning};
+use bp3d_lua::util::LuaThread;
+use bp3d_lua::vm::Vm;
+use bp3d_lua::vm::thread::core::State;
+use bp3d_lua::vm::thread::value::Thread;
+use bp3d_os::time::Instant;
 use std::cell::RefCell;
 use std::cmp::Ordering;
 use std::collections::BinaryHeap;
-use bp3d_debug::{error, warning};
-use bp3d_os::time::Instant;
-use bp3d_lua::util::LuaThread;
-use bp3d_lua::vm::thread::core::State;
-use bp3d_lua::vm::thread::value::Thread;
-use bp3d_lua::vm::Vm;
-use crate::data::DataOut;
-use crate::data_out::Log;
 
 struct Task {
     at_ms: u64,
     period_ms: Option<u32>,
-    thread: LuaThread
+    thread: LuaThread,
 }
 
 impl Eq for Task {}
@@ -66,7 +66,7 @@ impl PartialOrd for Task {
 
 struct Scheduler {
     main: BinaryHeap<Task>,
-    instant: Instant
+    instant: Instant,
 }
 
 impl Scheduler {
@@ -74,7 +74,7 @@ impl Scheduler {
         let task = Task {
             at_ms: self.instant.elapsed().as_millis() as u64 + after_ms as u64,
             period_ms: None,
-            thread: LuaThread::create(value)
+            thread: LuaThread::create(value),
         };
         self.main.push(task);
     }
@@ -83,7 +83,7 @@ impl Scheduler {
         let task = Task {
             at_ms: self.instant.elapsed().as_millis() as u64 + period_ms as u64,
             period_ms: Some(period_ms),
-            thread: LuaThread::create(value)
+            thread: LuaThread::create(value),
         };
         self.main.push(task);
     }
@@ -96,7 +96,11 @@ impl Scheduler {
                 let out = match task.thread.as_thread().resume::<Option<u32>>(()) {
                     Ok(v) => v,
                     Err(e) => {
-                        error!("{}: Failed to schedule lua thread: {:?}", task.thread.as_thread(), e);
+                        error!(
+                            "{}: Failed to schedule lua thread: {:?}",
+                            task.thread.as_thread(),
+                            e
+                        );
                         logger.send(Log("scheduler", e.to_string()));
                         task.thread.delete(vm);
                         continue;
@@ -111,7 +115,10 @@ impl Scheduler {
                         self.main.push(task);
                         continue;
                     } else {
-                        warning!("{}: Attempt to change period or time of terminated task.", task.thread.as_thread());
+                        warning!(
+                            "{}: Attempt to change period or time of terminated task.",
+                            task.thread.as_thread()
+                        );
                         task.thread.delete(vm);
                         continue;
                     }
@@ -121,7 +128,10 @@ impl Scheduler {
                         task.at_ms = time + period_ms as u64;
                         self.main.push(task);
                     } else {
-                        warning!("{}: Attempt to re-schedule terminated task.", task.thread.as_thread());
+                        warning!(
+                            "{}: Attempt to re-schedule terminated task.",
+                            task.thread.as_thread()
+                        );
                         task.thread.delete(vm);
                     }
                 }
@@ -136,7 +146,10 @@ pub struct SchedulerPtr(RefCell<Scheduler>);
 
 impl SchedulerPtr {
     pub fn new() -> Self {
-        Self(RefCell::new(Scheduler { main: BinaryHeap::new(), instant: Instant::now() }))
+        Self(RefCell::new(Scheduler {
+            main: BinaryHeap::new(),
+            instant: Instant::now(),
+        }))
     }
 
     pub fn schedule_in(&self, value: Thread, after_ms: u32) {

@@ -29,9 +29,9 @@
 use crate::ffi::lua::{lua_pushcclosure, CFunction, State};
 use crate::vm::closure::{FromUpvalue, IntoUpvalue};
 use crate::vm::function::{FromParam, IntoParam};
+use crate::vm::value::types::RawPtr;
 use crate::vm::value::IntoLua;
 use crate::vm::Vm;
-use crate::vm::value::types::RawPtr;
 
 pub struct RClosure<T> {
     func: CFunction,
@@ -66,14 +66,14 @@ impl RClosure<RawPtr<()>> {
     where
         for<'a> T: FromParam<'a>,
         R: IntoParam,
-        F: Send
+        F: Send,
     {
         let ptr = crate::vm::core::destructor::Pool::attach_send(vm, Box::new(fun));
         extern "C-unwind" fn _cfunc<T, R, F: Fn(T) -> R>(l: State) -> i32
         where
             for<'a> T: FromParam<'a>,
             R: IntoParam,
-            F: Send
+            F: Send,
         {
             let vm = unsafe { Vm::from_raw(l) };
             let upvalue: RawPtr<F> = unsafe { FromUpvalue::from_upvalue(&vm, 1) };
@@ -87,14 +87,14 @@ impl RClosure<RawPtr<()>> {
     #[cfg(not(feature = "send"))]
     pub fn from_rust<T, R, F: Fn(T) -> R + 'static>(vm: &Vm, fun: F) -> Self
     where
-            for<'a> T: FromParam<'a>,
-            R: IntoParam
+        for<'a> T: FromParam<'a>,
+        R: IntoParam,
     {
         let ptr = crate::vm::core::destructor::Pool::attach(vm, Box::new(fun));
         extern "C-unwind" fn _cfunc<T, R, F: Fn(T) -> R>(l: State) -> i32
         where
-                for<'a> T: FromParam<'a>,
-                R: IntoParam,
+            for<'a> T: FromParam<'a>,
+            R: IntoParam,
         {
             let vm = unsafe { Vm::from_raw(l) };
             let upvalue: RawPtr<F> = unsafe { FromUpvalue::from_upvalue(&vm, 1) };

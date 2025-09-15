@@ -31,15 +31,16 @@ use crate::vm::Vm;
 
 pub struct LuaThread {
     key: Key<crate::vm::registry::types::Thread>,
-    thread: crate::vm::thread::core::Thread<'static>
+    thread: crate::vm::thread::core::Thread<'static>,
 }
 
 impl LuaThread {
     pub fn create(value: crate::vm::thread::value::Thread) -> Self {
-        let thread = unsafe { crate::vm::thread::core::Thread::from_raw(value.as_thread().as_ptr()) };
+        let thread =
+            unsafe { crate::vm::thread::core::Thread::from_raw(value.as_thread().as_ptr()) };
         Self {
             key: Key::new(value),
-            thread
+            thread,
         }
     }
 

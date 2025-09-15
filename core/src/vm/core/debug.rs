@@ -26,14 +26,14 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::collections::HashMap;
 use crate::vm::core::destructor::Pool;
+use crate::vm::registry::lua_ref::LuaRef as LiveLuaRef;
 use crate::vm::registry::named::Key;
 use crate::vm::registry::types::LuaRef;
-use crate::vm::registry::lua_ref::LuaRef as LiveLuaRef;
 use crate::vm::userdata::UserData;
 use crate::vm::value::types::RawPtr;
 use crate::vm::Vm;
+use std::collections::HashMap;
 
 pub trait DebugItemType {
     const NAME: &'static str;
@@ -54,7 +54,7 @@ pub trait DebugItem<T: DebugItemType> {
     fn describe() -> String;
 }
 
-#[cfg(feature="libs-core")]
+#[cfg(feature = "libs-core")]
 impl<T: crate::libs::Lib + ?Sized> DebugItem<Lib> for T {
     fn describe() -> String {
         let lib_name = std::any::type_name::<T>();
@@ -73,12 +73,15 @@ impl<T: UserData> DebugItem<Class> for T {
 static DBG_REG: Key<LuaRef<RawPtr<DebugRegistry>>> = Key::new("__debug_registry__");
 
 pub struct DebugRegistry {
-    map: HashMap<&'static str, Vec<String>>
+    map: HashMap<&'static str, Vec<String>>,
 }
 
 impl DebugRegistry {
     fn add_internal<D: DebugItem<T> + ?Sized, T: DebugItemType>(&mut self) {
-        self.map.entry(T::NAME).or_insert_with(Vec::new).push(D::describe());
+        self.map
+            .entry(T::NAME)
+            .or_insert_with(Vec::new)
+            .push(D::describe());
     }
 
     fn list_internal<T: DebugItemType>(&self, _: T) -> Option<Vec<String>> {
@@ -87,7 +90,12 @@ impl DebugRegistry {
 
     fn get(vm: &Vm) -> RawPtr<DebugRegistry> {
         if let None = DBG_REG.push(vm) {
-            let ptr = Pool::attach_send(vm, Box::new(DebugRegistry { map: HashMap::new() }));
+            let ptr = Pool::attach_send(
+                vm,
+                Box::new(DebugRegistry {
+                    map: HashMap::new(),
+                }),
+            );
             DBG_REG.set(LiveLuaRef::new(vm, RawPtr::new(ptr)));
         }
         let ptr = DBG_REG.push(vm).unwrap().get();

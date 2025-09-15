@@ -26,13 +26,13 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::marker::PhantomData;
 use crate::ffi::lua::{lua_replace, lua_settop};
 use crate::impl_simple_registry_value_static;
 use crate::vm::registry::{FromIndex, Set};
-use crate::vm::value::{FromLua, IntoLua};
 use crate::vm::value::types::RawPtr;
+use crate::vm::value::{FromLua, IntoLua};
 use crate::vm::Vm;
+use std::marker::PhantomData;
 
 /// Represents a simple value type which can be manipulated by [LuaRef].
 ///
@@ -129,7 +129,9 @@ impl<'a, T> Drop for LuaRef<'a, T> {
     fn drop(&mut self) {
         // Remove the object from the lua stack if it is on top of the stack.
         if self.index == self.vm.top() {
-            unsafe { lua_settop(self.vm.as_ptr(), -2); }
+            unsafe {
+                lua_settop(self.vm.as_ptr(), -2);
+            }
         }
     }
 }
@@ -157,7 +159,10 @@ impl<T: SimpleRegistryValue + 'static> super::Value for super::types::LuaRef<T> 
     }
 }
 
-unsafe impl<'a, T> SimpleValue<'a> for T where T: FromLua<'a> + IntoLua {
+unsafe impl<'a, T> SimpleValue<'a> for T
+where
+    T: FromLua<'a> + IntoLua,
+{
     #[inline(always)]
     fn into_lua(self, vm: &'a Vm) {
         // This ensures the safety guarentee still holds.

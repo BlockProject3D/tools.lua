@@ -28,14 +28,14 @@
 
 #![cfg(all(feature = "root-vm", feature = "util-method"))]
 
-use std::ffi::CStr;
 use bp3d_lua::util::{LuaFunction, LuaMethod};
 use bp3d_lua::vm::registry::core::Key;
 use bp3d_lua::vm::registry::lua_ref::LuaRef as LiveLuaRef;
 use bp3d_lua::vm::registry::types::LuaRef;
-use bp3d_lua::vm::RootVm;
 use bp3d_lua::vm::table::Table;
 use bp3d_lua::vm::value::types::Function;
+use bp3d_lua::vm::RootVm;
+use std::ffi::CStr;
 
 const METHODS: &CStr = c"
 local obj = { ctx = 'this is a test' }
@@ -64,10 +64,12 @@ fn test_vm_registry_method() {
 fn test_vm_registry_function() {
     let vm = RootVm::new();
     let top = vm.top();
-    let obj: Function = vm.run_code(c"return function() return 'Hello world' end").unwrap();
+    let obj: Function = vm
+        .run_code(c"return function() return 'Hello world' end")
+        .unwrap();
     let f = LuaFunction::create(obj);
     assert_eq!(vm.top(), top); // The function should have been popped from the stack following the
-    // call to LuaFunction
+                               // call to LuaFunction
     let str: &str = f.call(&vm, ()).unwrap();
     assert_eq!(str, "Hello world");
     assert_eq!(vm.top(), top + 1); // 1 result
@@ -80,7 +82,7 @@ fn test_vm_registry_string() {
     let r = LiveLuaRef::new(&vm, "this is a test");
     let key: Key<LuaRef<&str>> = Key::new(r);
     assert_eq!(vm.top(), top); // The string should have been popped from the stack like any normal
-    // registry creation operation.
+                               // registry creation operation.
     {
         let value = key.push(&vm).get();
         assert_eq!(value, "this is a test");

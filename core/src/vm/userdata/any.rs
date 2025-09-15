@@ -27,18 +27,20 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::ffi::laux::luaL_testudata;
-use crate::ffi::lua::{lua_pushvalue, lua_replace, lua_settop, lua_topointer, lua_touserdata, lua_type, Type};
-use crate::vm::error::{Error, TypeError};
-use crate::vm::userdata::{UserData, UserDataImmutable};
-use crate::vm::value::{FromLua, ImmutableValue, IntoLua};
-use crate::vm::Vm;
-use std::fmt::{Debug, Display};
+use crate::ffi::lua::{
+    lua_pushvalue, lua_replace, lua_settop, lua_topointer, lua_touserdata, lua_type, Type,
+};
 use crate::util::core::{AnyStr, SimpleDrop};
 use crate::util::LuaFunction;
+use crate::vm::error::{Error, TypeError};
 use crate::vm::table::ImmutableTable;
+use crate::vm::userdata::{UserData, UserDataImmutable};
 use crate::vm::util::LuaType;
 use crate::vm::value::types::Function;
 use crate::vm::value::util::{check_get_metatable, check_push_value};
+use crate::vm::value::{FromLua, ImmutableValue, IntoLua};
+use crate::vm::Vm;
+use std::fmt::{Debug, Display};
 
 pub struct AnyUserData<'a> {
     vm: &'a Vm,
@@ -66,14 +68,15 @@ impl Eq for AnyUserData<'_> {}
 //Stupid fmt name in Rust which causes conflicts...
 fn internal_display(ud: &AnyUserData, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     let res = ud.vm.scope(|_| {
-        let res: crate::vm::Result<&str> = ud.call_method("__tostring", ())
+        let res: crate::vm::Result<&str> = ud
+            .call_method("__tostring", ())
             .or_else(|_| ud.call_method("tostring", ()));
         match res {
             Ok(v) => {
                 let type_name = ud.get_type_name()?;
                 Ok(write!(f, "{}({})", type_name, v))
-            },
-            Err(e) => Err(e)
+            }
+            Err(e) => Err(e),
         }
     });
     match res {
@@ -82,7 +85,7 @@ fn internal_display(ud: &AnyUserData, f: &mut std::fmt::Formatter<'_>) -> std::f
             f,
             "userdata@{:X}",
             unsafe { lua_touserdata(ud.vm.as_ptr(), ud.index) } as usize
-        )
+        ),
     }
 }
 
@@ -164,7 +167,11 @@ impl<'a> AnyUserData<'a> {
         Ok(value2)
     }
 
-    pub fn call_method<'b, T: FromLua<'b>>(&'b self, name: impl AnyStr, args: impl IntoLua) -> crate::vm::Result<T> {
+    pub fn call_method<'b, T: FromLua<'b>>(
+        &'b self,
+        name: impl AnyStr,
+        args: impl IntoLua,
+    ) -> crate::vm::Result<T> {
         let tbl = self.get_metatable().ok_or(Error::Type(TypeError {
             expected: Type::Table,
             actual: Type::None,
@@ -263,7 +270,11 @@ impl<'a> ImmutableAnyUserData<'a> {
     }
 
     #[inline(always)]
-    pub fn call_method<'b, T: FromLua<'b> + ImmutableValue>(&'b self, name: impl AnyStr, args: impl IntoLua) -> crate::vm::Result<T> {
+    pub fn call_method<'b, T: FromLua<'b> + ImmutableValue>(
+        &'b self,
+        name: impl AnyStr,
+        args: impl IntoLua,
+    ) -> crate::vm::Result<T> {
         self.0.call_method(name, args)
     }
 }

@@ -26,17 +26,17 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::fmt::Debug;
 use crate::ffi::lua::{lua_replace, lua_type, Type};
 use crate::vm::function::IntoParam;
-use crate::vm::value::{FromLua, IntoLua};
 use crate::vm::value::any::Any;
 use crate::vm::value::util::check_value_top;
+use crate::vm::value::{FromLua, IntoLua};
 use crate::vm::Vm;
+use std::fmt::Debug;
 
 pub struct Unknown<'a> {
     vm: &'a Vm,
-    index: i32
+    index: i32,
 }
 
 impl Debug for Unknown<'_> {
@@ -60,10 +60,7 @@ impl<'a> Unknown<'a> {
     /// The given stack index must be absolute, if not this is UB. Using this to return the
     /// metatable of an UserData is also UB.
     pub unsafe fn from_raw(vm: &'a Vm, index: i32) -> Self {
-        Self {
-            vm,
-            index
-        }
+        Self { vm, index }
     }
 
     /// Interprets the underlying reference on the lua stack as the specified Rust type.
@@ -101,7 +98,8 @@ impl<'a> Unknown<'a> {
 
 unsafe impl IntoLua for Unknown<'_> {
     fn into_lua(self, vm: &Vm) -> u16 {
-        if self.ty() == Type::None { // None is not a value, do not operate the stack or UB.
+        if self.ty() == Type::None {
+            // None is not a value, do not operate the stack or UB.
             return 0; // No value exists on the stack so IntoLua returns 0 values.
         }
         check_value_top(self.vm, vm, self.index)

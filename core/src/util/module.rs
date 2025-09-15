@@ -118,7 +118,7 @@ unsafe fn convert_module_error_to_vm_error(
             crate::vm::userdata::Error::Alignment(err.alignment.alignment),
         ),
         ErrorType::None => std::hint::unreachable_unchecked(),
-        ErrorType::BadThreadState => crate::vm::error::Error::BadThreadState
+        ErrorType::BadThreadState => crate::vm::error::Error::BadThreadState,
     }
 }
 

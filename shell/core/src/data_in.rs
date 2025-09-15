@@ -26,10 +26,10 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::fmt::Debug;
-use bp3d_lua::vm::Vm;
 use crate::data::DataOut;
 use crate::lua::Args;
+use bp3d_lua::vm::Vm;
+use std::fmt::Debug;
 
 pub trait InData: Send + Debug {
     fn handle(&mut self, args: &Args, vm: &Vm, out: &DataOut) -> bool;
@@ -53,7 +53,7 @@ pub struct RunFile {
 impl<'a> NetInData for bp3d_lua_shell_proto::send::RunFile<'a> {
     fn to_in_data(self) -> Box<dyn InData> {
         Box::new(RunFile {
-            path: self.path.into()
+            path: self.path.into(),
         })
     }
 }
@@ -62,7 +62,7 @@ impl<'a> NetInData for bp3d_lua_shell_proto::send::RunCode<'a> {
     fn to_in_data(self) -> Box<dyn InData> {
         Box::new(RunCode {
             name: self.name.map(|v| v.into()),
-            code: self.code.into()
+            code: self.code.into(),
         })
     }
 }

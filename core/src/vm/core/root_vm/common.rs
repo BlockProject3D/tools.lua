@@ -26,12 +26,12 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use bp3d_debug::debug;
 use crate::ffi::laux::{luaL_newstate, luaL_openlibs};
 use crate::ffi::lua::lua_close;
 use crate::vm::core::destructor::Pool;
 use crate::vm::registry::named::{handle_root_vm_init, handle_root_vm_uninit};
 use crate::vm::Vm;
+use bp3d_debug::debug;
 
 #[cfg(not(feature = "send"))]
 thread_local! {

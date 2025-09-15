@@ -81,4 +81,4 @@ impl Display for TryFromIntError {
     }
 }
 
-impl Error for TryFromIntError { }
+impl Error for TryFromIntError {}

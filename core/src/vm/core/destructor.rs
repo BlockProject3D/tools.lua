@@ -26,13 +26,13 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use crate::vm::registry::lua_ref::LuaRef as LiveLuaRef;
 use crate::vm::registry::named::Key;
+use crate::vm::registry::types::LuaRef;
+use crate::vm::value::types::RawPtr;
 use crate::vm::Vm;
 use bp3d_debug::debug;
 use std::sync::Arc;
-use crate::vm::registry::types::LuaRef;
-use crate::vm::value::types::RawPtr;
-use crate::vm::registry::lua_ref::LuaRef as LiveLuaRef;
 
 /// This trait represents a value which can be attached to a [Pool](Pool).
 pub trait RawSend: Send {
@@ -116,14 +116,14 @@ static DESTRUCTOR_POOL: Key<LuaRef<RawPtr<Pool>>> = Key::new("__destructor_pool_
 
 pub struct Pool {
     leaked: Vec<Box<dyn FnOnce()>>,
-    is_send: bool
+    is_send: bool,
 }
 
 impl Pool {
     pub fn new(is_send: bool) -> Self {
         Self {
             leaked: Vec::new(),
-            is_send
+            is_send,
         }
     }
 

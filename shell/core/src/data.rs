@@ -26,8 +26,8 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use tokio::sync::mpsc;
 use crate::data_out::OutData;
+use tokio::sync::mpsc;
 
 #[derive(Clone)]
 pub struct DataOut(mpsc::Sender<Box<dyn OutData>>);

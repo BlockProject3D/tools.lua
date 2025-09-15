@@ -26,10 +26,10 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use bp3d_debug::info;
 use crate::util::Namespace;
 use crate::vm::core::debug::DebugRegistry;
 use crate::vm::Vm;
+use bp3d_debug::info;
 
 pub trait Lib {
     const NAMESPACE: &'static str;

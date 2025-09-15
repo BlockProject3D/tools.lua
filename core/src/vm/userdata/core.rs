@@ -27,7 +27,12 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::ffi::laux::{luaL_checkudata, luaL_newmetatable};
-use crate::ffi::lua::{lua_getmetatable, lua_pushcclosure, lua_pushlightuserdata, lua_pushnil, lua_pushvalue, lua_rawget, lua_setfield, lua_setmetatable, lua_settop, lua_touserdata, lua_type, CFunction, State, Type, GLOBALSINDEX};
+use crate::ffi::lua::{
+    lua_getmetatable, lua_pushcclosure, lua_pushlightuserdata, lua_pushnil, lua_pushvalue,
+    lua_rawget, lua_setfield, lua_setmetatable, lua_settop, lua_touserdata, lua_type, CFunction,
+    State, Type, GLOBALSINDEX,
+};
+use crate::vm::table::Table;
 use crate::vm::userdata::{AddGcMethod, Error, LuaDrop, NameConvert, UserData};
 use crate::vm::util::{LuaType, TypeName};
 use crate::vm::value::IntoLua;
@@ -36,7 +41,6 @@ use bp3d_debug::{debug, trace, warning};
 use std::cell::OnceCell;
 use std::ffi::{c_void, CStr};
 use std::marker::PhantomData;
-use crate::vm::table::Table;
 
 #[derive(Copy, Clone)]
 pub struct Function {
@@ -162,7 +166,9 @@ impl<'a, T: UserData, C: NameConvert> Registry<'a, T, C> {
     pub fn add_static_field(&self, name: &'static CStr, value: impl IntoLua) -> Result<(), Error> {
         let _ = self.has_static.set(());
         let mut static_table = unsafe { Table::from_raw(self.vm, -3) };
-        static_table.set(&*self.case.name_convert(name), value).map_err(|_| Error::MultiValueField)?;
+        static_table
+            .set(&*self.case.name_convert(name), value)
+            .map_err(|_| Error::MultiValueField)?;
         Ok(())
     }
 

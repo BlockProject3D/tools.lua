@@ -34,7 +34,7 @@ use crate::vm::Vm;
 #[derive(Debug)]
 pub struct RawPtr<T>(*const T);
 
-unsafe impl<T> SimpleDrop for RawPtr<T> { }
+unsafe impl<T> SimpleDrop for RawPtr<T> {}
 
 impl<T> Clone for RawPtr<T> {
     #[inline(always)]
@@ -43,7 +43,7 @@ impl<T> Clone for RawPtr<T> {
     }
 }
 
-impl<T> Copy for RawPtr<T> { }
+impl<T> Copy for RawPtr<T> {}
 
 impl<T> RawPtr<T> {
     #[inline(always)]

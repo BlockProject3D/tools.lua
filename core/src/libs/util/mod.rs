@@ -26,15 +26,15 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+mod num;
 mod string;
 mod table;
 mod utf8;
-mod num;
 
+pub use num::Num;
 pub use string::String;
 pub use table::Table;
 pub use utf8::Utf8;
-pub use num::Num;
 
 // Workaround for language defect #22259.
 #[allow(non_upper_case_globals)]

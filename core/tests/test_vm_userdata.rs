@@ -29,12 +29,12 @@
 #![cfg(feature = "root-vm")]
 
 use bp3d_lua::ffi::lua::RawNumber;
+use bp3d_lua::util::Namespace;
 use bp3d_lua::vm::function::types::RFunction;
 use bp3d_lua::vm::userdata::{AnyUserData, LuaDrop};
 use bp3d_lua::vm::{RootVm, Vm};
 use bp3d_lua::{decl_lib_func, decl_userdata, impl_userdata, impl_userdata_mut};
 use std::sync::Mutex;
-use bp3d_lua::util::Namespace;
 
 static MUTEX: Mutex<()> = Mutex::new(());
 
@@ -208,7 +208,10 @@ fn test_vm_userdata_error_handling() {
     let res = vm.register_userdata::<BrokenObject4>(bp3d_lua::vm::userdata::case::Snake);
     assert!(res.is_err());
     let msg = res.unwrap_err().to_string();
-    assert_eq!(msg, "userdata: __metatable is set for security reasons and cannot be altered");
+    assert_eq!(
+        msg,
+        "userdata: __metatable is set for security reasons and cannot be altered"
+    );
     assert_eq!(top, vm.top());
 }
 
@@ -255,7 +258,9 @@ fn test_vm_userdata_base2(vm: &Vm) {
     let top = vm.top();
     {
         let mut namespace = Namespace::new(vm, "_G").unwrap();
-        namespace.add_userdata::<MyInt>("MyInt", bp3d_lua::vm::userdata::case::Snake).unwrap();
+        namespace
+            .add_userdata::<MyInt>("MyInt", bp3d_lua::vm::userdata::case::Snake)
+            .unwrap();
     }
     assert_eq!(top, vm.top());
     vm.run_code::<()>(c"a = MyInt.new(123)").unwrap();
@@ -290,7 +295,9 @@ fn test_vm_userdata_base3(vm: &Vm) {
     let top = vm.top();
     {
         let mut namespace = Namespace::new(vm, "_G").unwrap();
-        namespace.add_userdata::<MyInt>("MyInt", bp3d_lua::vm::userdata::case::Camel).unwrap();
+        namespace
+            .add_userdata::<MyInt>("MyInt", bp3d_lua::vm::userdata::case::Camel)
+            .unwrap();
     }
     assert_eq!(top, vm.top());
     vm.run_code::<()>(c"a = MyInt.new(123)").unwrap();
@@ -410,7 +417,8 @@ fn test_vm_userdata_call_method() {
     let _guard = MUTEX.lock();
     let vm = RootVm::new();
     let top = vm.top();
-    vm.register_userdata::<MyInt>(bp3d_lua::vm::userdata::case::Snake).unwrap();
+    vm.register_userdata::<MyInt>(bp3d_lua::vm::userdata::case::Snake)
+        .unwrap();
     vm.set_global("MY_INT", MyInt(123456)).unwrap();
     let ud: AnyUserData = vm.get_global("MY_INT").unwrap();
     let val: &str = ud.call_method("tostring", ()).unwrap();
@@ -425,7 +433,8 @@ fn test_vm_userdata_display() {
     let _guard = MUTEX.lock();
     let vm = RootVm::new();
     let top = vm.top();
-    vm.register_userdata::<MyInt>(bp3d_lua::vm::userdata::case::Snake).unwrap();
+    vm.register_userdata::<MyInt>(bp3d_lua::vm::userdata::case::Snake)
+        .unwrap();
     vm.set_global("MY_INT", MyInt(123456)).unwrap();
     let ud: AnyUserData = vm.get_global("MY_INT").unwrap();
     let s = ud.to_string();
@@ -439,10 +448,13 @@ fn test_vm_userdata_statics() {
     {
         let vm = RootVm::new();
         test_vm_userdata_base2(&vm);
-        vm.run_code::<()>(c"
+        vm.run_code::<()>(
+            c"
             MyInt.__gc = function() print(\"Lua has hacked Rust\") end
             MyInt.__metatable = function() print(\"Lua has hacked Rust\") end
-        ").unwrap();
+        ",
+        )
+        .unwrap();
         let ud: AnyUserData = vm.get_global("a").unwrap();
         let s = ud.to_string();
         assert_eq!(s, "MyInt(123)");
@@ -457,11 +469,14 @@ fn test_vm_userdata_statics_2() {
     {
         let vm = RootVm::new();
         test_vm_userdata_base2(&vm);
-        vm.run_code::<()>(c"
+        vm.run_code::<()>(
+            c"
             assert(a[0] == 123)
             assert(a[1] == nil)
             assert(b[0] == 456)
-        ").unwrap();
+        ",
+        )
+        .unwrap();
     }
     assert_eq!(unsafe { DROP_COUNTER }, 6);
     assert_eq!(unsafe { LUA_DROP_COUNTER }, 6);
@@ -512,8 +527,7 @@ fn test_vm_userdata_security9() {
     {
         let vm = RootVm::new();
         test_vm_userdata_base(&vm);
-        vm.run_code::<()>(c"a:__gc()")
-            .unwrap();
+        vm.run_code::<()>(c"a:__gc()").unwrap();
     }
     assert_eq!(unsafe { DROP_COUNTER }, 6);
     assert_eq!(unsafe { LUA_DROP_COUNTER }, 6);
@@ -525,8 +539,7 @@ fn test_vm_userdata_security10() {
     {
         let vm = RootVm::new();
         test_vm_userdata_base(&vm);
-        vm.run_code::<()>(c"a.__gc(a)")
-            .unwrap();
+        vm.run_code::<()>(c"a.__gc(a)").unwrap();
     }
     assert_eq!(unsafe { DROP_COUNTER }, 6);
     assert_eq!(unsafe { LUA_DROP_COUNTER }, 6);

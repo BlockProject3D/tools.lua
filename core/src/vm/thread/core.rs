@@ -26,14 +26,16 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::fmt::{Debug, Display};
-use std::marker::PhantomData;
 use crate::ffi::laux::luaL_error;
-use crate::ffi::lua::{lua_isyieldable, lua_remove, lua_resume, lua_status, lua_yield, ThreadStatus};
+use crate::ffi::lua::{
+    lua_isyieldable, lua_remove, lua_resume, lua_status, lua_yield, ThreadStatus,
+};
 use crate::vm::error::{Error, RuntimeError};
 use crate::vm::function::IntoParam;
 use crate::vm::value::{FromLua, IntoLua};
 use crate::vm::Vm;
+use std::fmt::{Debug, Display};
+use std::marker::PhantomData;
 
 #[derive(Copy, Clone, Eq, PartialEq, Debug)]
 pub enum State {
@@ -43,12 +45,12 @@ pub enum State {
 
 pub struct Output<T> {
     pub state: State,
-    pub data: T
+    pub data: T,
 }
 
 pub struct Thread<'a> {
     vm: Vm,
-    useless: PhantomData<&'a ()>
+    useless: PhantomData<&'a ()>,
 }
 
 impl PartialEq for Thread<'_> {
@@ -87,7 +89,7 @@ impl<'a> Thread<'a> {
     pub unsafe fn from_raw(l: crate::ffi::lua::State) -> Self {
         Self {
             vm: Vm::from_raw(l),
-            useless: PhantomData
+            useless: PhantomData,
         }
     }
 
@@ -109,8 +111,10 @@ impl<'a> Thread<'a> {
     }
 
     pub fn resume<'b, T: FromLua<'b>>(&'b self, args: impl IntoLua) -> crate::vm::Result<Output<T>>
-        where T: 'static /* This clause ensures that a future call to collectgarbage or resume does
-        not free a lua value which would be borrowed by a previous call to resume */ {
+    where
+        T: 'static, /* This clause ensures that a future call to collectgarbage or resume does
+                    not free a lua value which would be borrowed by a previous call to resume */
+    {
         let num = args.into_lua(&self.vm);
         let top = self.vm.top();
         let res = unsafe { lua_resume(self.vm.as_ptr(), num as _) };
@@ -119,16 +123,16 @@ impl<'a> Thread<'a> {
                 let data = T::from_lua(&self.vm, top)?;
                 Ok(Output {
                     state: State::Finished,
-                    data
+                    data,
                 })
-            },
+            }
             ThreadStatus::Yield => {
                 let data = T::from_lua(&self.vm, top)?;
                 Ok(Output {
                     state: State::Suspended,
-                    data
+                    data,
                 })
-            },
+            }
             ThreadStatus::ErrRun => {
                 // We've got a runtime error when executing the function.
                 // TODO: In the future, might be great to traceback the thread as well.
@@ -152,7 +156,10 @@ unsafe impl<T: IntoParam> IntoParam for Yield<T> {
     fn into_param(self, vm: &Vm) -> i32 {
         unsafe {
             if lua_isyieldable(vm.as_ptr()) != 1 {
-                luaL_error(vm.as_ptr(), c"attempt to yield a non-thread stack object".as_ptr());
+                luaL_error(
+                    vm.as_ptr(),
+                    c"attempt to yield a non-thread stack object".as_ptr(),
+                );
             }
             let num = self.0.into_param(vm);
             lua_yield(vm.as_ptr(), num);

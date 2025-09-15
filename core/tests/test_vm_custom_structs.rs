@@ -31,8 +31,8 @@
 use bp3d_lua::decl_lib_func;
 use bp3d_lua::vm::function::types::RFunction;
 use bp3d_lua::vm::RootVm;
-use bp3d_lua_codegen::{IntoLua, LuaType};
 use bp3d_lua_codegen::{FromParam, IntoParam};
+use bp3d_lua_codegen::{IntoLua, LuaType};
 
 #[derive(FromParam, LuaType, IntoParam)]
 struct Test1<'a>(&'a str, i32);

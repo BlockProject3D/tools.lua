@@ -26,18 +26,20 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::fmt::{Debug, Display};
-use crate::ffi::lua::{lua_newthread, lua_pushvalue, lua_tothread, lua_type, lua_xmove, ThreadStatus, Type};
+use crate::ffi::lua::{
+    lua_newthread, lua_pushvalue, lua_tothread, lua_type, lua_xmove, ThreadStatus, Type,
+};
 use crate::vm::thread::core;
 use crate::vm::value::types::Function;
 use crate::vm::value::util::move_value_top;
 use crate::vm::Vm;
+use std::fmt::{Debug, Display};
 
 /// Represents a thread object value on a lua stack.
 pub struct Thread<'a> {
     pub(super) vm: &'a Vm,
     index: i32,
-    thread: core::Thread<'static>
+    thread: core::Thread<'static>,
 }
 
 impl Clone for Thread<'_> {
@@ -46,7 +48,7 @@ impl Clone for Thread<'_> {
         Thread {
             vm: self.vm,
             index: self.vm.top(),
-            thread: unsafe { core::Thread::from_raw(self.thread.as_ptr()) }
+            thread: unsafe { core::Thread::from_raw(self.thread.as_ptr()) },
         }
     }
 }
@@ -90,7 +92,7 @@ impl<'a> Thread<'a> {
         Self {
             vm,
             index,
-            thread: core::Thread::from_raw(lua_tothread(vm.as_ptr(), index))
+            thread: core::Thread::from_raw(lua_tothread(vm.as_ptr(), index)),
         }
     }
 
@@ -99,7 +101,7 @@ impl<'a> Thread<'a> {
         Self {
             vm,
             index: vm.top(),
-            thread
+            thread,
         }
     }
 
@@ -108,7 +110,9 @@ impl<'a> Thread<'a> {
             return Err(crate::vm::error::Error::BadThreadState);
         }
         move_value_top(self.vm, function.index());
-        unsafe { lua_xmove(self.vm.as_ptr(), self.thread.as_ptr(), 1); }
+        unsafe {
+            lua_xmove(self.vm.as_ptr(), self.thread.as_ptr(), 1);
+        }
         unsafe {
             assert_eq!(lua_type(self.thread.as_ptr(), -1), Type::Function);
         };

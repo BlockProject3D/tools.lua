@@ -26,7 +26,10 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use crate::ffi::lua::{lua_getmetatable, lua_gettop, lua_pushnil, lua_pushvalue, lua_replace, lua_settop, lua_type, Type};
+use crate::ffi::lua::{
+    lua_getmetatable, lua_gettop, lua_pushnil, lua_pushvalue, lua_replace, lua_settop, lua_type,
+    Type,
+};
 use crate::vm::error::{Error, TypeError};
 use crate::vm::table::Table;
 use crate::vm::value::IntoLua;

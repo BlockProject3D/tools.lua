@@ -43,8 +43,8 @@ const PATCH_LIST: &[&str] = &[
     "lua_load_no_bc",        // Treat all inputs as strings (no bytecode allowed).
     "windows_set_lib_names", // Allow setting LJLIBNAME and LJDLLNAME from environment variables.
     "lua_ext_ccatch_error",  // Throw lua errors which cannot be catched from lua standard
-                             // pcall/xpcall but only from lua_pcall C API.
-    "lua_ext_provenance",    // lua_ext_getprovenance for registry key safety.
+    // pcall/xpcall but only from lua_pcall C API.
+    "lua_ext_provenance", // lua_ext_getprovenance for registry key safety.
 ];
 
 fn apply_patches(luajit_build_path: &Path, _summary_path: &Path) -> std::io::Result<()> {
@@ -56,7 +56,10 @@ fn apply_patches(luajit_build_path: &Path, _summary_path: &Path) -> std::io::Res
     #[cfg(feature = "libs")]
     {
         _summary.write(_summary_path)?;
-        println!("cargo:rustc-env=BP3D_LUA_PATCH_SUMMARY_FILE={}", _summary_path.display());
+        println!(
+            "cargo:rustc-env=BP3D_LUA_PATCH_SUMMARY_FILE={}",
+            _summary_path.display()
+        );
     }
     Ok(())
 }
@@ -85,7 +88,8 @@ fn main() {
     let out_path = Path::new(&out).join("luajit-build");
 
     // Apply patches to LuaJIT source code.
-    apply_patches(&out_path, &Path::new(&out).join("patch_summary.rs")).expect("Failed to patch LuaJIT");
+    apply_patches(&out_path, &Path::new(&out).join("patch_summary.rs"))
+        .expect("Failed to patch LuaJIT");
 
     // Copy the source directory to the build directory.
     println!("Internal LuaJIT build directory: {}", out_path.display());

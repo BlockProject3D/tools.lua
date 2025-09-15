@@ -26,15 +26,15 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use crate::{decl_userdata, impl_userdata_mut};
 use crate::libs::Lib;
 use crate::util::module::ModuleManager;
 use crate::util::module::Result;
 use crate::util::Namespace;
+use crate::vm::core::debug::DebugRegistry;
 use crate::vm::Vm;
+use crate::{decl_userdata, impl_userdata_mut};
 use bp3d_os::module::library::types::VirtualLibrary;
 use std::path::PathBuf;
-use crate::vm::core::debug::DebugRegistry;
 
 pub struct Module {
     builtins: &'static [&'static VirtualLibrary],

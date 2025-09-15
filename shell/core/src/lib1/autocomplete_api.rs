@@ -26,24 +26,30 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::collections::HashSet;
+use crate::autocomplete::{Completions, Item, Mode};
+use crate::data::DataOut;
 use bp3d_lua::decl_closure;
 use bp3d_lua::vm::closure::rc::Rc;
 use bp3d_lua::vm::table::ImmutableTable;
 use bp3d_lua::vm::value::any::Any;
-use crate::autocomplete::{Completions, Item, Mode};
-use crate::data::DataOut;
+use std::collections::HashSet;
 
 fn get_capacity(val: &Any) -> usize {
     match val {
         Any::Function(_) => 0,
         Any::Table(v) => v.len(),
         Any::UserData(_) => 1,
-        _ => 0
+        _ => 0,
     }
 }
 
-fn list_table_completions(set: &mut HashSet<usize>, path: Vec<String>, root: &mut Vec<Completions>, mut value: ImmutableTable, metatables: bool) -> bp3d_lua::vm::Result<()> {
+fn list_table_completions(
+    set: &mut HashSet<usize>,
+    path: Vec<String>,
+    root: &mut Vec<Completions>,
+    mut value: ImmutableTable,
+    metatables: bool,
+) -> bp3d_lua::vm::Result<()> {
     if set.contains(&value.uid()) {
         return Ok(());
     }
@@ -58,14 +64,17 @@ fn list_table_completions(set: &mut HashSet<usize>, path: Vec<String>, root: &mu
                     path.push(name.into());
                     root.push(Completions {
                         path: path.join("."),
-                        items: Vec::with_capacity(c)
+                        items: Vec::with_capacity(c),
                     });
                     list_completions(set, path, root, v, metatables)?;
                 } else {
-                    root.last_mut().unwrap().items.push(Item::from_lua(name, &v));
+                    root.last_mut()
+                        .unwrap()
+                        .items
+                        .push(Item::from_lua(name, &v));
                 }
             }
-            _ => continue
+            _ => continue,
         }
     }
     if metatables {
@@ -77,7 +86,13 @@ fn list_table_completions(set: &mut HashSet<usize>, path: Vec<String>, root: &mu
     Ok(())
 }
 
-fn list_completions(set: &mut HashSet<usize>, path: Vec<String>, root: &mut Vec<Completions>, value: Any, metatables: bool) -> bp3d_lua::vm::Result<()> {
+fn list_completions(
+    set: &mut HashSet<usize>,
+    path: Vec<String>,
+    root: &mut Vec<Completions>,
+    value: Any,
+    metatables: bool,
+) -> bp3d_lua::vm::Result<()> {
     match value {
         Any::Table(v) => list_table_completions(set, path, root, v.into(), metatables),
         Any::UserData(v) => {
@@ -87,7 +102,7 @@ fn list_completions(set: &mut HashSet<usize>, path: Vec<String>, root: &mut Vec<
             }
             Ok(())
         }
-        _ => Ok(())
+        _ => Ok(()),
     }
 }
 

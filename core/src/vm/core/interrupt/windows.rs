@@ -26,20 +26,20 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::ops::Deref;
 use super::{Error, InterruptibleRootVm};
 use crate::ffi::ext::lua_ext_ccatch_error;
 use crate::ffi::lua::{
     lua_pushstring, lua_sethook, Debug, State, MASKCALL, MASKCOUNT, MASKLINE, MASKRET,
 };
+use crate::vm::Vm;
 use bp3d_debug::{error, warning};
-use std::sync::{Arc, Mutex};
+use std::ops::Deref;
 use std::sync::atomic::AtomicBool;
+use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use windows_sys::Win32::Foundation::HANDLE;
 use windows_sys::Win32::System::Diagnostics::Debug::{GetThreadContext, CONTEXT};
 use windows_sys::Win32::System::Threading::{GetCurrentThread, ResumeThread, SuspendThread};
-use crate::vm::Vm;
 
 static SIG_STATE: Mutex<Option<std::sync::mpsc::Sender<()>>> = Mutex::new(None);
 

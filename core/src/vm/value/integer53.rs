@@ -31,8 +31,8 @@ use crate::ffi::lua::{lua_pushinteger, lua_tointeger, RawInteger, Type};
 use crate::util::core::{SimpleDrop, TryFromIntError};
 use crate::vm::function::{FromParam, IntoParam};
 use crate::vm::util::{LuaType, TypeName};
-use crate::vm::value::{FromLua, ImmutableValue, IntoLua};
 use crate::vm::value::util::check_type_equals;
+use crate::vm::value::{FromLua, ImmutableValue, IntoLua};
 use crate::vm::Vm;
 
 #[derive(Eq, PartialEq, Ord, PartialOrd, Hash, Copy, Clone, Debug)]

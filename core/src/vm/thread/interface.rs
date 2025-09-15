@@ -34,8 +34,8 @@ use crate::vm::function::{FromParam, IntoParam};
 use crate::vm::registry::{FromIndex, Set};
 use crate::vm::thread::value::{ImmutableThread, Thread};
 use crate::vm::util::LuaType;
-use crate::vm::value::{FromLua, ImmutableValue, IntoLua};
 use crate::vm::value::util::{check_type_equals, check_value_top};
+use crate::vm::value::{FromLua, ImmutableValue, IntoLua};
 use crate::vm::Vm;
 
 unsafe impl ImmutableValue for ImmutableThread<'_> {}

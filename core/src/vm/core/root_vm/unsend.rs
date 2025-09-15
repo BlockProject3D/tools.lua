@@ -26,18 +26,18 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::ops::{Deref, DerefMut};
 use crate::vm::core::root_vm::common::UnsafeRootVm;
 use crate::vm::Vm;
+use std::ops::{Deref, DerefMut};
 
 pub struct RootVm {
-    vm: UnsafeRootVm
+    vm: UnsafeRootVm,
 }
 
 impl RootVm {
     pub fn new() -> RootVm {
         RootVm {
-            vm: UnsafeRootVm::new(false)
+            vm: UnsafeRootVm::new(false),
         }
     }
 }

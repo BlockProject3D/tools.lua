@@ -26,12 +26,9 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::collections::{BTreeMap, HashMap};
-use std::hash::Hash;
 use crate::ffi::laux::luaL_checktype;
 use crate::ffi::lua::{
-    lua_getfield, lua_rawgeti, lua_rawseti, lua_setfield, lua_type,
-    State, Type,
+    lua_getfield, lua_rawgeti, lua_rawseti, lua_setfield, lua_type, State, Type,
 };
 use crate::impl_registry_value;
 use crate::util::core::{AnyStr, SimpleDrop};
@@ -43,6 +40,8 @@ use crate::vm::util::LuaType;
 use crate::vm::value::util::{check_type_equals, check_value_top};
 use crate::vm::value::{FromLua, ImmutableValue, IntoLua};
 use crate::vm::Vm;
+use std::collections::{BTreeMap, HashMap};
+use std::hash::Hash;
 
 unsafe impl SimpleDrop for Table<'_> {}
 
@@ -154,7 +153,10 @@ impl<T: AnyStr> SetTable for T {
     }
 }
 
-impl<'a, T: 'static> FromLua<'a> for Vec<T> where for<'b> T: FromLua<'b> {
+impl<'a, T: 'static> FromLua<'a> for Vec<T>
+where
+    for<'b> T: FromLua<'b>,
+{
     unsafe fn from_lua_unchecked(vm: &'a Vm, index: i32) -> Self {
         let mut tbl = Table::from_lua_unchecked(vm, index);
         let mut vec = Vec::new();
@@ -178,8 +180,11 @@ impl<'a, T: 'static> FromLua<'a> for Vec<T> where for<'b> T: FromLua<'b> {
 
 unsafe impl<T: ImmutableValue> ImmutableValue for Vec<T> {}
 
-impl<'a, K: 'static, V: 'static> FromLua<'a> for HashMap<K, V> where for<'b> K: FromLua<'b> + Hash + Eq,
-                                                                     for<'b> V: FromLua<'b> {
+impl<'a, K: 'static, V: 'static> FromLua<'a> for HashMap<K, V>
+where
+    for<'b> K: FromLua<'b> + Hash + Eq,
+    for<'b> V: FromLua<'b>,
+{
     unsafe fn from_lua_unchecked(vm: &'a Vm, index: i32) -> Self {
         let mut tbl = Table::from_lua_unchecked(vm, index);
         let mut map = HashMap::new();
@@ -205,8 +210,11 @@ impl<'a, K: 'static, V: 'static> FromLua<'a> for HashMap<K, V> where for<'b> K: 
 
 unsafe impl<K: ImmutableValue, V: ImmutableValue> ImmutableValue for HashMap<K, V> {}
 
-impl<'a, K: 'static, V: 'static> FromLua<'a> for BTreeMap<K, V> where for<'b> K: FromLua<'b> + Ord,
-                                                                     for<'b> V: FromLua<'b> {
+impl<'a, K: 'static, V: 'static> FromLua<'a> for BTreeMap<K, V>
+where
+    for<'b> K: FromLua<'b> + Ord,
+    for<'b> V: FromLua<'b>,
+{
     unsafe fn from_lua_unchecked(vm: &'a Vm, index: i32) -> Self {
         let mut tbl = Table::from_lua_unchecked(vm, index);
         let mut map = BTreeMap::new();

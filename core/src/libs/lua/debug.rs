@@ -26,8 +26,6 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::ffi::CString;
-use std::str::FromStr;
 use crate::decl_lib_func;
 use crate::libs::Lib;
 use crate::util::Namespace;
@@ -38,6 +36,8 @@ use crate::vm::function::types::RFunction;
 use crate::vm::table::Table;
 use crate::vm::userdata::util::{get_metatable_by_name, get_static_table_by_name};
 use crate::vm::value::any::Any;
+use std::ffi::CString;
+use std::str::FromStr;
 
 decl_lib_func! {
     fn dump_stack(vm: &Vm, start_index: i32) -> crate::vm::Result<Table<'_>> {
@@ -127,7 +127,7 @@ impl Lib for Debug {
             ("dumpClasses", RFunction::wrap(dump_classes)),
             ("dumpStaticTable", RFunction::wrap(dump_static_table)),
             ("dumpMetaTable", RFunction::wrap(dump_meta_table)),
-            ("dumpClassName", RFunction::wrap(dump_class_name))
+            ("dumpClassName", RFunction::wrap(dump_class_name)),
         ])
     }
 }

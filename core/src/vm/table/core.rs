@@ -27,7 +27,10 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::ffi::ext::{lua_ext_tab_len, MSize};
-use crate::ffi::lua::{lua_createtable, lua_gettable, lua_gettop, lua_objlen, lua_pushvalue, lua_rawseti, lua_setmetatable, lua_settable, lua_topointer};
+use crate::ffi::lua::{
+    lua_createtable, lua_gettable, lua_gettop, lua_objlen, lua_pushvalue, lua_rawseti,
+    lua_setmetatable, lua_settable, lua_topointer,
+};
 use crate::vm::table::iter::Iter;
 use crate::vm::table::traits::{GetTable, SetTable};
 use crate::vm::value::util::{check_get_metatable, check_push_single};
@@ -60,11 +63,7 @@ impl Eq for Table<'_> {}
 
 impl Display for Table<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "table@{:X}",
-            self.uid()
-        )
+        write!(f, "table@{:X}", self.uid())
     }
 }
 

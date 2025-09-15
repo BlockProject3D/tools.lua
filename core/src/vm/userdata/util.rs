@@ -26,11 +26,11 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::ffi::CStr;
 use crate::ffi::lua::{lua_getfield, lua_replace, lua_settop, lua_type, Type, REGISTRYINDEX};
 use crate::vm::table::ImmutableTable;
 use crate::vm::userdata::UserData;
 use crate::vm::Vm;
+use std::ffi::CStr;
 
 /// Returns the static table attached to the given UserData type.
 ///

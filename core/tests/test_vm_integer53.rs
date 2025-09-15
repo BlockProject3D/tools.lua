@@ -26,8 +26,8 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use bp3d_lua::vm::RootVm;
 use bp3d_lua::vm::value::types::{Int53, UInt53};
+use bp3d_lua::vm::RootVm;
 
 #[test]
 fn test_vm_u53() {
@@ -36,7 +36,10 @@ fn test_vm_u53() {
     let val: UInt53 = vm.run_code(c"return 2^53-1").unwrap();
     assert_eq!(val, UInt53::MAX);
     vm.set_global(c"UINT53_MAX", UInt53::MAX).unwrap();
-    assert_eq!(vm.run_code::<&str>(c"return tostring(UINT53_MAX)").unwrap(), "9.007199254741e+15");
+    assert_eq!(
+        vm.run_code::<&str>(c"return tostring(UINT53_MAX)").unwrap(),
+        "9.007199254741e+15"
+    );
     vm.run_code::<()>(c"assert(UINT53_MAX == 2^53-1)").unwrap();
     assert_eq!(top + 2, vm.top());
 }
@@ -51,8 +54,14 @@ fn test_vm_i53() {
     assert_eq!(val, Int53::MIN);
     vm.set_global(c"INT53_MAX", Int53::MAX).unwrap();
     vm.set_global(c"INT53_MIN", Int53::MIN).unwrap();
-    assert_eq!(vm.run_code::<&str>(c"return tostring(INT53_MAX)").unwrap(), "4.5035996273705e+15");
-    assert_eq!(vm.run_code::<&str>(c"return tostring(INT53_MIN)").unwrap(), "-4.5035996273705e+15");
+    assert_eq!(
+        vm.run_code::<&str>(c"return tostring(INT53_MAX)").unwrap(),
+        "4.5035996273705e+15"
+    );
+    assert_eq!(
+        vm.run_code::<&str>(c"return tostring(INT53_MIN)").unwrap(),
+        "-4.5035996273705e+15"
+    );
     vm.run_code::<()>(c"assert(INT53_MAX == 2^52-1)").unwrap();
     vm.run_code::<()>(c"assert(INT53_MIN == -2^52)").unwrap();
     assert_eq!(top + 4, vm.top());

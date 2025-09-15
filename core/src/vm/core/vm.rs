@@ -26,18 +26,21 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use bp3d_debug::{info, warning};
-use crate::ffi::lua::{lua_getfield, lua_gettop, lua_isyieldable, lua_pushnil, lua_remove, lua_setfield, lua_settop, State, ThreadStatus, GLOBALSINDEX, REGISTRYINDEX};
+use crate::ffi::lua::{
+    lua_getfield, lua_gettop, lua_isyieldable, lua_pushnil, lua_remove, lua_setfield, lua_settop,
+    State, ThreadStatus, GLOBALSINDEX, REGISTRYINDEX,
+};
 use crate::util::core::AnyStr;
+use crate::vm::core::debug::DebugRegistry;
 use crate::vm::core::util::{handle_syntax_error, pcall, push_error_handler};
 use crate::vm::core::{Load, LoadString};
-use crate::vm::core::debug::DebugRegistry;
 use crate::vm::error::Error;
 use crate::vm::thread::core::Thread;
 use crate::vm::userdata::core::Registry;
 use crate::vm::userdata::{NameConvert, UserData};
 use crate::vm::value::types::Function;
 use crate::vm::value::{FromLua, IntoLua};
+use bp3d_debug::{info, warning};
 
 #[repr(transparent)]
 pub struct Vm {
@@ -79,7 +82,11 @@ impl Vm {
         match res {
             Ok(_) => Ok(()),
             Err(e) => {
-                warning!("Failed to register userdata type {:?}: {}", T::CLASS_NAME, e);
+                warning!(
+                    "Failed to register userdata type {:?}: {}",
+                    T::CLASS_NAME,
+                    e
+                );
                 unsafe {
                     lua_pushnil(self.l);
                     lua_setfield(self.l, REGISTRYINDEX, T::FULL_TYPE.as_ptr());

@@ -27,9 +27,9 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use bp3d_lua::ffi::lua::Type;
-use bp3d_lua::vm::RootVm;
 use bp3d_lua::vm::value::any::Any;
 use bp3d_lua::vm::value::util::check_type_equals;
+use bp3d_lua::vm::RootVm;
 
 #[test]
 fn test_vm_u64() {
@@ -39,8 +39,12 @@ fn test_vm_u64() {
     assert!(check_type_equals(&vm, -1, Type::Cdata).is_ok());
     assert_eq!(val, u64::MAX);
     vm.set_global(c"UINT64_MAX", u64::MAX).unwrap();
-    assert_eq!(vm.run_code::<&str>(c"return tostring(UINT64_MAX)").unwrap(), "18446744073709551615ULL");
-    vm.run_code::<()>(c"assert(UINT64_MAX == 2ULL^64ULL-1ULL)").unwrap();
+    assert_eq!(
+        vm.run_code::<&str>(c"return tostring(UINT64_MAX)").unwrap(),
+        "18446744073709551615ULL"
+    );
+    vm.run_code::<()>(c"assert(UINT64_MAX == 2ULL^64ULL-1ULL)")
+        .unwrap();
     assert_eq!(top + 2, vm.top());
 }
 
@@ -56,10 +60,18 @@ fn test_vm_i64() {
     assert_eq!(val, i64::MIN);
     vm.set_global(c"INT64_MAX", i64::MAX).unwrap();
     vm.set_global(c"INT64_MIN", i64::MIN).unwrap();
-    assert_eq!(vm.run_code::<&str>(c"return tostring(INT64_MAX)").unwrap(), "9223372036854775807LL");
-    assert_eq!(vm.run_code::<&str>(c"return tostring(INT64_MIN)").unwrap(), "-9223372036854775808LL");
-    vm.run_code::<()>(c"assert(INT64_MAX == 2LL^63LL-1LL)").unwrap();
-    vm.run_code::<()>(c"assert(INT64_MIN == -2LL^63LL)").unwrap();
+    assert_eq!(
+        vm.run_code::<&str>(c"return tostring(INT64_MAX)").unwrap(),
+        "9223372036854775807LL"
+    );
+    assert_eq!(
+        vm.run_code::<&str>(c"return tostring(INT64_MIN)").unwrap(),
+        "-9223372036854775808LL"
+    );
+    vm.run_code::<()>(c"assert(INT64_MAX == 2LL^63LL-1LL)")
+        .unwrap();
+    vm.run_code::<()>(c"assert(INT64_MIN == -2LL^63LL)")
+        .unwrap();
     assert_eq!(top + 4, vm.top());
 }
 

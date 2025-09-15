@@ -30,12 +30,12 @@ use crate::util::CommandRunner;
 use bp3d_os::fs::CopyOptions;
 use std::ffi::OsStr;
 use std::fs::File;
+use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::process::Command;
-use std::io::Write;
 
 pub struct Summary {
-    patches: Vec<String>
+    patches: Vec<String>,
 }
 
 impl Summary {
@@ -104,7 +104,9 @@ impl Patch {
                 CopyOptions::new().exclude(OsStr::new(".git")),
             )?;
         }
-        Ok(Summary { patches: self.get_patch_list().map(String::from).collect() })
+        Ok(Summary {
+            patches: self.get_patch_list().map(String::from).collect(),
+        })
     }
 }
 

@@ -29,7 +29,7 @@
 mod gen;
 mod parser;
 
-use crate::gen::{FromParam, IntoParam, IntoLua, LuaType};
+use crate::gen::{FromParam, IntoLua, IntoParam, LuaType};
 use crate::parser::Parser;
 use proc_macro::TokenStream;
 use proc_macro2::Ident;

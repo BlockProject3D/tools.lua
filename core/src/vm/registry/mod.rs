@@ -28,9 +28,9 @@
 
 pub mod core;
 mod interface;
+pub mod lua_ref;
 pub mod named;
 pub mod types;
-pub mod lua_ref;
 
 #[cfg(feature = "send")]
 mod send_key;

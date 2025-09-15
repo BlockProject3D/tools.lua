@@ -26,12 +26,12 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::fmt::Display;
 use crate::vm::table::iter::Iter;
-use crate::vm::table::Table;
 use crate::vm::table::traits::GetTable;
+use crate::vm::table::Table;
 use crate::vm::value::{FromLua, ImmutableValue, IntoLua};
 use crate::vm::Vm;
+use std::fmt::Display;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ImmutableTable<'a>(Table<'a>);
@@ -106,12 +106,18 @@ impl<'a> ImmutableTable<'a> {
     }
 
     #[inline(always)]
-    pub fn get<'b, T: FromLua<'b> + ImmutableValue>(&'b self, key: impl GetTable) -> crate::vm::Result<T> {
+    pub fn get<'b, T: FromLua<'b> + ImmutableValue>(
+        &'b self,
+        key: impl GetTable,
+    ) -> crate::vm::Result<T> {
         self.0.get(key)
     }
 
     #[inline(always)]
-    pub fn get_any<'b, T: FromLua<'b> + ImmutableValue>(&'b self, key: impl IntoLua) -> crate::vm::Result<T> {
+    pub fn get_any<'b, T: FromLua<'b> + ImmutableValue>(
+        &'b self,
+        key: impl IntoLua,
+    ) -> crate::vm::Result<T> {
         self.0.get_any(key)
     }
 

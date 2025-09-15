@@ -26,16 +26,16 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::cell::Cell;
+use crate::data::DataOut;
+use crate::lib1::autocomplete_api::{build_completions, delete_completions};
+use crate::lib1::scheduler_api::{schedule_in, schedule_periodically};
+use crate::scheduler::SchedulerPtr;
 use bp3d_debug::info;
 use bp3d_lua::decl_closure;
 use bp3d_lua::libs::Lib;
 use bp3d_lua::util::Namespace;
 use bp3d_lua::vm::closure::rc::{Rc, Shared};
-use crate::data::DataOut;
-use crate::lib1::autocomplete_api::{build_completions, delete_completions};
-use crate::lib1::scheduler_api::{schedule_in, schedule_periodically};
-use crate::scheduler::SchedulerPtr;
+use std::cell::Cell;
 
 mod autocomplete_api;
 mod scheduler_api;
@@ -50,15 +50,19 @@ decl_closure! {
 pub struct Shell {
     log_ch: Shared<DataOut>,
     scheduler: Shared<SchedulerPtr>,
-    running: Shared<Cell<bool>>
+    running: Shared<Cell<bool>>,
 }
 
 impl Shell {
-    pub fn new(log_ch: DataOut, scheduler: Shared<SchedulerPtr>, running: Shared<Cell<bool>>) -> Shell {
+    pub fn new(
+        log_ch: DataOut,
+        scheduler: Shared<SchedulerPtr>,
+        running: Shared<Cell<bool>>,
+    ) -> Shell {
         Self {
             log_ch: log_ch.into(),
             scheduler,
-            running
+            running,
         }
     }
 }
@@ -74,11 +78,11 @@ impl Lib for Shell {
         let running = Rc::from_rust(namespace.vm(), self.running.clone());
         namespace.add([
             ("buildCompletions", build_completions(rc)),
-            ("deleteCompletions", delete_completions(rc1))
+            ("deleteCompletions", delete_completions(rc1)),
         ])?;
         namespace.add([
             ("scheduleIn", schedule_in(r1)),
-            ("schedulePeriodically", schedule_periodically(r2))
+            ("schedulePeriodically", schedule_periodically(r2)),
         ])?;
         namespace.add([("requestExit", request_exit(running))])
     }

@@ -28,14 +28,14 @@
 
 const MAX_SIZE: usize = 4096;
 
+use crate::lua::{Args, Lua};
 use bp3d_debug::{debug, error, info};
-use bp3d_net::ipc::{Client, Server};
+use bp3d_lua_shell_proto::send;
 use bp3d_net::ipc::util::Message;
+use bp3d_net::ipc::{Client, Server};
 use bp3d_os::shell::{Event, SendChannel, Shell};
 use bp3d_proto::message::FromBytes;
-use crate::lua::{Args, Lua};
 use bp3d_util::result::ResultExt;
-use bp3d_lua_shell_proto::send;
 use tokio::sync::mpsc;
 
 async fn client_task(lua: &mut Lua, client: Client) -> bp3d_proto::message::Result<bool> {
@@ -71,7 +71,9 @@ pub async fn run(args: Args, name: &str) {
     info!("starting lua VM");
     let mut lua = Lua::new(args);
     info!("starting IPC server");
-    let mut server = Server::create(name).await.expect_exit("Failed to create IPC server", 1);
+    let mut server = Server::create(name)
+        .await
+        .expect_exit("Failed to create IPC server", 1);
     while let Ok(client) = server.accept().await {
         debug!("client connected");
         match client_task(&mut lua, client).await {

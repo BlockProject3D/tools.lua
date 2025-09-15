@@ -62,7 +62,8 @@ fn test_vm_lib_lua() {
         .into_runtime()
         .unwrap();
     assert_eq!(err.msg(), "rust error: unknown source name not");
-    vm.run_code::<()>(c"
+    vm.run_code::<()>(
+        c"
         local function test()
             bp3d.lua.require \"not.existing.file\"
         end
@@ -70,7 +71,8 @@ fn test_vm_lib_lua() {
         assert(not flag)
         print(err)
         assert(err ~= '')
-    ")
+    ",
+    )
     .unwrap();
     let err = vm
         .run_code::<()>(c"MODULES:load('broken', 'broken2')")
@@ -241,14 +243,17 @@ fn test_vm_lib_os_time() {
 fn test_vm_lib_os_time_2() {
     let mut vm = RootVm::new();
     bp3d_lua::libs::os::Time.register(&mut vm).unwrap();
-    vm.run_code::<()>(c"
+    vm.run_code::<()>(
+        c"
         local OffsetDateTime = bp3d.os.time.OffsetDateTime
         local dt = OffsetDateTime.new({year = 1900, month = 12, day = 1})
         local date = dt:getDate()
         assert(date.year == 1900)
         assert(date.month == 12)
         assert(date.day == 1)
-    ").unwrap();
+    ",
+    )
+    .unwrap();
 }
 
 #[test]
@@ -282,13 +287,20 @@ fn test_vm_lib_os() {
     )
     .unwrap();
     std::thread::sleep(std::time::Duration::from_millis(500));
-    vm.run_code::<()>(c"
+    vm.run_code::<()>(
+        c"
         local now = os.clock()
         assert((clock - now) < 0.1)
-    ").unwrap();
-    let s = vm.run_code::<&str>(c"
+    ",
+    )
+    .unwrap();
+    let s = vm
+        .run_code::<&str>(
+            c"
         return os.date('!%H:%M:%S')
-    ").unwrap();
+    ",
+        )
+        .unwrap();
     assert!(s.contains(":"));
     assert!(!s.contains("["));
     assert!(!s.contains("]"));
@@ -298,7 +310,8 @@ fn test_vm_lib_os() {
 fn test_vm_lib_debug() {
     let mut vm = RootVm::new();
     bp3d_lua::libs::lua::Debug.register(&mut vm).unwrap();
-    vm.run_code::<()>(c"
+    vm.run_code::<()>(
+        c"
         local debug = bp3d.lua.debug
         local libs = debug.dumpLibs();
         assert(#libs == 1)
@@ -307,23 +320,37 @@ fn test_vm_lib_debug() {
         assert(#classes == 0)
         local stack = debug.dumpStack(0);
         assert(#stack > 0)
-    ").unwrap();
+    ",
+    )
+    .unwrap();
 }
 
 #[test]
 fn test_vm_lib_util_num() {
     let mut vm = RootVm::new();
     Util.register(&mut vm).unwrap();
-    let val = vm.run_code::<&str>(c"return bp3d.util.num.toistring(bp3d.util.num.INT53_MAX)").unwrap();
+    let val = vm
+        .run_code::<&str>(c"return bp3d.util.num.toistring(bp3d.util.num.INT53_MAX)")
+        .unwrap();
     assert_eq!(val, "4503599627370495");
-    let val = vm.run_code::<&str>(c"return bp3d.util.num.toistring(bp3d.util.num.INT53_MIN)").unwrap();
+    let val = vm
+        .run_code::<&str>(c"return bp3d.util.num.toistring(bp3d.util.num.INT53_MIN)")
+        .unwrap();
     assert_eq!(val, "-4503599627370496");
-    let val = vm.run_code::<&str>(c"return bp3d.util.num.toustring(bp3d.util.num.UINT53_MAX)").unwrap();
+    let val = vm
+        .run_code::<&str>(c"return bp3d.util.num.toustring(bp3d.util.num.UINT53_MAX)")
+        .unwrap();
     assert_eq!(val, "9007199254740991");
-    let val = vm.run_code::<&str>(c"return bp3d.util.num.toistring(bp3d.util.num.INT64_MIN)").unwrap();
+    let val = vm
+        .run_code::<&str>(c"return bp3d.util.num.toistring(bp3d.util.num.INT64_MIN)")
+        .unwrap();
     assert_eq!(val, "-9223372036854775808");
-    let val = vm.run_code::<&str>(c"return bp3d.util.num.toistring(bp3d.util.num.INT64_MAX)").unwrap();
+    let val = vm
+        .run_code::<&str>(c"return bp3d.util.num.toistring(bp3d.util.num.INT64_MAX)")
+        .unwrap();
     assert_eq!(val, "9223372036854775807");
-    let val = vm.run_code::<&str>(c"return bp3d.util.num.toustring(bp3d.util.num.UINT64_MAX)").unwrap();
+    let val = vm
+        .run_code::<&str>(c"return bp3d.util.num.toustring(bp3d.util.num.UINT64_MAX)")
+        .unwrap();
     assert_eq!(val, "18446744073709551615");
 }

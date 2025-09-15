@@ -31,7 +31,7 @@ use crate::util::core::SimpleDrop;
 use crate::vm::error::{Error, TypeError};
 use crate::vm::function::{FromParam, IntoParam};
 use crate::vm::table::{ImmutableTable, Table};
-use crate::vm::thread::value::{ImmutableThread, Thread as Thread};
+use crate::vm::thread::value::{ImmutableThread, Thread};
 use crate::vm::userdata::{AnyUserData, ImmutableAnyUserData};
 use crate::vm::util::{lua_rust_error, LuaType};
 use crate::vm::value::function::Function;
@@ -41,7 +41,8 @@ use std::fmt::Display;
 use std::str::FromStr;
 
 pub type Any<'a> = AnyValue<'a, Table<'a>, AnyUserData<'a>, Thread<'a>>;
-pub type AnyImmutable<'a> = AnyValue<'a, ImmutableTable<'a>, ImmutableAnyUserData<'a>, ImmutableThread<'a>>;
+pub type AnyImmutable<'a> =
+    AnyValue<'a, ImmutableTable<'a>, ImmutableAnyUserData<'a>, ImmutableThread<'a>>;
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum AnyValue<'a, T, U, R> {
@@ -75,7 +76,7 @@ impl<T: Display, U: Display, R: Display> Display for AnyValue<'_, T, U, R> {
             AnyValue::UserData(v) => write!(f, "{}", v),
             AnyValue::Thread(v) => write!(f, "{}", v),
             AnyValue::Int64(v) => write!(f, "{}", v),
-            AnyValue::UInt64(v) => write!(f, "{}", v)
+            AnyValue::UInt64(v) => write!(f, "{}", v),
         }
     }
 }
@@ -94,7 +95,7 @@ impl<T, U, R> AnyValue<'_, T, U, R> {
             AnyValue::UserData(_) => Type::Userdata,
             AnyValue::Thread(_) => Type::Thread,
             AnyValue::Int64(_) => Type::Cdata,
-            AnyValue::UInt64(_) => Type::Cdata
+            AnyValue::UInt64(_) => Type::Cdata,
         }
     }
 
@@ -114,9 +115,7 @@ impl<T, U, R> AnyValue<'_, T, U, R> {
     pub fn to_integer(&self) -> Result<i64, Error> {
         match self {
             AnyValue::Number(v) => Ok(*v as _),
-            AnyValue::String(v) => {
-                i64::from_str(v).map_err(|_| Error::ParseInt)
-            }
+            AnyValue::String(v) => i64::from_str(v).map_err(|_| Error::ParseInt),
             AnyValue::Int64(v) => Ok(*v),
             AnyValue::UInt64(v) => Ok(*v as _),
             _ => Err(Error::Type(TypeError {
@@ -129,9 +128,7 @@ impl<T, U, R> AnyValue<'_, T, U, R> {
     pub fn to_uinteger(&self) -> Result<u64, Error> {
         match self {
             AnyValue::Number(v) => Ok(*v as _),
-            AnyValue::String(v) => {
-                u64::from_str(v).map_err(|_| Error::ParseInt)
-            }
+            AnyValue::String(v) => u64::from_str(v).map_err(|_| Error::ParseInt),
             AnyValue::Int64(v) => Ok(*v as _),
             AnyValue::UInt64(v) => Ok(*v),
             _ => Err(Error::Type(TypeError {
@@ -159,7 +156,7 @@ unsafe impl IntoLua for Any<'_> {
             AnyValue::UserData(_) => 0,
             AnyValue::Thread(_) => 0,
             AnyValue::Int64(v) => v.into_lua(vm),
-            AnyValue::UInt64(v) => v.into_lua(vm)
+            AnyValue::UInt64(v) => v.into_lua(vm),
         }
     }
 }
@@ -206,11 +203,10 @@ impl<'a, T: FromLua<'a>, U: FromLua<'a>, R: FromLua<'a>> FromLua<'a> for AnyValu
                 Ok(unsafe { AnyValue::UserData(FromLua::from_lua_unchecked(vm, index)) })
             }
             Type::Thread => Ok(unsafe { AnyValue::Thread(FromLua::from_lua_unchecked(vm, index)) }),
-            Type::Cdata => {
-                i64::from_lua(vm, index).map(AnyValue::Int64)
-                    .or_else(|_| u64::from_lua(vm, index).map(AnyValue::UInt64))
-                    .map_err(|_| Error::UnsupportedType(ty))
-            },
+            Type::Cdata => i64::from_lua(vm, index)
+                .map(AnyValue::Int64)
+                .or_else(|_| u64::from_lua(vm, index).map(AnyValue::UInt64))
+                .map_err(|_| Error::UnsupportedType(ty)),
         }
     }
 }
@@ -219,7 +215,13 @@ unsafe impl<T: SimpleDrop, U: SimpleDrop, R: SimpleDrop> SimpleDrop for AnyValue
 
 impl<T: LuaType, U: LuaType, R: LuaType> LuaType for AnyValue<'_, T, U, R> {}
 
-impl<'a, T: FromLua<'a> + SimpleDrop + LuaType, U: FromLua<'a> + SimpleDrop + LuaType, R: FromLua<'a> + SimpleDrop + LuaType> FromParam<'a> for AnyValue<'a, T, U, R> {
+impl<
+        'a,
+        T: FromLua<'a> + SimpleDrop + LuaType,
+        U: FromLua<'a> + SimpleDrop + LuaType,
+        R: FromLua<'a> + SimpleDrop + LuaType,
+    > FromParam<'a> for AnyValue<'a, T, U, R>
+{
     #[inline(always)]
     unsafe fn from_param(vm: &'a Vm, index: i32) -> Self {
         match FromLua::from_lua(vm, index) {

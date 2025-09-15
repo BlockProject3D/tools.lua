@@ -26,16 +26,18 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::fmt::Debug;
+use crate::autocomplete::{Mode, Type};
+use bp3d_lua_shell_proto::completion;
+use bp3d_lua_shell_proto::recv;
 use bp3d_net::ipc::util::Message;
 use bp3d_proto::message::WriteSelf;
-use bp3d_lua_shell_proto::recv;
-use bp3d_lua_shell_proto::completion;
-use crate::autocomplete::{Mode, Type};
+use std::fmt::Debug;
 
 pub trait OutData: Send + Debug {
     fn write(&self, msg: &mut Message) -> bp3d_proto::message::Result<()>;
-    fn has_exited(&self) -> bool { false }
+    fn has_exited(&self) -> bool {
+        false
+    }
 }
 
 #[derive(Debug)]
@@ -45,11 +47,14 @@ impl OutData for End {
     fn write(&self, msg: &mut Message) -> bp3d_proto::message::Result<()> {
         recv::Main {
             hdr: recv::Header::new().set_type(recv::Type::End).to_ref(),
-            msg: recv::Message::End
-        }.write_self(msg)
+            msg: recv::Message::End,
+        }
+        .write_self(msg)
     }
 
-    fn has_exited(&self) -> bool { true }
+    fn has_exited(&self) -> bool {
+        true
+    }
 }
 
 #[derive(Debug)]
@@ -59,8 +64,12 @@ impl OutData for Log {
     fn write(&self, msg: &mut Message) -> bp3d_proto::message::Result<()> {
         recv::Main {
             hdr: recv::Header::new().set_type(recv::Type::Log).to_ref(),
-            msg: recv::Log { source: self.0, msg: &self.1 }
-        }.write_self(msg)
+            msg: recv::Log {
+                source: self.0,
+                msg: &self.1,
+            },
+        }
+        .write_self(msg)
     }
 }
 
@@ -77,24 +86,27 @@ impl OutData for Autocomplete {
                     for item in &completion.items {
                         let ty = match item.ty {
                             Type::Function => completion::Type::Function,
-                            Type::Attribute => completion::Type::Attribute
+                            Type::Attribute => completion::Type::Attribute,
                         };
                         items2.write_item(&completion::Item {
                             hdr: completion::Header::new().set_type(ty).to_ref(),
-                            name: &item.name
+                            name: &item.name,
                         })?;
                     }
                     items.write_item(&completion::List {
                         path: &completion.path,
-                        items: items2.to_ref()
+                        items: items2.to_ref(),
                     })?;
                 }
                 recv::Main {
-                    hdr: recv::Header::new().set_type(recv::Type::AutocompleteAddUpdate).to_ref(),
+                    hdr: recv::Header::new()
+                        .set_type(recv::Type::AutocompleteAddUpdate)
+                        .to_ref(),
                     msg: completion::AddUpdate {
-                        items: items.to_ref()
-                    }
-                }.write_self(msg)?;
+                        items: items.to_ref(),
+                    },
+                }
+                .write_self(msg)?;
             }
             Mode::Delete(v) => {
                 let mut items = completion::DeleteItems::new(Vec::<u8>::new());
@@ -102,11 +114,14 @@ impl OutData for Autocomplete {
                     items.write_item(&completion::Path { path })?;
                 }
                 recv::Main {
-                    hdr: recv::Header::new().set_type(recv::Type::AutocompleteDelete).to_ref(),
+                    hdr: recv::Header::new()
+                        .set_type(recv::Type::AutocompleteDelete)
+                        .to_ref(),
                     msg: completion::Delete {
-                        items: items.to_ref()
-                    }
-                }.write_self(msg)?;
+                        items: items.to_ref(),
+                    },
+                }
+                .write_self(msg)?;
             }
         }
         Ok(())

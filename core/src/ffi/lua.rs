@@ -74,7 +74,7 @@ pub enum Type {
     Function = 6,
     Userdata = 7,
     Thread = 8,
-    Cdata = 10
+    Cdata = 10,
 }
 
 pub type RawNumber = c_double;

@@ -26,15 +26,15 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use bp3d_debug::info;
 use crate::ffi::lua::lua_settop;
 use crate::util::core::AnyStr;
 use crate::vm::registry::core::Key;
 use crate::vm::table::Table;
-use crate::vm::userdata::{NameConvert, UserData};
 use crate::vm::userdata::util::get_static_table;
+use crate::vm::userdata::{NameConvert, UserData};
 use crate::vm::value::IntoLua;
 use crate::vm::Vm;
+use bp3d_debug::info;
 
 pub struct Namespace<'a> {
     vm: &'a Vm,
@@ -92,11 +92,21 @@ impl<'a> Namespace<'a> {
         Ok(())
     }
 
-    pub fn add_userdata<T: UserData>(&mut self, name: impl AnyStr, case: impl NameConvert) -> crate::vm::Result<()> {
-        info!("Adding userdata type {:?} as {:?}", T::CLASS_NAME, name.to_str()?);
+    pub fn add_userdata<T: UserData>(
+        &mut self,
+        name: impl AnyStr,
+        case: impl NameConvert,
+    ) -> crate::vm::Result<()> {
+        info!(
+            "Adding userdata type {:?} as {:?}",
+            T::CLASS_NAME,
+            name.to_str()?
+        );
         self.vm.register_userdata::<T>(case)?;
-        self.table.set(name, get_static_table::<T>(self.vm)
-            .map(|v| unsafe { v.to_table() }))?;
+        self.table.set(
+            name,
+            get_static_table::<T>(self.vm).map(|v| unsafe { v.to_table() }),
+        )?;
         Ok(())
     }
 

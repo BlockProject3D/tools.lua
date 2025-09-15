@@ -26,13 +26,13 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use crate::gen::IntoLua;
 use crate::parser::enums::EnumVariant;
 use crate::parser::structs::StructField;
 use crate::parser::Parser;
 use proc_macro2::{Ident, TokenStream};
 use quote::quote;
 use syn::Generics;
-use crate::gen::IntoLua;
 
 pub struct IntoParam(IntoLua);
 

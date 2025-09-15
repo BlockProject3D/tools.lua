@@ -26,6 +26,7 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+pub mod debug;
 pub mod destructor;
 mod interface;
 pub mod iter;
@@ -33,7 +34,6 @@ pub mod load;
 #[cfg(feature = "root-vm")]
 mod root_vm;
 pub mod util;
-pub mod debug;
 mod vm;
 
 #[cfg(feature = "root-vm")]

@@ -30,9 +30,9 @@
 
 use bp3d_lua::vm::core::destructor::Pool;
 use bp3d_lua::vm::registry::core::Key;
-use bp3d_lua::vm::RootVm;
-use bp3d_lua::vm::value::types::Function;
 use bp3d_lua::vm::registry::types;
+use bp3d_lua::vm::value::types::Function;
+use bp3d_lua::vm::RootVm;
 
 #[test]
 fn test_multi_root_vms_basic() {

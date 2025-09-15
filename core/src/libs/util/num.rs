@@ -53,25 +53,13 @@ impl Lib for Num {
     const NAMESPACE: &'static str = "bp3d.util.num";
 
     fn load(&self, namespace: &mut Namespace) -> crate::vm::Result<()> {
-        namespace.add([
-            ("UINT53_MAX", UInt53::MAX),
-            ("UINT53_MIN", UInt53::MIN)
-        ])?;
-        namespace.add([
-            ("INT53_MAX", Int53::MAX),
-            ("INT53_MIN", Int53::MIN)
-        ])?;
-        namespace.add([
-            ("UINT64_MAX", u64::MAX),
-            ("UINT64_MIN", u64::MIN)
-        ])?;
-        namespace.add([
-            ("INT64_MAX", i64::MAX),
-            ("INT64_MIN", i64::MIN)
-        ])?;
+        namespace.add([("UINT53_MAX", UInt53::MAX), ("UINT53_MIN", UInt53::MIN)])?;
+        namespace.add([("INT53_MAX", Int53::MAX), ("INT53_MIN", Int53::MIN)])?;
+        namespace.add([("UINT64_MAX", u64::MAX), ("UINT64_MIN", u64::MIN)])?;
+        namespace.add([("INT64_MAX", i64::MAX), ("INT64_MIN", i64::MIN)])?;
         namespace.add([
             ("toistring", RFunction::wrap(toistring)),
-            ("toustring", RFunction::wrap(toustring))
+            ("toustring", RFunction::wrap(toustring)),
         ])
     }
 }

@@ -26,16 +26,19 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::collections::HashMap;
-use crate::ffi::lua::{lua_insert, lua_pushlightuserdata, lua_rawget, lua_rawset, lua_settop, lua_type, State, Type, REGISTRYINDEX};
+use crate::ffi::ext::lua_ext_keyreg_get;
+use crate::ffi::lua::{
+    lua_insert, lua_pushlightuserdata, lua_rawget, lua_rawset, lua_settop, lua_type, State, Type,
+    REGISTRYINDEX,
+};
 use crate::vm::registry::{Set, Value};
 use crate::vm::value::util::move_value_top;
 use crate::vm::Vm;
+use std::collections::HashMap;
 use std::ffi::c_void;
 use std::marker::PhantomData;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Mutex;
-use crate::ffi::ext::lua_ext_keyreg_get;
 
 #[derive(Debug)]
 pub struct RawKey {
@@ -45,7 +48,7 @@ pub struct RawKey {
     // which must implement the Value trait which limits the number of possible types.
     ty: fn() -> &'static str,
     registered: AtomicBool,
-    register_lock: Mutex<bool>
+    register_lock: Mutex<bool>,
 }
 
 unsafe impl Send for RawKey {}
@@ -95,7 +98,7 @@ impl RawKey {
             ptr: val as usize as *const c_void,
             ty,
             registered: AtomicBool::new(false),
-            register_lock: Mutex::new(false)
+            register_lock: Mutex::new(false),
         }
     }
 }
@@ -137,29 +140,26 @@ fn check_register_key_unique(key: &RawKey) {
 
 type NamedKeyRegistry = Mutex<HashMap<usize, &'static str>>;
 
-unsafe fn voidp_to_ref(p: *mut c_void) -> &'static NamedKeyRegistry
-{
+unsafe fn voidp_to_ref(p: *mut c_void) -> &'static NamedKeyRegistry {
     assert!(!p.is_null());
     unsafe { &*(p as *const NamedKeyRegistry) }
 }
 
-#[cfg(feature="root-vm")]
-unsafe fn voidp_to_ptr(p: *mut c_void) -> *mut NamedKeyRegistry
-{
+#[cfg(feature = "root-vm")]
+unsafe fn voidp_to_ptr(p: *mut c_void) -> *mut NamedKeyRegistry {
     assert!(!p.is_null());
     p as *mut NamedKeyRegistry
 }
 
-#[cfg(feature="root-vm")]
-fn ref_to_voidp(r: &'static NamedKeyRegistry) -> *mut c_void
-{
+#[cfg(feature = "root-vm")]
+fn ref_to_voidp(r: &'static NamedKeyRegistry) -> *mut c_void {
     r as *const NamedKeyRegistry as *mut c_void
 }
 
-#[cfg(feature="root-vm")]
+#[cfg(feature = "root-vm")]
 pub(crate) fn handle_root_vm_init() {
-    use bp3d_debug::debug;
     use crate::ffi::ext::lua_ext_keyreg_ref;
+    use bp3d_debug::debug;
     let ptr = ref_to_voidp(Box::leak(Box::new(Mutex::new(HashMap::new()))));
     // Pointer set in lua_ext_keyreg_ref to avoid TOCTOU.
     let ptr = unsafe { lua_ext_keyreg_ref(ptr) };
@@ -171,10 +171,10 @@ pub(crate) fn handle_root_vm_init() {
     }
 }
 
-#[cfg(feature="root-vm")]
+#[cfg(feature = "root-vm")]
 pub(crate) fn handle_root_vm_uninit() {
-    use bp3d_debug::debug;
     use crate::ffi::ext::lua_ext_keyreg_unref;
+    use bp3d_debug::debug;
     // Pointer reset to NULL in lua_ext_keyreg_unref to avoid TOCTOU.
     let ptr = unsafe { lua_ext_keyreg_unref() };
     if !ptr.is_null() {
@@ -187,7 +187,7 @@ pub(crate) fn handle_root_vm_uninit() {
 
 pub struct Key<T> {
     raw: RawKey,
-    useless: PhantomData<*const T>
+    useless: PhantomData<*const T>,
 }
 
 unsafe impl<T> Send for Key<T> {}

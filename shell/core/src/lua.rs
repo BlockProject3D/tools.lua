@@ -26,25 +26,25 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::cell::Cell;
-use std::path::PathBuf;
-use std::rc::Rc;
-use tokio::sync::mpsc;
-use std::thread::JoinHandle;
-use std::time::Duration;
-use bp3d_lua::vm::core::interrupt::{spawn_interruptible, Signal};
-use bp3d_lua::libs;
-use bp3d_lua::libs::Lib;
-use bp3d_debug::{debug, error, info, trace, warning};
-use bp3d_lua::vm::core::jit::JitOptions;
-use bp3d_lua::vm::core::load::{Code, Script};
-use bp3d_lua::vm::value::any::Any;
-use bp3d_lua::vm::Vm;
 use crate::data::DataOut;
 use crate::data_in::{Exit, InData, NetInData, RunCode, RunFile};
 use crate::data_out::{End, Log, OutData};
 use crate::lib1::Shell;
 use crate::scheduler::SchedulerPtr;
+use bp3d_debug::{debug, error, info, trace, warning};
+use bp3d_lua::libs;
+use bp3d_lua::libs::Lib;
+use bp3d_lua::vm::Vm;
+use bp3d_lua::vm::core::interrupt::{Signal, spawn_interruptible};
+use bp3d_lua::vm::core::jit::JitOptions;
+use bp3d_lua::vm::core::load::{Code, Script};
+use bp3d_lua::vm::value::any::Any;
+use std::cell::Cell;
+use std::path::PathBuf;
+use std::rc::Rc;
+use std::thread::JoinHandle;
+use std::time::Duration;
+use tokio::sync::mpsc;
 
 const CHANNEL_BUFFER: usize = 32;
 
@@ -52,7 +52,7 @@ pub struct Args {
     pub data: PathBuf,
     pub lua: PathBuf,
     pub modules: Vec<PathBuf>,
-    pub main_script: Option<String>
+    pub main_script: Option<String>,
 }
 
 pub struct Lua {
@@ -82,7 +82,7 @@ impl Lua {
         let res = self.signal.send(Duration::from_secs(10));
         match res {
             Ok(_) => self.handle.join().unwrap(),
-            Err(e) => error!("Error attempting to terminate VM thread: {}", e)
+            Err(e) => error!("Error attempting to terminate VM thread: {}", e),
         }
     }
 
@@ -95,7 +95,7 @@ impl Lua {
             Ok(v) => {
                 logger.send(Log("output", v.to_string()));
                 false
-            },
+            }
             Err(e) => {
                 if e.is_uncatchable() {
                     logger.send(Log("kill", e.to_string()));
@@ -127,11 +127,17 @@ impl Lua {
             if let Err(e) = libs::util::Util.register(vm) {
                 error!("Failed to load util library: {}", e);
             }
-            if let Err(e) = libs::lua::Lua::new().load_chroot_path(&args.data).build().register(vm) {
+            if let Err(e) = libs::lua::Lua::new()
+                .load_chroot_path(&args.data)
+                .build()
+                .register(vm)
+            {
                 error!("Failed to load base library: {}", e);
             }
             info!("Loading bp3d-lua-shell library...");
-            if let Err(e) = Shell::new(logger.clone(), scheduler.clone(), running.clone()).register(vm) {
+            if let Err(e) =
+                Shell::new(logger.clone(), scheduler.clone(), running.clone()).register(vm)
+            {
                 error!("Failed to load shell library: {}", e);
             }
             let mut modules = libs::lua::Module::new(&[]);
@@ -150,15 +156,23 @@ impl Lua {
                 info!("JIT: OFF")
             }
             if let Some(main_script) = &args.main_script {
-                vm.scope(|vm| Ok(RunFile { path: main_script.clone() }.handle(&args, vm, &logger))).unwrap();
+                vm.scope(|vm| {
+                    Ok(RunFile {
+                        path: main_script.clone(),
+                    }
+                    .handle(&args, vm, &logger))
+                })
+                .unwrap();
             }
             while running.get() {
                 // First handle IPC events
                 while let Some(command) = receiver.try_recv().ok() {
                     // Nice type-inference breakage with this box.
                     trace!("received command: {:?}", command);
-                    let ret = vm.scope(|vm| Ok((command as Box<dyn InData>).handle(&args, vm, &logger))).unwrap();
-                    trace!({ret}, "command handled");
+                    let ret = vm
+                        .scope(|vm| Ok((command as Box<dyn InData>).handle(&args, vm, &logger)))
+                        .unwrap();
+                    trace!({ ret }, "command handled");
                     if ret {
                         running.set(false);
                         break;
@@ -175,7 +189,7 @@ impl Lua {
             signal,
             handle,
             exec_queue,
-            out_queue
+            out_queue,
         }
     }
 }
@@ -184,7 +198,7 @@ impl InData for RunCode {
     fn handle(&mut self, _: &Args, vm: &Vm, out: &DataOut) -> bool {
         match &self.name {
             Some(name) => Lua::handle_value(vm.run(Code::new(name, self.code.as_bytes())), out),
-            None => Lua::handle_value(vm.run_code(&*self.code), out)
+            None => Lua::handle_value(vm.run_code(&*self.code), out),
         }
     }
 }

@@ -26,8 +26,8 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::path::Path;
 use bp3d_protoc::api::generate_rust;
+use std::path::Path;
 
 fn main() {
     generate_rust(Path::new("./protoc.toml")).unwrap();

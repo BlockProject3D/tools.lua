@@ -38,12 +38,18 @@ pub struct VmCheckedRawKey {
 
 impl VmCheckedRawKey {
     pub fn push(&self, vm: &Vm) {
-        assert_eq!(unsafe { lua_ext_getprovenance(vm.as_ptr()) }, self.provenance);
+        assert_eq!(
+            unsafe { lua_ext_getprovenance(vm.as_ptr()) },
+            self.provenance
+        );
         unsafe { self.raw.push(vm) }
     }
 
     pub fn delete(self, vm: &Vm) {
-        assert_eq!(unsafe { lua_ext_getprovenance(vm.as_ptr()) }, self.provenance);
+        assert_eq!(
+            unsafe { lua_ext_getprovenance(vm.as_ptr()) },
+            self.provenance
+        );
         unsafe { self.raw.delete(vm) }
     }
 
@@ -58,14 +64,17 @@ impl FromIndex for VmCheckedRawKey {
         let raw = RawKey::from_index(vm, index);
         Self {
             provenance: unsafe { lua_ext_getprovenance(vm.as_ptr()) },
-            raw
+            raw,
         }
     }
 }
 
 impl Set for VmCheckedRawKey {
     unsafe fn set(&self, vm: &Vm, index: i32) {
-        assert_eq!(unsafe { lua_ext_getprovenance(vm.as_ptr()) }, self.provenance);
+        assert_eq!(
+            unsafe { lua_ext_getprovenance(vm.as_ptr()) },
+            self.provenance
+        );
         self.raw.set(vm, index);
     }
 }

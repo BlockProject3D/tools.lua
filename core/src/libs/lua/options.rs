@@ -31,8 +31,8 @@ use crate::libs::lua::call::Call;
 use crate::libs::lua::load::Load;
 use crate::libs::lua::require::{Provider, Require};
 use crate::libs::Lib;
-use std::path::Path;
 use crate::vm::closure::arc::Shared;
+use std::path::Path;
 
 #[derive(Default)]
 pub struct Lua<'a> {

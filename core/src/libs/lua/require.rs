@@ -30,12 +30,12 @@ use crate::decl_closure;
 use crate::libs::interface::Lib;
 use crate::util::Namespace;
 use crate::vm::closure::arc::{Arc, Shared};
+use crate::vm::core::debug::DebugRegistry;
 use crate::vm::value::any::{AnyParam, UncheckedAnyReturn};
 use crate::vm::Vm;
 use bp3d_util::simple_error;
 use std::collections::HashMap;
 use std::sync::Mutex;
-use crate::vm::core::debug::DebugRegistry;
 
 simple_error! {
     pub Error {

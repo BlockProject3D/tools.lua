@@ -28,13 +28,13 @@
 
 use crate::ffi::laux::{luaL_ref, luaL_unref};
 use crate::ffi::lua::{lua_rawgeti, lua_rawseti, REGISTRYINDEX};
+#[cfg(feature = "send")]
+use crate::vm::registry::send_key::VmCheckedRawKey;
 use crate::vm::registry::{FromIndex, Set, Value};
 use crate::vm::value::util::move_value_top;
 use crate::vm::Vm;
 use std::ffi::c_int;
 use std::marker::PhantomData;
-#[cfg(feature = "send")]
-use crate::vm::registry::send_key::VmCheckedRawKey;
 
 //TODO: Check if key can be a NonZeroI32.
 
@@ -173,7 +173,9 @@ impl<T: Value> Key<T> {
         #[cfg(feature = "send")]
         self.raw.delete(vm);
         #[cfg(not(feature = "send"))]
-        unsafe { self.raw.delete(vm) };
+        unsafe {
+            self.raw.delete(vm)
+        };
     }
 
     #[inline(always)]

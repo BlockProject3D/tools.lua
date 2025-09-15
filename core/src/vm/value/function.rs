@@ -28,6 +28,7 @@
 
 use crate::ffi::laux::luaL_checktype;
 use crate::ffi::lua::{lua_pushvalue, lua_topointer, Type};
+use crate::impl_registry_value;
 use crate::util::core::SimpleDrop;
 use crate::vm::core::util::{pcall, push_error_handler};
 use crate::vm::function::{FromParam, IntoParam};
@@ -37,7 +38,6 @@ use crate::vm::value::util::{check_type_equals, check_value_top};
 use crate::vm::value::{FromLua, ImmutableValue, IntoLua};
 use crate::vm::Vm;
 use std::fmt::{Debug, Display};
-use crate::impl_registry_value;
 
 pub struct Function<'a> {
     vm: &'a Vm,

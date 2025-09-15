@@ -31,21 +31,21 @@ use crate::ffi::lua::{
     lua_pushstring, lua_sethook, Debug, State, MASKCALL, MASKCOUNT, MASKLINE, MASKRET,
 };
 use crate::vm::core::interrupt::{Error, InterruptibleRootVm};
+use crate::vm::Vm;
 use bp3d_debug::{error, warning};
 use libc::{c_int, pthread_kill, pthread_self, pthread_t, SIGUSR1};
 use std::mem::MaybeUninit;
 use std::ops::Deref;
-use std::sync::{Arc, Mutex, Once};
 use std::sync::atomic::AtomicBool;
+use std::sync::{Arc, Mutex, Once};
 use std::thread::ThreadId;
 use std::time::Duration;
-use crate::vm::Vm;
 
 pub struct Signal {
     l: State,
     thread: ThreadId,
     th: pthread_t,
-    alive: Arc<AtomicBool>
+    alive: Arc<AtomicBool>,
 }
 
 struct SigState {
@@ -117,7 +117,12 @@ impl Signal {
             let ret = unsafe { libc::sigaction(SIGUSR1, &sig as _, std::ptr::null_mut()) };
             assert_eq!(ret, 0);
         });
-        Self { l, thread, th, alive }
+        Self {
+            l,
+            thread,
+            th,
+            alive,
+        }
     }
 
     pub fn send(&self, duration: Duration) -> Result<(), Error> {

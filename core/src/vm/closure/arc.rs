@@ -28,9 +28,9 @@
 
 use crate::util::core::SimpleDrop;
 use crate::vm::closure::{FromUpvalue, IntoUpvalue, Upvalue};
+use crate::vm::value::types::RawPtr;
 use crate::vm::Vm;
 use std::ops::Deref;
-use crate::vm::value::types::RawPtr;
 
 pub type Shared<T> = std::sync::Arc<T>;
 

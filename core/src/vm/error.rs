@@ -27,9 +27,9 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::ffi::lua::{lua_type, Type};
+use crate::vm::Vm;
 use bp3d_util::simple_error;
 use std::fmt::{Display, Formatter};
-use crate::vm::Vm;
 
 #[derive(Debug, Copy, Clone)]
 pub struct TypeError {

@@ -26,18 +26,18 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::path::PathBuf;
 use bp3d_debug::trace;
 use clap::Parser;
+use std::path::PathBuf;
 
-mod lua;
-mod core;
-mod data_out;
-mod data_in;
-mod data;
-mod scheduler;
-mod lib1;
 mod autocomplete;
+mod core;
+mod data;
+mod data_in;
+mod data_out;
+mod lib1;
+mod lua;
+mod scheduler;
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
@@ -55,7 +55,7 @@ struct Cli {
     pub interactive: bool,
 
     #[arg(help = "Path to main script to start at Vm startup in the root directory.")]
-    pub main_script: Option<String>
+    pub main_script: Option<String>,
 }
 
 #[tokio::main]
@@ -76,7 +76,11 @@ async fn main() {
     if args.interactive {
         core::run_interactive(largs).await;
     } else {
-        core::run(largs, args.name.as_ref().map(|v| &**v).unwrap_or("bp3d-lua-shell")).await;
+        core::run(
+            largs,
+            args.name.as_ref().map(|v| &**v).unwrap_or("bp3d-lua-shell"),
+        )
+        .await;
     }
     trace!("Application end");
 }

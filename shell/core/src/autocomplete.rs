@@ -31,26 +31,32 @@ use bp3d_lua::vm::value::any::Any;
 #[derive(Debug)]
 pub enum Mode {
     AddUpdate(Vec<Completions>),
-    Delete(Vec<String>)
+    Delete(Vec<String>),
 }
 
 #[derive(Debug, Eq, PartialEq)]
 pub enum Type {
     Function,
-    Attribute
+    Attribute,
 }
 
 #[derive(Debug)]
 pub struct Item {
     pub name: String,
-    pub ty: Type
+    pub ty: Type,
 }
 
 impl Item {
     pub fn from_lua(name: &str, val: &Any) -> Self {
         match val {
-            Any::Function(_) => Item { name: name.into(), ty: Type::Function },
-            _ => Item { name: name.into(), ty: Type::Attribute }
+            Any::Function(_) => Item {
+                name: name.into(),
+                ty: Type::Function,
+            },
+            _ => Item {
+                name: name.into(),
+                ty: Type::Attribute,
+            },
         }
     }
 }
@@ -58,5 +64,5 @@ impl Item {
 #[derive(Debug)]
 pub struct Completions {
     pub path: String,
-    pub items: Vec<Item>
+    pub items: Vec<Item>,
 }

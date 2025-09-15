@@ -26,19 +26,28 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use crate::ffi::ext::{lua_ext_checkinteger64, lua_ext_checkuinteger64, lua_ext_fast_checkboolean, lua_ext_fast_checkinteger, lua_ext_fast_checknumber, lua_ext_pushinteger64, lua_ext_pushuinteger64};
-use crate::ffi::laux::{luaL_checkinteger, luaL_checklstring, luaL_checknumber, luaL_checkudata, luaL_testudata};
-use crate::ffi::lua::{lua_isnumber, lua_pushboolean, lua_pushinteger, lua_pushnil, lua_pushnumber, lua_toboolean, lua_tointeger, lua_tonumber, lua_type, RawInteger, RawNumber, Type};
+use crate::ffi::ext::{
+    lua_ext_checkinteger64, lua_ext_checkuinteger64, lua_ext_fast_checkboolean,
+    lua_ext_fast_checkinteger, lua_ext_fast_checknumber, lua_ext_pushinteger64,
+    lua_ext_pushuinteger64,
+};
+use crate::ffi::laux::{
+    luaL_checkinteger, luaL_checklstring, luaL_checknumber, luaL_checkudata, luaL_testudata,
+};
+use crate::ffi::lua::{
+    lua_isnumber, lua_pushboolean, lua_pushinteger, lua_pushnil, lua_pushnumber, lua_toboolean,
+    lua_tointeger, lua_tonumber, lua_type, RawInteger, RawNumber, Type,
+};
 use crate::util::core::SimpleDrop;
 use crate::vm::function::{FromParam, IntoParam};
 use crate::vm::userdata::UserData;
 use crate::vm::util::{lua_rust_error, LuaType, TypeName};
+use crate::vm::value::types::{Boolean, Integer, Number};
 use crate::vm::value::{FromLua, IntoLua};
 use crate::vm::Vm;
 use std::borrow::Cow;
 use std::error::Error;
 use std::slice;
-use crate::vm::value::types::{Boolean, Integer, Number};
 
 impl<'a, T: FromParam<'a> + SimpleDrop> FromParam<'a> for Option<T> {
     unsafe fn from_param(vm: &'a Vm, index: i32) -> Self {
@@ -207,7 +216,7 @@ macro_rules! impl_integer_64 {
                 unsafe { $push_func(vm.as_ptr(), self as _) }
             }
         }
-    }
+    };
 }
 
 impl_integer_64!(i64, lua_ext_checkinteger64, lua_ext_pushinteger64);
@@ -259,7 +268,7 @@ macro_rules! impl_float {
 
 impl_float!(f32, f64);
 
-impl LuaType for bool { }
+impl LuaType for bool {}
 
 impl FromParam<'_> for bool {
     #[inline(always)]

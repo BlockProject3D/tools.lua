@@ -33,10 +33,10 @@ use crate::ffi::lua::lua_newuserdata;
 use crate::util::core::SimpleDrop;
 use crate::vm::closure::{FromUpvalue, IntoUpvalue, Upvalue};
 use crate::vm::registry::core::RawKey;
+use crate::vm::value::types::RawPtr;
 use crate::vm::Vm;
 use std::marker::PhantomData;
 use std::ops::{Deref, DerefMut};
-use crate::vm::value::types::RawPtr;
 
 pub struct Cell<T> {
     ptr: *mut *const T,

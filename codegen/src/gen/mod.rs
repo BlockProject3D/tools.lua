@@ -29,11 +29,11 @@
 //TODO: FromLua generator
 
 mod from_param;
+mod into_lua;
 mod into_param;
 mod lua_type;
-mod into_lua;
 
 pub use from_param::FromParam;
-pub use into_param::IntoParam;
 pub use into_lua::IntoLua;
+pub use into_param::IntoParam;
 pub use lua_type::LuaType;

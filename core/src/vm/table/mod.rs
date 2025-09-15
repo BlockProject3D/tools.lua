@@ -27,10 +27,10 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 mod core;
+mod immutable;
 mod interface;
 mod iter;
 pub mod traits;
-mod immutable;
 
 pub use core::Table;
 

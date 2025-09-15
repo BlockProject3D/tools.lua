@@ -29,11 +29,11 @@
 pub mod any;
 mod core;
 mod function;
-mod interface;
-pub mod types;
-pub mod util;
-mod raw_ptr;
-mod unknown;
 mod integer53;
+mod interface;
+mod raw_ptr;
+pub mod types;
+mod unknown;
+pub mod util;
 
 pub use interface::*;
