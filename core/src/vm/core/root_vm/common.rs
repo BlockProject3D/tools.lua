@@ -62,6 +62,7 @@ impl UnsafeRootVm {
 impl Drop for UnsafeRootVm {
     fn drop(&mut self) {
         debug!("Deleting destructor pool");
+        let funcs = Pool::extract_post_close(&mut self.0);
         unsafe {
             drop(Box::from_raw(Pool::from_vm(&mut self.0)));
         }
@@ -72,5 +73,9 @@ impl Drop for UnsafeRootVm {
         }
         #[cfg(not(feature = "send"))]
         HAS_VM.set(false);
+        debug!("Running post VM hooks...");
+        for func in funcs {
+            func()
+        }
     }
 }

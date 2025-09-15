@@ -116,6 +116,7 @@ static DESTRUCTOR_POOL: Key<LuaRef<RawPtr<Pool>>> = Key::new("__destructor_pool_
 
 pub struct Pool {
     leaked: Vec<Box<dyn FnOnce()>>,
+    post_close: Vec<Box<dyn FnOnce() + Send + 'static>>,
     is_send: bool,
 }
 
@@ -123,6 +124,7 @@ impl Pool {
     pub fn new(is_send: bool) -> Self {
         Self {
             leaked: Vec::new(),
+            post_close: Vec::new(),
             is_send,
         }
     }
@@ -191,6 +193,19 @@ impl Pool {
             unsafe { R::delete(ptr) };
         }));
         ptr
+    }
+
+    pub fn attach_post_close(vm: &Vm, f: impl FnOnce() + Send + 'static) {
+        let ptr = unsafe { Self::_from_vm(vm) };
+        unsafe { (*ptr.as_mut_ptr()).attach_mut_post_close(f) }
+    }
+
+    pub fn attach_mut_post_close(&mut self, f: impl FnOnce() + Send + 'static) {
+        self.post_close.push(Box::new(f));
+    }
+
+    pub fn extract_post_close(vm: &mut Vm) -> Vec<Box<dyn FnOnce() + Send + 'static>> {
+        std::mem::replace(&mut Self::from_vm(vm).post_close, Vec::new())
     }
 }
 
