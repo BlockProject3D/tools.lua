@@ -130,6 +130,21 @@ fn test_multi_root_vms_panic_4() {
 
 #[test]
 #[should_panic]
+fn test_multi_root_vms_panic_5() {
+    let key = {
+        let root1 = RootVm::new();
+        root1.run_code::<()>(c"function Test() end").unwrap();
+        let glb: Function = root1.get_global("Test").unwrap();
+        Key::<types::Function>::new(glb)
+    };
+    {
+        let root2 = RootVm::new();
+        key.delete(&root2);
+    }
+}
+
+#[test]
+#[should_panic]
 fn test_multi_root_vms_not_send_destructor() {
     let root1 = RootVm::new();
     Pool::attach(&root1, Box::new(()));

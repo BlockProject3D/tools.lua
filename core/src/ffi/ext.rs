@@ -60,6 +60,8 @@ extern "C" {
 extern "C" {
     pub fn lua_ext_tab_len(l: State, idx: c_int, outsize: *mut MSize) -> c_int;
     pub fn lua_ext_ccatch_error(l: State) -> u32;
+
+    pub fn lua_ext_getprovenance(l: State) -> u64;
 }
 
 //-----

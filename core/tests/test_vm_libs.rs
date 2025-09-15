@@ -45,7 +45,7 @@ fn test_vm_lib_lua() {
         c"
         assert(bp3d.lua.name == 'bp3d-lua')
         assert(bp3d.lua.version == BP3D_LUA_CRATE_VERSION)
-        assert(#bp3d.lua.patches == 7)
+        assert(#bp3d.lua.patches == 8)
         local func = bp3d.lua.loadString('return 1 + 1')
         assert(func)
         assert(func() == 2)

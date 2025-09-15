@@ -44,6 +44,7 @@ const PATCH_LIST: &[&str] = &[
     "windows_set_lib_names", // Allow setting LJLIBNAME and LJDLLNAME from environment variables.
     "lua_ext_ccatch_error",  // Throw lua errors which cannot be catched from lua standard
                              // pcall/xpcall but only from lua_pcall C API.
+    "lua_ext_provenance",    // lua_ext_getprovenance for registry key safety.
 ];
 
 fn apply_patches(luajit_build_path: &Path, _summary_path: &Path) -> std::io::Result<()> {

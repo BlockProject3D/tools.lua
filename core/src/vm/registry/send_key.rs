@@ -26,24 +26,24 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use crate::ffi::lua::State;
+use crate::ffi::ext::lua_ext_getprovenance;
 use crate::vm::registry::core::RawKey;
 use crate::vm::registry::{FromIndex, Set};
 use crate::vm::Vm;
 
 pub struct VmCheckedRawKey {
     raw: RawKey,
-    vm: State
+    provenance: u64,
 }
 
 impl VmCheckedRawKey {
     pub fn push(&self, vm: &Vm) {
-        assert!(vm.as_ptr() == self.vm);
+        assert_eq!(unsafe { lua_ext_getprovenance(vm.as_ptr()) }, self.provenance);
         unsafe { self.raw.push(vm) }
     }
 
     pub fn delete(self, vm: &Vm) {
-        assert!(vm.as_ptr() == self.vm);
+        assert_eq!(unsafe { lua_ext_getprovenance(vm.as_ptr()) }, self.provenance);
         unsafe { self.raw.delete(vm) }
     }
 
@@ -57,7 +57,7 @@ impl FromIndex for VmCheckedRawKey {
     unsafe fn from_index(vm: &Vm, index: i32) -> Self {
         let raw = RawKey::from_index(vm, index);
         Self {
-            vm: vm.as_ptr(),
+            provenance: unsafe { lua_ext_getprovenance(vm.as_ptr()) },
             raw
         }
     }
@@ -65,7 +65,7 @@ impl FromIndex for VmCheckedRawKey {
 
 impl Set for VmCheckedRawKey {
     unsafe fn set(&self, vm: &Vm, index: i32) {
-        assert!(vm.as_ptr() == self.vm);
+        assert_eq!(unsafe { lua_ext_getprovenance(vm.as_ptr()) }, self.provenance);
         self.raw.set(vm, index);
     }
 }
