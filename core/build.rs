@@ -81,7 +81,7 @@ fn run_build(build_dir: &Path) -> std::io::Result<Lib> {
 fn main() {
     // Rerun this script if any of the patch files changed.
     println!("cargo:rerun-if-changed=build.rs");
-    println!("cargo:rerun-if-changed=patch");
+    println!("cargo:rerun-if-changed=../patch");
 
     // Create build directory.
     let out = std::env::var_os("OUT_DIR").expect("Failed to acquire output directory");
