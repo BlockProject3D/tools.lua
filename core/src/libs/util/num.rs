@@ -27,11 +27,45 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::decl_lib_func;
+use crate::ffi::lua::RawNumber;
 use crate::libs::Lib;
 use crate::util::Namespace;
 use crate::vm::function::types::RFunction;
 use crate::vm::value::any::Any;
 use crate::vm::value::types::{Int53, UInt53};
+
+decl_lib_func! {
+    fn eq(a: RawNumber, b: RawNumber, epsilon: RawNumber) -> bool {
+        (a - b).abs() <= epsilon
+    }
+}
+
+decl_lib_func! {
+    fn parsenumber(value: &str) -> (Option<RawNumber>, Option<String>) {
+        match value.parse() {
+            Ok(n) => (Some(n), None),
+            Err(e) => (None, Some(e.to_string()))
+        }
+    }
+}
+
+decl_lib_func! {
+    fn parseint64(value: &str) -> (Option<i64>, Option<String>) {
+        match value.parse() {
+            Ok(n) => (Some(n), None),
+            Err(e) => (None, Some(e.to_string()))
+        }
+    }
+}
+
+decl_lib_func! {
+    fn parseuint64(value: &str) -> (Option<u64>, Option<String>) {
+        match value.parse() {
+            Ok(n) => (Some(n), None),
+            Err(e) => (None, Some(e.to_string()))
+        }
+    }
+}
 
 decl_lib_func! {
     fn toistring(val: Any) -> crate::vm::Result<String> {
@@ -57,9 +91,14 @@ impl Lib for Num {
         namespace.add([("INT53_MAX", Int53::MAX), ("INT53_MIN", Int53::MIN)])?;
         namespace.add([("UINT64_MAX", u64::MAX), ("UINT64_MIN", u64::MIN)])?;
         namespace.add([("INT64_MAX", i64::MAX), ("INT64_MIN", i64::MIN)])?;
+        namespace.add([("NAN", f64::NAN), ("EPSILON", f64::EPSILON)])?;
         namespace.add([
             ("toistring", RFunction::wrap(toistring)),
             ("toustring", RFunction::wrap(toustring)),
+            ("eq", RFunction::wrap(eq)),
+            ("parsenumber", RFunction::wrap(parsenumber)),
+            ("parseint64", RFunction::wrap(parseint64)),
+            ("parseuint64", RFunction::wrap(parseuint64))
         ])
     }
 }

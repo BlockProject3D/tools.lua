@@ -222,6 +222,8 @@ bp3d.util.utf8.sub = function(src, start, end1) end
 --- @field INT64_MAX number 2^63-1; this is actually not a number but a special LuaJIT cdata type
 --- @field UINT64_MIN number 0; this is actually not a number but a special LuaJIT cdata type
 --- @field UINT64_MAX number 2^64-1; this is actually not a number but a special LuaJIT cdata type
+--- @field NAN number nan
+--- @field EPSILON number represents the maximum possible precision of a Lua floating-point
 
 --- Converts the input value to an integer string.
 ---
@@ -234,3 +236,38 @@ bp3d.util.num.toistring = function(value) end
 --- @param value any
 --- @return string
 bp3d.util.num.toustring = function(value) end
+
+--- Tests equality between two floating-point numbers.
+---
+--- @param a number first operand
+--- @param b number second operand
+--- @param epsilon number maximum difference between a and b
+--- @return boolean
+bp3d.util.num.eq = function(a, b, epsilon) end
+
+--- Parse a Lua floating-point number from the input string.
+---
+--- If the number was successfully parsed, returns the number and nil,
+--- otherwise returns nil and a string error message.
+---
+--- @param str string
+--- @return [number?, string?]
+bp3d.util.num.parsenumber = function(str) end
+
+--- Parse a LuaJIT true 64 bits integer from the input string.
+---
+--- If the number was successfully parsed, returns the integer and nil,
+--- otherwise returns nil and a string error message.
+---
+--- @param str string
+--- @return [number?, string?]
+bp3d.util.num.parseint64 = function(str) end
+
+--- Parse a LuaJIT true 64 bits unsigned integer from the input string.
+---
+--- If the number was successfully parsed, returns the integer and nil,
+--- otherwise returns nil and a string error message.
+---
+--- @param str string
+--- @return [number?, string?]
+bp3d.util.num.parseuint64 = function(str) end
