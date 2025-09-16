@@ -30,5 +30,5 @@ note: required by a bound in `RClosure::<RawPtr<()>>::from_rust`
    |     pub fn from_rust<T, R, F: Fn(T) -> R + 'static>(vm: &Vm, fun: F) -> Self
    |            --------- required by a bound in this associated function
 ...
-   |         F: Send
+   |         F: Send,
    |            ^^^^ required by this bound in `RClosure::<RawPtr<()>>::from_rust`
