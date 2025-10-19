@@ -98,7 +98,7 @@ impl Lib for Num {
             ("eq", RFunction::wrap(eq)),
             ("parsenumber", RFunction::wrap(parsenumber)),
             ("parseint64", RFunction::wrap(parseint64)),
-            ("parseuint64", RFunction::wrap(parseuint64))
+            ("parseuint64", RFunction::wrap(parseuint64)),
         ])
     }
 }
