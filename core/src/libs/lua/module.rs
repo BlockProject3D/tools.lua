@@ -27,62 +27,51 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::libs::Lib;
-use crate::util::module::ModuleManager;
+use crate::util::module::{Error, ModuleManager};
 use crate::util::module::Result;
 use crate::util::Namespace;
-use crate::vm::core::debug::DebugRegistry;
 use crate::vm::Vm;
-use crate::{decl_userdata, impl_userdata_mut};
-use bp3d_os::module::library::types::VirtualLibrary;
-use std::path::PathBuf;
+use crate::decl_lib_func;
+use crate::vm::core::destructor::Pool;
+use crate::vm::function::types::RFunction;
+use crate::vm::registry::named::Key;
+use crate::vm::registry::types::LuaRef;
+use crate::vm::value::types::RawPtr;
 
-pub struct Module {
-    builtins: &'static [&'static VirtualLibrary],
-    search_paths: Vec<PathBuf>,
+static KEY: Key<LuaRef<RawPtr<ModuleManager>>> = Key::new("__module_manager__");
+
+fn register_module_manager(vm: &Vm) {
+    let value = KEY.push(vm);
+    if value.is_some() {
+        panic!("A ModuleManager is already registered in the current Vm");
+    }
+    let manager = ModuleManager::new();
+    let value = Pool::attach_send(vm, Box::new(manager));
+    let value = crate::vm::registry::lua_ref::LuaRef::new(vm, RawPtr::new(value));
+    KEY.set(value);
 }
 
-impl Module {
-    pub fn new(builtins: &'static [&'static VirtualLibrary]) -> Self {
-        Self {
-            builtins,
-            search_paths: Vec::new(),
+decl_lib_func! {
+    fn load_module(vm: &Vm, lib: &str, plugin: &str) -> Result<()> {
+        let manager = KEY.push(vm);
+        if let Some(manager) = manager {
+            unsafe { (&mut *manager.get().as_mut_ptr()).load(lib, plugin, vm) }?;
+            Ok(())
+        } else {
+            Err(Error::NotRegistered)
         }
     }
-
-    pub fn add_search_path(&mut self, path: PathBuf) -> &mut Self {
-        self.search_paths.push(path);
-        self
-    }
 }
 
-decl_userdata!(struct ModuleManagerWrapper(ModuleManager));
-
-impl_userdata_mut! {
-    impl ModuleManagerWrapper {
-        fn load(this: &mut ModuleManagerWrapper, vm: &Vm, lib: &str, plugin: &str) -> Result<()> {
-            this.0.load(lib, plugin, vm)
-        }
-    }
-}
-
-//TODO: Re-write as a global to avoid safety bug where multiple instances of the module manager
-// exists for the application.
-//TODO: Put libs as global to allow threads and maybe future unload.
+pub struct Module;
 
 impl Lib for Module {
-    const NAMESPACE: &'static str = "";
+    const NAMESPACE: &'static str = "bp3d.lua.module";
 
-    fn load(&self, _: &mut Namespace) -> crate::vm::Result<()> {
-        unreachable!()
-    }
-
-    fn register(&self, vm: &Vm) -> crate::vm::Result<()> {
-        DebugRegistry::add::<Module, _>(vm);
-        vm.register_userdata::<ModuleManagerWrapper>(crate::vm::userdata::case::Camel)?;
-        let mut manager = ModuleManager::new(self.builtins);
-        for search_path in &self.search_paths {
-            manager.add_search_path(search_path.clone());
-        }
-        vm.set_global(c"MODULES", ModuleManagerWrapper(manager))
+    fn load(&self, namespace: &mut Namespace) -> crate::vm::Result<()> {
+        register_module_manager(namespace.vm());
+        namespace.add([
+            ("load", RFunction::wrap(load_module))
+        ])
     }
 }

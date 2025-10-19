@@ -39,7 +39,7 @@ fn test_vm_lib_lua() {
     let vm = RootVm::new();
     let top = vm.top();
     Lua::new().build().register(&vm).unwrap();
-    Module::new(&[]).register(&vm).unwrap();
+    Module.register(&vm).unwrap();
     vm.set_global("BP3D_LUA_CRATE_VERSION", VERSION).unwrap();
     vm.run_code::<()>(
         c"
@@ -75,7 +75,7 @@ fn test_vm_lib_lua() {
     )
     .unwrap();
     let err = vm
-        .run_code::<()>(c"MODULES:load('broken', 'broken2')")
+        .run_code::<()>(c"bp3d.lua.module.load('broken', 'broken2')")
         .unwrap_err()
         .into_runtime()
         .unwrap();

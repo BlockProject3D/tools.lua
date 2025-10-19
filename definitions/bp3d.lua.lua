@@ -28,10 +28,6 @@
 
 --- @meta bp3d.lua
 
---- @class _G
---- @field MODULES ModuleManager Global instance of the module manager available to the current LuaJIT interpreter.
-_G = {}
-
 bp3d = {}
 
 --- @class bp3d.lua
@@ -105,8 +101,7 @@ bp3d.lua.runFile = function(path) end
 --- @return any[] whatever outputs returned by the function which was executed.
 bp3d.lua.require = function(path) end
 
---- @class ModuleManager
-ModuleManager = {}
+bp3d.lua.module = {}
 
 --- Loads a native module into the current underlying LuaJIT interpreter.
 --- File extensions and other platform specific prefixes are pre-applied by the underlying search algorithm and must
@@ -119,4 +114,4 @@ ModuleManager = {}
 ---
 --- @param lib string the name of the library to load.
 --- @param plugin string the name of the plugin in the native library to load.
-function ModuleManager:load(lib, plugin) end
+bp3d.lua.module.load = function(lib, plugin) end

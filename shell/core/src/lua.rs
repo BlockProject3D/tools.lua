@@ -44,7 +44,9 @@ use std::path::PathBuf;
 use std::rc::Rc;
 use std::thread::JoinHandle;
 use std::time::Duration;
+use bp3d_os::module::loader::ModuleLoader;
 use tokio::sync::mpsc;
+use bp3d_lua::libs::lua::Module;
 
 const CHANNEL_BUFFER: usize = 32;
 
@@ -140,11 +142,14 @@ impl Lua {
             {
                 error!("Failed to load shell library: {}", e);
             }
-            let mut modules = libs::lua::Module::new(&[]);
-            for path in &args.modules {
-                modules.add_search_path(path.clone());
+            {
+                let mut loader = ModuleLoader::lock();
+                for path in &args.modules {
+                    trace!("Adding search path: {:?}", path);
+                    loader.add_search_path(path.clone());
+                }
             }
-            if let Err(e) = modules.register(vm) {
+            if let Err(e) = Module.register(vm) {
                 error!("Failed to load module manager: {}", e);
             }
             let jit = JitOptions::get(vm);

@@ -26,24 +26,25 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use bp3d_os::module::loader::ModuleHandle;
 use crate::module::error::ErrorType;
 use crate::module::{TIME_VERSION, VERSION};
 use crate::vm::error::{RuntimeError, TypeError, Utf8Error};
 use crate::vm::Vm;
-use bp3d_debug::info;
-use bp3d_os::module::library::types::VirtualLibrary;
+use bp3d_debug::{error, info};
 use bp3d_os::module::library::Library;
-use bp3d_os::module::{Module, ModuleLoader};
+use bp3d_os::module::Module;
 use bp3d_util::simple_error;
 use std::collections::HashSet;
 use std::ffi::CStr;
-use std::path::PathBuf;
+use bp3d_os::module::loader::ModuleLoader;
 
 simple_error! {
     pub Error {
         PluginAlreadyLoaded(String) => "plugin {} is already loaded",
         LibNotFound(String) => "library not found: {}",
         PluginNotFound(String) => "plugin not found: {}",
+        NotRegistered => "ModuleManager not registered",
         (impl From)Vm(crate::vm::error::Error) => "vm error: {}",
         (impl From)Module(bp3d_os::module::error::Error) => "module error: {}"
     }
@@ -123,8 +124,7 @@ unsafe fn convert_module_error_to_vm_error(
 }
 
 pub struct ModuleManager {
-    set: HashSet<String>,
-    loader: ModuleLoader,
+    set: HashSet<String>
 }
 
 // This is safe because ModuleManager does not use thread locals or mutable globals of some kind.
@@ -156,13 +156,14 @@ impl ModuleManager {
         if self.set.contains(&name) {
             return Err(Error::PluginAlreadyLoaded(name));
         }
-        let module = unsafe { self.loader.load(lib) }?;
+        let mut lock = ModuleLoader::lock();
+        let module = unsafe { lock.load(lib) }?;
         info!(
             "Loaded dynamic module {:?}-{:?}",
-            module.get_metadata_key("NAME"),
-            module.get_metadata_key("VERSION")
+            module.get().get_metadata_key("NAME"),
+            module.get().get_metadata_key("VERSION")
         );
-        Self::load_plugin(vm, module, &name, &lib.replace("-", "_"), plugin)?;
+        Self::load_plugin(vm, module.get(), &name, &lib.replace("-", "_"), plugin)?;
         info!("Loaded plugin {}", name);
         self.set.insert(name);
         Ok(())
@@ -173,7 +174,8 @@ impl ModuleManager {
         if self.set.contains(&name) {
             return Err(Error::PluginAlreadyLoaded(name));
         }
-        let module = match unsafe { self.loader.load_builtin(lib) } {
+        let mut lock = ModuleLoader::lock();
+        let module = match unsafe { lock.load_builtin(lib) } {
             Ok(v) => v,
             Err(e) => {
                 return match e {
@@ -184,10 +186,10 @@ impl ModuleManager {
         };
         info!(
             "Loaded builtin module {:?}-{:?}",
-            module.get_metadata_key("NAME"),
-            module.get_metadata_key("VERSION")
+            module.get().get_metadata_key("NAME"),
+            module.get().get_metadata_key("VERSION")
         );
-        Self::load_plugin(vm, module, &name, &lib.replace("-", "_"), plugin)?;
+        Self::load_plugin(vm, module.get(), &name, &lib.replace("-", "_"), plugin)?;
         info!("Loaded plugin {}", name);
         self.set.insert(name);
         Ok(true)
@@ -200,26 +202,34 @@ impl ModuleManager {
         Ok(())
     }
 
-    pub fn add_search_path(&mut self, name: PathBuf) {
-        self.loader.add_search_path(name)
-    }
-
-    pub fn new(builtins: &'static [&'static VirtualLibrary]) -> Self {
-        let mut loader = ModuleLoader::new(builtins);
+    pub fn new() -> Self {
+        let mut lock = ModuleLoader::lock();
         #[cfg(feature = "send")]
-        loader.add_public_dependency("bp3d-lua", VERSION, ["send"]);
+        lock.add_public_dependency("bp3d-lua", VERSION, ["send"]);
         #[cfg(not(feature = "send"))]
-        loader.add_public_dependency("bp3d-lua", VERSION, ["-send"]);
-        loader.add_public_dependency("time", TIME_VERSION, ["*"]);
+        lock.add_public_dependency("bp3d-lua", VERSION, ["-send"]);
+        lock.add_public_dependency("time", TIME_VERSION, ["*"]);
         Self {
-            set: Default::default(),
-            loader,
+            set: Default::default()
         }
     }
 }
 
 impl Default for ModuleManager {
     fn default() -> Self {
-        Self::new(&[])
+        Self::new()
+    }
+}
+
+impl Drop for ModuleManager {
+    fn drop(&mut self) {
+        for plugin in self.set.drain() {
+            let mut it = plugin.split("::");
+            let lib = it.next().unwrap();
+            let plugin = it.next().unwrap();
+            if let Err(e) = ModuleLoader::lock().unload(lib) {
+                error!("Failed to unload plugin {}::{}: {}", lib, plugin, e);
+            }
+        }
     }
 }
