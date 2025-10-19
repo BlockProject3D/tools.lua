@@ -26,17 +26,17 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use crate::libs::Lib;
-use crate::util::module::{Error, ModuleManager};
-use crate::util::module::Result;
-use crate::util::Namespace;
-use crate::vm::Vm;
 use crate::decl_lib_func;
+use crate::libs::Lib;
+use crate::util::module::Result;
+use crate::util::module::{Error, ModuleManager};
+use crate::util::Namespace;
 use crate::vm::core::destructor::Pool;
 use crate::vm::function::types::RFunction;
 use crate::vm::registry::named::Key;
 use crate::vm::registry::types::LuaRef;
 use crate::vm::value::types::RawPtr;
+use crate::vm::Vm;
 
 static KEY: Key<LuaRef<RawPtr<ModuleManager>>> = Key::new("__module_manager__");
 
@@ -70,8 +70,6 @@ impl Lib for Module {
 
     fn load(&self, namespace: &mut Namespace) -> crate::vm::Result<()> {
         register_module_manager(namespace.vm());
-        namespace.add([
-            ("load", RFunction::wrap(load_module))
-        ])
+        namespace.add([("load", RFunction::wrap(load_module))])
     }
 }

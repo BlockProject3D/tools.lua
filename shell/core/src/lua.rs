@@ -34,19 +34,19 @@ use crate::scheduler::SchedulerPtr;
 use bp3d_debug::{debug, error, info, trace, warning};
 use bp3d_lua::libs;
 use bp3d_lua::libs::Lib;
+use bp3d_lua::libs::lua::Module;
 use bp3d_lua::vm::Vm;
 use bp3d_lua::vm::core::interrupt::{Signal, spawn_interruptible};
 use bp3d_lua::vm::core::jit::JitOptions;
 use bp3d_lua::vm::core::load::{Code, Script};
 use bp3d_lua::vm::value::any::Any;
+use bp3d_os::module::loader::ModuleLoader;
 use std::cell::Cell;
 use std::path::PathBuf;
 use std::rc::Rc;
 use std::thread::JoinHandle;
 use std::time::Duration;
-use bp3d_os::module::loader::ModuleLoader;
 use tokio::sync::mpsc;
-use bp3d_lua::libs::lua::Module;
 
 const CHANNEL_BUFFER: usize = 32;
 

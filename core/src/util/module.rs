@@ -26,18 +26,18 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use bp3d_os::module::loader::ModuleHandle;
 use crate::module::error::ErrorType;
 use crate::module::{TIME_VERSION, VERSION};
 use crate::vm::error::{RuntimeError, TypeError, Utf8Error};
 use crate::vm::Vm;
 use bp3d_debug::{error, info};
 use bp3d_os::module::library::Library;
+use bp3d_os::module::loader::ModuleHandle;
+use bp3d_os::module::loader::ModuleLoader;
 use bp3d_os::module::Module;
 use bp3d_util::simple_error;
 use std::collections::HashSet;
 use std::ffi::CStr;
-use bp3d_os::module::loader::ModuleLoader;
 
 simple_error! {
     pub Error {
@@ -124,7 +124,7 @@ unsafe fn convert_module_error_to_vm_error(
 }
 
 pub struct ModuleManager {
-    set: HashSet<String>
+    set: HashSet<String>,
 }
 
 // This is safe because ModuleManager does not use thread locals or mutable globals of some kind.
@@ -210,7 +210,7 @@ impl ModuleManager {
         lock.add_public_dependency("bp3d-lua", VERSION, ["-send"]);
         lock.add_public_dependency("time", TIME_VERSION, ["*"]);
         Self {
-            set: Default::default()
+            set: Default::default(),
         }
     }
 }
