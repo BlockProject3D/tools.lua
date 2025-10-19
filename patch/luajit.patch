@@ -1,0 +1,32 @@
+diff --git a/src/luajit.c b/src/luajit.c
+index 2e2e9150..c76fe839 100644
+--- a/src/luajit.c
++++ b/src/luajit.c
+@@ -149,22 +149,13 @@ static void print_version(void)
+   fputs(LUAJIT_VERSION " -- " LUAJIT_COPYRIGHT ". " LUAJIT_URL "\n", stdout);
+ }
+ 
++#include "lj_jit.h"
++uint32_t lua_ext_getjitflags(lua_State *L);
++
+ static void print_jit_status(lua_State *L)
+ {
+-  int n;
+-  const char *s;
+-  lua_getfield(L, LUA_REGISTRYINDEX, "_LOADED");
+-  lua_getfield(L, -1, "jit");  /* Get jit.* module table. */
+-  lua_remove(L, -2);
+-  lua_getfield(L, -1, "status");
+-  lua_remove(L, -2);
+-  n = lua_gettop(L);
+-  lua_call(L, 0, LUA_MULTRET);
+-  fputs(lua_toboolean(L, n) ? "JIT: ON" : "JIT: OFF", stdout);
+-  for (n++; (s = lua_tostring(L, n)); n++) {
+-    putc(' ', stdout);
+-    fputs(s, stdout);
+-  }
++  uint32_t flags = lua_ext_getjitflags(L);
++  fputs(flags & JIT_F_ON ? "JIT: ON" : "JIT: OFF", stdout);
+   putc('\n', stdout);
+   lua_settop(L, 0);  /* clear stack */
+ }
