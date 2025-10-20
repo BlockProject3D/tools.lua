@@ -46,8 +46,13 @@ fn register_module_manager(vm: &Vm) {
         panic!("A ModuleManager is already registered in the current Vm");
     }
     let manager = ModuleManager::new();
-    let value = Pool::attach_send(vm, Box::new(manager));
-    let value = crate::vm::registry::lua_ref::LuaRef::new(vm, RawPtr::new(value));
+    let mut value = Box::new(manager);
+    let value2 = &mut *value as *mut ModuleManager;
+    Pool::attach_post_close(vm, || {
+        let value = value;
+        drop(value);
+    });
+    let value = crate::vm::registry::lua_ref::LuaRef::new(vm, RawPtr::new(value2));
     KEY.set(value);
 }
 

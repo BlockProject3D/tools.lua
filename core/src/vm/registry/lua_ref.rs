@@ -39,13 +39,13 @@ use std::marker::PhantomData;
 /// # Notes
 ///
 /// * The definition of a simple type in bp3d-lua is a type which does not hold a reference to
-/// the [Vm]. This is typically the case of primitives like strings, integers, numbers, etc. Types
-/// such as tables or functions are called complex in bp3d-lua as they require constant interactions
-/// with the Lua stack represented by a [Vm] in order to operate on them.
+///   the [Vm]. This is typically the case of primitives like strings, integers, numbers, etc.
+///   Types such as tables or functions are called complex in bp3d-lua as they require constant
+///   interactions with the Lua stack represented by a [Vm] in order to operate on them.
 ///
 /// * For complex types, no wrapper is needed as they already have a reference to the attached [Vm]
-/// in their value type. Instead, complex types which can be saved in the registry directly
-/// implements the registry [Value](crate::vm::registry::Value) trait.
+///   in their value type. Instead, complex types which can be saved in the registry directly
+///   implements the registry [Value](crate::vm::registry::Value) trait.
 ///
 /// # Safety
 ///
