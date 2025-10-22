@@ -46,7 +46,7 @@ simple_error! {
 }
 
 pub trait Source: Send + Sync {
-    fn run(&self, vm: &Vm, path: &str) -> crate::vm::Result<AnyParam>;
+    fn run(&self, vm: &Vm, path: &str, full_path: &str) -> crate::vm::Result<AnyParam>;
 }
 
 #[derive(Default)]
@@ -69,7 +69,7 @@ impl Provider {
         let src = guard
             .get(source)
             .ok_or_else(|| Error::UnknownSource(source.into()))?;
-        let ret = src.run(vm, path)?;
+        let ret = src.run(vm, &path[id + 1..], path)?;
         Ok(ret)
     }
 }
