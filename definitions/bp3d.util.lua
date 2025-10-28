@@ -124,7 +124,7 @@ bp3d.util.utf8.contains = function(src, needle) end
 --- Note: This function wil error if any of the inputs are not UTF-8 encoded.
 ---
 --- @param src string input source string.
---- @param pattern integer separator string.
+--- @param pattern string separator string.
 --- @return string[]
 bp3d.util.utf8.split = function(src, pattern) end
 
@@ -133,7 +133,7 @@ bp3d.util.utf8.split = function(src, pattern) end
 --- Note: This function wil error if any of the inputs are not UTF-8 encoded.
 ---
 --- @param src string input source string.
---- @param pattern integer search string.
+--- @param pattern string search string.
 --- @param replacement string replacement string
 bp3d.util.utf8.replace = function(src, pattern, replacement) end
 
