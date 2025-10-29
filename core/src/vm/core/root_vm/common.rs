@@ -55,6 +55,7 @@ impl UnsafeRootVm {
         let mut vm = UnsafeRootVm(unsafe { Vm::from_raw(l) });
         handle_root_vm_init();
         unsafe { Pool::new_in_vm(&mut vm.0, is_send) };
+        vm.0.run_code::<()>(c"table.unpack = unpack").unwrap();
         vm
     }
 }
