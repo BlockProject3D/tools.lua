@@ -197,7 +197,7 @@ impl Parser for FromParam {
             impl #generics bp3d_lua::vm::function::FromParam<#lifetime> for #name #generics {
                 unsafe fn from_param(vm: &#lifetime bp3d_lua::vm::Vm, index: i32) -> Self {
                     #(#from_params)*
-                    bp3d_lua::ffi::laux::luaL_error(vm.as_ptr(), "Unable to find a type satisfying constraints");
+                    bp3d_lua::ffi::laux::luaL_error(vm.as_ptr(), c"Unable to find a type satisfying constraints".as_ptr());
                     std::hint::unreachable_unchecked()
                 }
 
