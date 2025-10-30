@@ -35,7 +35,7 @@ use crate::vm::value::any::{AnyParam, UncheckedAnyReturn};
 use crate::vm::Vm;
 use bp3d_util::simple_error;
 use std::collections::HashMap;
-use std::sync::Mutex;
+use std::sync::RwLock;
 
 simple_error! {
     pub Error {
@@ -50,7 +50,7 @@ pub trait Source: Send + Sync {
 }
 
 #[derive(Default)]
-pub struct Provider(Mutex<HashMap<String, Box<dyn Source>>>);
+pub struct Provider(RwLock<HashMap<String, Box<dyn Source>>>);
 
 impl Provider {
     pub fn new() -> Self {
@@ -58,14 +58,14 @@ impl Provider {
     }
 
     pub fn add_source<S: Source + 'static>(&self, name: String, source: S) {
-        let mut guard = self.0.lock().unwrap();
+        let mut guard = self.0.write().unwrap();
         guard.insert(name, Box::new(source));
     }
 
     pub fn require(&self, vm: &Vm, path: &str) -> Result<AnyParam, Error> {
         let id = path.find('.').ok_or(Error::InvalidSyntax)?;
         let source = &path[..id];
-        let guard = self.0.lock().unwrap();
+        let guard = self.0.read().unwrap();
         let src = guard
             .get(source)
             .ok_or_else(|| Error::UnknownSource(source.into()))?;
