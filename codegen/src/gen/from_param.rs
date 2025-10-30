@@ -54,7 +54,7 @@ impl FromParam {
 pub struct Field {
     name: Ident,
     from_param: TokenStream,
-    try_from_param: TokenStream,
+    try_from_param: TokenStream
 }
 
 impl Parser for FromParam {
@@ -112,7 +112,8 @@ impl Parser for FromParam {
             EnumVariant::MultiField(_) => panic!("Multi-field enum variants are not supported"),
             EnumVariant::None(variant) => {
                 let name = self.name.clone();
-                let vname = variant.to_string();
+                //FIXME: Use decapitalize + maybe allow configuration for which case to use
+                let vname = variant.to_string().to_lowercase();
                 Field {
                     name: variant.clone(),
                     from_param: quote! {
@@ -193,15 +194,31 @@ impl Parser for FromParam {
             .unwrap_or(quote! { '_ });
         let from_params = parsed.iter().map(|field| &field.from_param);
         let try_from_params = parsed.iter().map(|field| &field.try_from_param);
+        let start_from_param = if self.is_simple_enum {
+            quote! {
+                let enum_name = <&str as bp3d_lua::vm::function::FromParam>::from_param(vm, index);
+            }
+        } else {
+            quote! {}
+        };
+        let start_try_from_param = if self.is_simple_enum {
+            quote! {
+                let enum_name = <&str as bp3d_lua::vm::function::FromParam>::try_from_param(vm, index)?;
+            }
+        } else {
+            quote! {}
+        };
         quote! {
             impl #generics bp3d_lua::vm::function::FromParam<#lifetime> for #name #generics {
                 unsafe fn from_param(vm: &#lifetime bp3d_lua::vm::Vm, index: i32) -> Self {
+                    #start_from_param
                     #(#from_params)*
                     bp3d_lua::ffi::laux::luaL_error(vm.as_ptr(), c"Unable to find a type satisfying constraints".as_ptr());
                     std::hint::unreachable_unchecked()
                 }
 
                 fn try_from_param(vm: &#lifetime bp3d_lua::vm::Vm, index: i32) -> Option<Self> {
+                    #start_try_from_param
                     #(#try_from_params)*
                     None
                 }
