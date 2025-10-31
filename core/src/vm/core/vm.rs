@@ -69,9 +69,9 @@ impl Vm {
         f: F,
     ) -> crate::vm::Result<R> {
         let top = self.top();
-        let r = f(self)?;
+        let r = f(self);
         unsafe { lua_settop(self.l, top) };
-        Ok(r)
+        r
     }
 
     pub fn register_userdata<T: UserData>(&self, case: impl NameConvert) -> crate::vm::Result<()> {
