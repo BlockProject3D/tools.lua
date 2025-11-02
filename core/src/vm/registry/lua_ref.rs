@@ -114,8 +114,19 @@ impl<'a, T: SimpleValue<'a>> LuaRef<'a, T> {
         }
     }
 
+    /// Returns the registry value from the lua stack.
     #[inline(always)]
-    pub fn get(&self) -> T {
+    pub fn get<'b: 'a>(&'b self) -> T {
+        unsafe { SimpleValue::<'b>::from_lua(self.vm, self.index) }
+    }
+
+    /// Returns the registry value from the lua stack.
+    ///
+    /// # Safety
+    ///
+    /// This function assumes the returned registry value won't be set while being borrowed.
+    #[inline(always)]
+    pub unsafe fn get_unchecked(&self) -> T {
         unsafe { T::from_lua(self.vm, self.index) }
     }
 

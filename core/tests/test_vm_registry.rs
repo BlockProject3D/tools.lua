@@ -84,7 +84,8 @@ fn test_vm_registry_string() {
     assert_eq!(vm.top(), top); // The string should have been popped from the stack like any normal
                                // registry creation operation.
     {
-        let value = key.push(&vm).get();
+        let motherfuckingrust = key.push(&vm);
+        let value = motherfuckingrust.get();
         assert_eq!(value, "this is a test");
     }
     // LuaRef automatically pops from the stack on drop, as simple values which are stored in the
@@ -106,7 +107,8 @@ fn test_vm_registry_string_modify() {
     key.set(value);
     assert_eq!(vm.top(), top);
     {
-        let value = key.push(&vm).get();
+        let motherfuckingrust = key.push(&vm);
+        let value = motherfuckingrust.get();
         assert_eq!(value, "one more test");
     }
     assert_eq!(vm.top(), top);
