@@ -26,26 +26,60 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-/// The bp3d-lua core library.
-#[cfg(feature = "libs")]
-pub mod lua;
+use std::borrow::Cow;
+use std::path::PathBuf;
+use crate::{decl_lib_func, decl_userdata, impl_userdata};
+use crate::libs::files::chroot::{sandbox, unsandbox, SandboxError};
+use crate::libs::files::SandboxPath;
 
-/// Utility toolkit.
-#[cfg(feature = "libs")]
-pub mod util;
+decl_userdata!(pub struct PathWrapper(PathBuf));
 
-/// OS toolkit.
-#[cfg(feature = "libs")]
-pub mod os;
+impl PathWrapper {
+    pub fn new(path: PathBuf) -> Self {
+        Self(path)
+    }
 
-#[cfg(feature = "libs")]
-pub mod files;
+    pub fn path(&self) -> &PathBuf {
+        &self.0
+    }
+}
 
-#[cfg(feature = "libs-core")]
-mod interface;
+decl_lib_func! {
+    fn new(vm: &Vm, path: &str) -> Result<PathWrapper, SandboxError> {
+        unsandbox(vm, path).map(|v| PathWrapper(v.into()))
+    }
+}
 
-//TODO: threading (sandbox with max number of threads)
-//      make sure thread join is time-limited.
+impl_userdata! {
+    impl PathWrapper {
+        fn join(this: &Path, vm: &Vm, other: SandboxPath) -> Result<PathWrapper, SandboxError> {
+            let path = other.to_str(vm)?;
+            Ok(PathWrapper(this.0.join(path.as_ref())))
+        }
 
-#[cfg(feature = "libs-core")]
-pub use interface::*;
+        fn with_extension(this: &Path, extension: &str) -> PathWrapper {
+            PathWrapper(this.0.with_extension(extension))
+        }
+
+        fn with_name(this: &Path, name: &str) -> PathWrapper {
+            let mut path = this.0.clone();
+            path.set_file_name(name);
+            PathWrapper(path)
+        }
+
+        fn name(this: &Path) -> Option<String> {
+            this.0.file_name().map(|v| v.to_string_lossy().into())
+        }
+
+        fn extension(this: &Path) -> Option<String> {
+            this.0.extension().map(|v| v.to_string_lossy().into())
+        }
+
+        fn __tostring<'a>(this: &Path, vm: &Vm) -> Cow<'a, str> {
+            sandbox(vm, &this.0).unwrap_or(Cow::Borrowed("<sandbox error>"))
+        }
+    }
+    static {
+        [fn new];
+    }
+}

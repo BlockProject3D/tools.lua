@@ -26,26 +26,33 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-/// The bp3d-lua core library.
-#[cfg(feature = "libs")]
-pub mod lua;
-
-/// Utility toolkit.
-#[cfg(feature = "libs")]
-pub mod util;
-
-/// OS toolkit.
-#[cfg(feature = "libs")]
-pub mod os;
-
-#[cfg(feature = "libs")]
-pub mod files;
-
-#[cfg(feature = "libs-core")]
 mod interface;
+mod obj;
+pub mod chroot;
+mod lib;
 
-//TODO: threading (sandbox with max number of threads)
-//      make sure thread join is time-limited.
+pub use interface::{SandboxPath, SandboxPathBuf};
+use crate::libs::files::obj::PathWrapper;
+use crate::libs::Lib;
+use crate::util::Namespace;
+use crate::vm::function::types::RFunction;
 
-#[cfg(feature = "libs-core")]
-pub use interface::*;
+pub struct Files;
+
+impl Lib for Files {
+    const NAMESPACE: &'static str = "bp3d.files";
+
+    fn load(&self, namespace: &mut Namespace) -> crate::vm::Result<()> {
+        namespace.add_userdata::<PathWrapper>(c"Path", crate::vm::userdata::case::Camel)?;
+        namespace.add([
+            ("readText", RFunction::wrap(lib::read_text)),
+            ("writeText", RFunction::wrap(lib::write_text)),
+            ("copyFile", RFunction::wrap(lib::copy_file)),
+            ("symlink", RFunction::wrap(lib::symlink)),
+            ("exists", RFunction::wrap(lib::exists)),
+            ("list", RFunction::wrap(lib::list)),
+            ("createDir", RFunction::wrap(lib::create_dir)),
+            ("deleteDir", RFunction::wrap(lib::delete_dir))
+        ])
+    }
+}
