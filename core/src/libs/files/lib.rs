@@ -83,7 +83,7 @@ decl_lib_func! {
     pub fn symlink(vm: &Vm, src_path: SandboxPath, dst_path: SandboxPath) -> Result<(), Error> {
         #[cfg(unix)]
         {
-            if !(src_path.access(vm) & Permissions::R) {
+            if !src_path.is_relative() && !(src_path.access(vm) & Permissions::R) {
                 return Err(Error::Permission);
             }
             if !(dst_path.access(vm) & Permissions::W) {
