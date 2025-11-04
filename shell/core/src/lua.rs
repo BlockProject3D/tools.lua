@@ -47,6 +47,7 @@ use std::rc::Rc;
 use std::thread::JoinHandle;
 use std::time::Duration;
 use tokio::sync::mpsc;
+use bp3d_lua::libs::files::chroot::set_chroot;
 
 const CHANNEL_BUFFER: usize = 32;
 
@@ -129,8 +130,8 @@ impl Lua {
             if let Err(e) = libs::util::Util.register(vm) {
                 error!("Failed to load util library: {}", e);
             }
+            set_chroot(&vm, &args.data);
             if let Err(e) = libs::lua::Lua::new()
-                .load_chroot_path(&args.data)
                 .build()
                 .register(vm)
             {

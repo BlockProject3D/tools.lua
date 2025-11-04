@@ -32,9 +32,11 @@ use crate::vm::core::load::{Code, Script};
 use crate::vm::function::types::RFunction;
 use crate::vm::value::any::{AnyParam, UncheckedAnyReturn};
 use crate::vm::value::types::Function;
-use crate::{decl_closure, decl_lib_func};
+use crate::decl_lib_func;
 use bp3d_util::simple_error;
-use std::path::{Path, PathBuf};
+use std::path::Path;
+use crate::libs::files::chroot::Permissions;
+use crate::libs::files::SandboxPath;
 
 decl_lib_func! {
     fn run_string(vm: &Vm, s: &str, chunkname: Option<&str>) -> crate::vm::Result<UncheckedAnyReturn> {
@@ -64,30 +66,19 @@ decl_lib_func! {
 
 simple_error! {
     Error {
-        EscapeChroot(String) => "invalid path {}: attempt to escape chroot",
+        Sandbox => "attempt to escape the sandbox",
+        Permission => "permission denied",
         (impl From) Io(std::io::Error) => "io error: {}",
         (impl From) Vm(crate::vm::error::Error) => "lua error: {}"
     }
 }
 
-fn parse_lua_path(chroot: &Path, path: &str) -> Result<PathBuf, Error> {
-    let iter = path.split("/");
-    let mut cur_path = Vec::new();
-    for component in iter {
-        if component == ".." {
-            if cur_path.pop().is_none() {
-                return Err(Error::EscapeChroot(path.into()));
-            }
-        } else if component != "." {
-            cur_path.push(component);
+decl_lib_func! {
+    fn load_file<'a> (vm: &Vm, path: SandboxPath) -> (Option<Function<'a>>, Option<String>) {
+        if !(path.access(vm) & Permissions::X) {
+            return (None, Some("permission denied".into()))
         }
-    }
-    Ok(chroot.join(path))
-}
-
-decl_closure! {
-    fn load_file<'a> |chroot: &Path| (vm: &Vm, path: &str) -> (Option<Function<'a>>, Option<String>) {
-        let path = match parse_lua_path(chroot, path) {
+        let path = match path.to_path(vm) {
             Ok(v) => v,
             Err(e) => return (None, Some(e.to_string()))
         };
@@ -102,9 +93,12 @@ decl_closure! {
     }
 }
 
-decl_closure! {
-    fn run_file<'a> |chroot: &Path| (vm: &Vm, path: &str) -> Result<UncheckedAnyReturn, Error> {
-        let path = parse_lua_path(chroot, path)?;
+decl_lib_func! {
+    fn run_file<'a> (vm: &Vm, path: SandboxPath) -> Result<UncheckedAnyReturn, Error> {
+        if !(path.access(vm) & Permissions::X) {
+            return Err(Error::Permission)
+        }
+        let path = path.to_path(vm).map_err(|_| Error::Sandbox)?;
         let script = Script::from_path(path)?;
         let top = vm.top();
         vm.run::<AnyParam>(script)?;
@@ -112,22 +106,17 @@ decl_closure! {
     }
 }
 
-pub struct Load<'a>(pub Option<&'a Path>);
+pub struct Load;
 
-impl Lib for Load<'_> {
+impl Lib for Load {
     const NAMESPACE: &'static str = "bp3d.lua";
 
     fn load(&self, namespace: &mut Namespace) -> crate::vm::Result<()> {
         namespace.add([
             ("runString", RFunction::wrap(run_string)),
             ("loadString", RFunction::wrap(load_string)),
-        ])?;
-        if let Some(chroot) = self.0 {
-            namespace.add([
-                ("loadFile", load_file(chroot)),
-                ("runFile", run_file(chroot)),
-            ])?;
-        }
-        Ok(())
+            ("loadFile", RFunction::wrap(load_file)),
+            ("runFile", RFunction::wrap(run_file)),
+        ])
     }
 }
