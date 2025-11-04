@@ -68,7 +68,7 @@ bp3d.lua.loadString = function(s, chunkname) end
 --- This avoids arbitrary code execution on files which the user does not whish to make visible to the Lua engine.
 ---
 --- @raises syntax error.
---- @param path string path to the file to load/compile.
+--- @param path string | Path path to the file to load/compile.
 --- @return function whatever the compiled function.
 bp3d.lua.loadFile = function(path) end
 
@@ -80,7 +80,7 @@ bp3d.lua.loadFile = function(path) end
 --- This avoids arbitrary code execution on files which the user does not whish to make visible to the Lua engine.
 ---
 --- @raises syntax or runtime error.
---- @param path string path to the file to load/compile and run.
+--- @param path string | Path path to the file to load/compile and run.
 --- @return any[] whatever outputs returned by the function which was executed.
 bp3d.lua.runFile = function(path) end
 
