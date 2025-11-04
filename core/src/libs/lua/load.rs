@@ -34,7 +34,6 @@ use crate::vm::value::any::{AnyParam, UncheckedAnyReturn};
 use crate::vm::value::types::Function;
 use crate::decl_lib_func;
 use bp3d_util::simple_error;
-use std::path::Path;
 use crate::libs::files::chroot::Permissions;
 use crate::libs::files::SandboxPath;
 

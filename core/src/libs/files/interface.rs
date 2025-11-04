@@ -27,6 +27,7 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use std::borrow::Cow;
+use std::ffi::OsStr;
 use std::path::{Path, PathBuf};
 use bp3d_debug::error;
 use crate::libs::files::chroot::{access, sandbox, unsandbox, Permissions, SandboxError};
@@ -58,6 +59,52 @@ impl From<SandboxPath<'_>> for SandboxPathBuf {
     }
 }
 
+impl SandboxPathBuf {
+    /// Creates a new [SandboxPathBuf] from an existing string.
+    pub fn from_str(vm: &Vm, path: String) -> Result<SandboxPathBuf, SandboxError> {
+        unsandbox(vm, &path)?;
+        Ok(SandboxPathBuf::String(path))
+    }
+
+    /// Creates a new [SandboxPathBuf] from an existing string.
+    ///
+    /// If the given string cannot be represented in the current sandbox configuration, a nil value
+    /// will be passed to Lua.
+    pub fn from_str_unchecked(path: String) -> SandboxPathBuf {
+        SandboxPathBuf::String(path)
+    }
+
+    /// Creates a new [SandboxPathBuf] from an existing [PathBuf].
+    pub fn from_path<'a>(vm: &Vm, path: PathBuf) -> Result<SandboxPathBuf, SandboxError> {
+        sandbox(vm, &path)?;
+        Ok(SandboxPathBuf::Path(path))
+    }
+
+    /// Creates a new [SandboxPathBuf] from an existing [PathBuf].
+    ///
+    /// This function allows passing paths from Rust to Lua which are outside the sandbox.
+    /// Use with caution.
+    pub fn from_path_unchecked(path: PathBuf) -> SandboxPathBuf {
+        SandboxPathBuf::Path(path)
+    }
+
+    pub fn as_path(&self) -> SandboxPath<'_> {
+        match self {
+            SandboxPathBuf::String(v) => SandboxPath::String(v),
+            SandboxPathBuf::Path(v) => SandboxPath::Path(v)
+        }
+    }
+
+    /// Returns the underlying path as raw [OsStr]. This function does not interpret the path
+    /// according to the current sandbox configuration.
+    pub fn as_os_str(&self) -> &OsStr {
+        match self {
+            SandboxPathBuf::String(v) => v.as_ref(),
+            SandboxPathBuf::Path(v) => v.as_os_str()
+        }
+    }
+}
+
 impl SandboxPath<'_> {
     /// Creates a new [SandboxPath] from an existing string.
     pub fn from_str<'a>(vm: &Vm, path: &'a str) -> Result<SandboxPath<'a>, SandboxError> {
@@ -85,6 +132,15 @@ impl SandboxPath<'_> {
     /// Use with caution.
     pub fn from_path_unchecked(path: &Path) -> SandboxPath<'_> {
         SandboxPath::Path(path)
+    }
+
+    /// Returns the underlying path as raw [OsStr]. This function does not interpret the path
+    /// according to the current sandbox configuration.
+    pub fn as_os_str(&self) -> &OsStr {
+        match self {
+            SandboxPath::String(v) => v.as_ref(),
+            SandboxPath::Path(v) => v.as_os_str()
+        }
     }
 
     pub fn to_str(&self, vm: &Vm) -> Result<Cow<'_, str>, SandboxError> {
@@ -183,5 +239,17 @@ unsafe impl IntoParam for SandboxPath<'_> {
     #[inline(always)]
     fn into_param(self, vm: &Vm) -> i32 {
         IntoLua::into_lua(self, vm) as _
+    }
+}
+
+unsafe impl IntoParam for SandboxPathBuf {
+    fn into_param(self, vm: &Vm) -> i32 {
+        IntoLua::into_lua(self.as_path(), vm) as _
+    }
+}
+
+unsafe impl IntoLua for SandboxPathBuf {
+    fn into_lua(self, vm: &Vm) -> u16 {
+        IntoLua::into_lua(self.as_path(), vm)
     }
 }
