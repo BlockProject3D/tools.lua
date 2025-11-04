@@ -72,12 +72,12 @@ impl Display for SandboxError {
 
 impl std::error::Error for SandboxError {}
 
-pub fn unsandbox<'a>(vm: &Vm, path: &'a str) -> Result<Cow<'a, Path>, SandboxError> {
+pub fn is_escaping(path: &str) -> bool {
     let mut level = 0;
     for component in path.split('/') {
         if component == ".." {
             if level == 0 {
-                return Err(SandboxError);
+                return true;
             }
             level -= 2;
         } else if component == "." || component == "" {
@@ -86,7 +86,11 @@ pub fn unsandbox<'a>(vm: &Vm, path: &'a str) -> Result<Cow<'a, Path>, SandboxErr
         }
     }
     trace!({level}, "unsandbox {}", path);
-    if level < 0 {
+    level < 0
+}
+
+pub fn unsandbox<'a>(vm: &Vm, path: &'a str) -> Result<Cow<'a, Path>, SandboxError> {
+    if is_escaping(path) {
         return Err(SandboxError);
     }
     if path.len() > 0 && path.as_bytes()[0] == b'/' {
