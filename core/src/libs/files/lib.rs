@@ -26,16 +26,22 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use std::fs::File;
+use std::io::Read;
 use bp3d_util::simple_error;
 use crate::decl_lib_func;
 use crate::libs::files::chroot::{access, sandbox, Permissions};
 use crate::libs::files::SandboxPath;
 use crate::vm::table::Table;
 
+const MAX_FILE_SIZE: usize = 5000000; //5Mb
+
 simple_error! {
     Error {
         Io(std::io::Error) => "io error: {}",
         Sandbox => "sandbox error",
+        TooLarge(usize) => "file is too large ({})",
+        Memory => "memory error",
         Permission => "permission denied",
         Unsupported => "unsupported operation"
     }
@@ -46,9 +52,16 @@ decl_lib_func! {
         if !(path.access(vm) & Permissions::R) {
             return Err(Error::Permission);
         }
-        //FIXME: refuse if data is too big.
         let path = path.to_path(vm).map_err(|_| Error::Sandbox)?;
-        std::fs::read_to_string(path).map_err(Error::Io)
+        let mut file = File::open(path).map_err(Error::Io)?;
+        let size = file.metadata().map(|m| m.len() as usize).ok().unwrap_or(usize::MAX);
+        if size > MAX_FILE_SIZE {
+            return Err(Error::TooLarge(size));
+        }
+        let mut s = String::new();
+        s.try_reserve_exact(size).map_err(|_| Error::Memory)?;
+        file.read_to_string(&mut s).map_err(Error::Io)?;
+        Ok(s)
     }
 }
 
