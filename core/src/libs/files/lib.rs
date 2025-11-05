@@ -28,7 +28,7 @@
 
 use bp3d_util::simple_error;
 use crate::decl_lib_func;
-use crate::libs::files::chroot::Permissions;
+use crate::libs::files::chroot::{access, sandbox, Permissions};
 use crate::libs::files::SandboxPath;
 use crate::vm::table::Table;
 
@@ -83,7 +83,14 @@ decl_lib_func! {
     pub fn symlink(vm: &Vm, src_path: SandboxPath, dst_path: SandboxPath) -> Result<(), Error> {
         #[cfg(unix)]
         {
-            if !src_path.is_relative() && !(src_path.access(vm) & Permissions::R) {
+            if src_path.is_relative() {
+                let first_part = dst_path.to_path(vm).map_err(|_| Error::Sandbox)?;
+                let path = first_part.join(src_path.as_os_str());
+                let path = sandbox(vm, &path).map_err(|_| Error::Sandbox)?;
+                if !(access(vm, &path) & Permissions::R) {
+                    return Err(Error::Permission);
+                }
+            } else if !(src_path.access(vm) & Permissions::R) {
                 return Err(Error::Permission);
             }
             if !(dst_path.access(vm) & Permissions::W) {

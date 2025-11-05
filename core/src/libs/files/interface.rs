@@ -30,7 +30,7 @@ use std::borrow::Cow;
 use std::ffi::OsStr;
 use std::path::{Path, PathBuf};
 use bp3d_debug::error;
-use crate::libs::files::chroot::{access, is_escaping, sandbox, unsandbox, Permissions, SandboxError};
+use crate::libs::files::chroot::{access, sandbox, unsandbox, Permissions, SandboxError};
 use crate::libs::files::obj::PathWrapper;
 use crate::util::core::SimpleDrop;
 use crate::vm::function::{FromParam, IntoParam};
@@ -173,8 +173,8 @@ impl SandboxPath<'_> {
 
     pub fn is_relative(&self) -> bool {
         match self {
-            SandboxPath::String(v) => !is_escaping(v) && !v.starts_with("/"),
-            SandboxPath::Path(v) => v.starts_with("/")
+            SandboxPath::String(v) => !v.starts_with("/"),
+            SandboxPath::Path(v) => !v.starts_with("/")
         }
     }
 }
