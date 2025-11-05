@@ -31,7 +31,7 @@ use std::ffi::OsStr;
 use std::path::{Path, PathBuf};
 use bp3d_debug::error;
 use crate::libs::files::chroot::{access, sandbox, unsandbox, Permissions, SandboxError};
-use crate::libs::files::obj::PathWrapper;
+use crate::libs::files::path::PathWrapper;
 use crate::util::core::SimpleDrop;
 use crate::vm::function::{FromParam, IntoParam};
 use crate::vm::util::LuaType;

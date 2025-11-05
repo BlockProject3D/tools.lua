@@ -27,12 +27,12 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 mod interface;
-mod obj;
+mod path;
 pub mod chroot;
 mod lib;
 
 pub use interface::{SandboxPath, SandboxPathBuf};
-use crate::libs::files::obj::PathWrapper;
+use crate::libs::files::path::PathWrapper;
 use crate::libs::Lib;
 use crate::util::Namespace;
 use crate::vm::function::types::RFunction;
