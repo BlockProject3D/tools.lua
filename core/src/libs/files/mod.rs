@@ -30,8 +30,10 @@ mod interface;
 mod path;
 pub mod chroot;
 mod lib;
+mod file;
 
 pub use interface::{SandboxPath, SandboxPathBuf};
+use crate::libs::files::file::FileWrapper;
 use crate::libs::files::path::PathWrapper;
 use crate::libs::Lib;
 use crate::util::Namespace;
@@ -44,6 +46,7 @@ impl Lib for Files {
 
     fn load(&self, namespace: &mut Namespace) -> crate::vm::Result<()> {
         namespace.add_userdata::<PathWrapper>(c"Path", crate::vm::userdata::case::Camel)?;
+        namespace.add_userdata::<FileWrapper>(c"File", crate::vm::userdata::case::Camel)?;
         namespace.add([
             ("readText", RFunction::wrap(lib::read_text)),
             ("writeText", RFunction::wrap(lib::write_text)),
@@ -52,7 +55,8 @@ impl Lib for Files {
             ("exists", RFunction::wrap(lib::exists)),
             ("list", RFunction::wrap(lib::list)),
             ("createDir", RFunction::wrap(lib::create_dir)),
-            ("deleteDir", RFunction::wrap(lib::delete_dir))
+            ("deleteDir", RFunction::wrap(lib::delete_dir)),
+            ("access", RFunction::wrap(lib::lua_access))
         ])
     }
 }

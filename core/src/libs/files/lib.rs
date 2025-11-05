@@ -174,3 +174,26 @@ decl_lib_func! {
         Ok(tbl)
     }
 }
+
+decl_lib_func! {
+    pub fn lua_access<'a>(vm: &Vm, path: SandboxPath) -> crate::vm::Result<Table<'a>> {
+        let perms = path.access(vm);
+        let mut tbl = Table::new(vm);
+        if perms & Permissions::R {
+            tbl.set(c"r", true)?;
+        } else {
+            tbl.set(c"r", false)?;
+        }
+        if perms & Permissions::W {
+            tbl.set(c"w", true)?;
+        } else {
+            tbl.set(c"w", false)?;
+        }
+        if perms & Permissions::X {
+            tbl.set(c"x", true)?;
+        } else {
+            tbl.set(c"x", false)?;
+        }
+        Ok(tbl)
+    }
+}
