@@ -32,6 +32,7 @@ use bp3d_util::simple_error;
 use crate::{decl_lib_func, decl_userdata, impl_userdata_mut};
 use crate::libs::files::chroot::Permissions;
 use crate::libs::files::SandboxPath;
+use crate::vm::value::types::UInt53;
 
 const MAX_BUF_SIZE: usize = 65535;
 
@@ -108,22 +109,22 @@ decl_lib_func! {
 
 impl_userdata_mut! {
     impl FileWrapper {
-        fn read(this: &mut FileWrapper, size: usize) -> Result<Option<&[u8]>, Error> {
-            if size >= MAX_BUF_SIZE {
-                return Err(Error::TooLarge(size));
+        fn read(this: &mut FileWrapper, size: UInt53) -> Result<Option<&[u8]>, Error> {
+            if size.to_usize() >= MAX_BUF_SIZE {
+                return Err(Error::TooLarge(size.to_usize()));
             }
-            let len = this.file.read(&mut this.buffer[..size]).map_err(Error::Io)?;
+            let len = this.file.read(&mut this.buffer[..size.to_usize()]).map_err(Error::Io)?;
             if len == 0 {
                 return Ok(None);
             }
             Ok(Some(&this.buffer[..len]))
         }
 
-        fn write(this: &mut FileWrapper, buf: &[u8]) -> Result<usize, Error> {
+        fn write(this: &mut FileWrapper, buf: &[u8]) -> Result<UInt53, Error> {
             if this.is_ro {
                 return Err(Error::Permission);
             }
-            this.file.write(buf).map_err(Error::Io)
+            this.file.write(buf).map(UInt53::from_usize_lossy).map_err(Error::Io)
         }
 
         fn seek_from_start(this: &mut FileWrapper, pos: u64) -> std::io::Result<u64> {

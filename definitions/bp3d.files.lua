@@ -58,6 +58,63 @@ function Path:name() end
 --- @return string whatever the file extension.
 function Path:extension() end
 
+--- Creates a new Path object.
+---
+--- @param path string the path to wrap.
+--- @return Path
+Path.new = function(path) end
+
+--- @class File
+File = {}
+
+--- Read a block of data from the file. Returns a byte string of the content.
+---
+--- @param size number number of bytes to read.
+--- @return string
+function File:read(size) end
+
+--- Writes the given block of data to the file. Returns the number of bytes written.
+---
+--- @param data string byte string representing the block of data.
+--- @return number
+function File:write(data) end
+
+--- Seeks from the start of the file.
+---
+--- @param pos number (uint64_t LuaJIT cdata type)
+--- @return number uint64_t LuaJIT cdata type
+function File:seekFromStart(pos) end
+
+--- Seeks from the end of the file.
+---
+--- @param pos number (int64_t LuaJIT cdata type)
+--- @return number uint64_t LuaJIT cdata type
+function File:seekFromEnd(pos) end
+
+--- Seeks from the current cursor position.
+---
+--- @param pos number (int64_t LuaJIT cdata type)
+--- @return number uint64_t LuaJIT cdata type
+function File:seekFromCursor(pos) end
+
+--- Returns the size of the file.
+---
+--- @return number uint64_t LuaJIT cdata type
+function File:size() end
+
+--- Opens a new file for read/write or append.
+---
+--- @param path string | Path the path of the file.
+--- @param mode string the file mode, r for read, w for write and a for append.
+--- @return File
+File.open = function(path, mode) end
+
+--- Creates a new file for writing.
+---
+--- @param path string | Path the path of the file.
+--- @return File
+File.create = function(path) end
+
 --- Read a text file.
 ---
 --- @param path string | Path the path to read from.
@@ -103,3 +160,9 @@ bp3d.files.exists = function(path) end
 --- @param path string | Path
 --- @return [{ path: Path, name: string, type: "dir" | "file" | "symlink" | "other" }]
 bp3d.files.list = function(path) end
+
+--- Returns the permissions of the specified file path.
+---
+--- @param path string | Path
+--- @return { r: boolean, w: boolean, x: boolean }
+bp3d.files.access = function(path) end
