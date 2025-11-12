@@ -111,14 +111,30 @@ pub fn sandbox<'a>(vm: &Vm, path: &'a Path) -> Result<Cow<'a, str>, SandboxError
     if pos == 0 {
         return Err(SandboxError)
     }
+    #[cfg(windows)]
+    let src = &path.as_os_str().as_encoded_bytes()[pos..];
+    #[cfg(unix)]
     let mut src = &path.as_os_str().as_encoded_bytes()[pos..];
     if src.len() == 0 {
         return Ok(Cow::Borrowed("/"));
     }
-    if src[0] != b'/' {
-        src = &path.as_os_str().as_encoded_bytes()[pos - 1..];
+    #[cfg(windows)]
+    {
+        let src = String::from_utf8_lossy(src).replace("\\", "/");
+        if src.as_bytes()[0] != b'/' {
+            let src = &src[pos - 1..];
+            return Ok(Cow::Owned(src.into()));
+        } else {
+            return Ok(Cow::Owned(src));
+        }
     }
-    Ok(String::from_utf8_lossy(src))
+    #[cfg(unix)]
+    {
+        if src[0] != b'/' {
+            src = &path.as_os_str().as_encoded_bytes()[pos - 1..];
+        }
+        return Ok(String::from_utf8_lossy(src));
+    }
 }
 
 #[derive(Copy, Clone, Eq, PartialEq, Debug)]
