@@ -5,3 +5,11 @@ rustc-link-lib = []
 [target.aarch64-apple-darwin.lua]
 rustc-link-search = []
 rustc-link-lib = []
+
+[target.aarch64-pc-windows-msvc.lua]
+rustc-link-search = []
+rustc-link-lib = []
+
+[target.x86_64-pc-windows-msvc.lua]
+rustc-link-search = []
+rustc-link-lib = []
