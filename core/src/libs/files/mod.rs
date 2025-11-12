@@ -26,18 +26,18 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-mod interface;
-mod path;
 pub mod chroot;
-mod lib;
 mod file;
+mod interface;
+mod lib;
+mod path;
 
-pub use interface::{SandboxPath, SandboxPathBuf};
 use crate::libs::files::file::FileWrapper;
 use crate::libs::files::path::PathWrapper;
 use crate::libs::Lib;
 use crate::util::Namespace;
 use crate::vm::function::types::RFunction;
+pub use interface::{SandboxPath, SandboxPathBuf};
 
 pub struct Files;
 
@@ -56,7 +56,7 @@ impl Lib for Files {
             ("list", RFunction::wrap(lib::list)),
             ("createDir", RFunction::wrap(lib::create_dir)),
             ("deleteDir", RFunction::wrap(lib::delete_dir)),
-            ("access", RFunction::wrap(lib::lua_access))
+            ("access", RFunction::wrap(lib::lua_access)),
         ])
     }
 }

@@ -26,10 +26,6 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::borrow::Cow;
-use std::ffi::OsStr;
-use std::path::{Path, PathBuf};
-use bp3d_debug::error;
 use crate::libs::files::chroot::{access, sandbox, unsandbox, Permissions, SandboxError};
 use crate::libs::files::path::PathWrapper;
 use crate::util::core::SimpleDrop;
@@ -37,24 +33,28 @@ use crate::vm::function::{FromParam, IntoParam};
 use crate::vm::util::LuaType;
 use crate::vm::value::{FromLua, IntoLua};
 use crate::vm::Vm;
+use bp3d_debug::error;
+use std::borrow::Cow;
+use std::ffi::OsStr;
+use std::path::{Path, PathBuf};
 
 #[derive(Debug, Eq, PartialEq)]
 pub enum SandboxPath<'a> {
     String(&'a str),
-    Path(&'a Path)
+    Path(&'a Path),
 }
 
 #[derive(Debug, Eq, PartialEq)]
 pub enum SandboxPathBuf {
     String(String),
-    Path(PathBuf)
+    Path(PathBuf),
 }
 
 impl From<SandboxPath<'_>> for SandboxPathBuf {
     fn from(value: SandboxPath<'_>) -> Self {
         match value {
             SandboxPath::String(v) => SandboxPathBuf::String(v.into()),
-            SandboxPath::Path(v) => SandboxPathBuf::Path(v.into())
+            SandboxPath::Path(v) => SandboxPathBuf::Path(v.into()),
         }
     }
 }
@@ -91,7 +91,7 @@ impl SandboxPathBuf {
     pub fn as_path(&self) -> SandboxPath<'_> {
         match self {
             SandboxPathBuf::String(v) => SandboxPath::String(v),
-            SandboxPathBuf::Path(v) => SandboxPath::Path(v)
+            SandboxPathBuf::Path(v) => SandboxPath::Path(v),
         }
     }
 
@@ -100,7 +100,7 @@ impl SandboxPathBuf {
     pub fn as_os_str(&self) -> &OsStr {
         match self {
             SandboxPathBuf::String(v) => v.as_ref(),
-            SandboxPathBuf::Path(v) => v.as_os_str()
+            SandboxPathBuf::Path(v) => v.as_os_str(),
         }
     }
 }
@@ -139,7 +139,7 @@ impl SandboxPath<'_> {
     pub fn as_os_str(&self) -> &OsStr {
         match self {
             SandboxPath::String(v) => v.as_ref(),
-            SandboxPath::Path(v) => v.as_os_str()
+            SandboxPath::Path(v) => v.as_os_str(),
         }
     }
 
@@ -148,15 +148,15 @@ impl SandboxPath<'_> {
             SandboxPath::String(v) => {
                 unsandbox(vm, v)?;
                 Ok(Cow::Borrowed(v))
-            },
-            SandboxPath::Path(v) => sandbox(vm, v)
+            }
+            SandboxPath::Path(v) => sandbox(vm, v),
         }
     }
 
     pub fn to_path(&self, vm: &Vm) -> Result<Cow<'_, Path>, SandboxError> {
         match self {
             SandboxPath::String(v) => unsandbox(vm, *v),
-            SandboxPath::Path(v) => Ok(Cow::Borrowed(v))
+            SandboxPath::Path(v) => Ok(Cow::Borrowed(v)),
         }
     }
 
@@ -174,7 +174,7 @@ impl SandboxPath<'_> {
     pub fn is_relative(&self) -> bool {
         match self {
             SandboxPath::String(v) => !v.starts_with("/"),
-            SandboxPath::Path(v) => !v.starts_with("/")
+            SandboxPath::Path(v) => !v.starts_with("/"),
         }
     }
 }
@@ -183,7 +183,7 @@ impl<'a> FromLua<'a> for SandboxPath<'a> {
     unsafe fn from_lua_unchecked(vm: &'a Vm, index: i32) -> Self {
         let wrapper: crate::vm::Result<&PathWrapper> = FromLua::from_lua(vm, index);
         if let Ok(wrapper) = wrapper {
-            return SandboxPath::Path(wrapper.path())
+            return SandboxPath::Path(wrapper.path());
         }
         let s: &str = FromLua::from_lua_unchecked(vm, index);
         SandboxPath::String(s)
@@ -192,7 +192,7 @@ impl<'a> FromLua<'a> for SandboxPath<'a> {
     fn from_lua(vm: &'a Vm, index: i32) -> crate::vm::Result<Self> {
         let wrapper: crate::vm::Result<&PathWrapper> = FromLua::from_lua(vm, index);
         if let Ok(wrapper) = wrapper {
-            return Ok(SandboxPath::Path(wrapper.path()))
+            return Ok(SandboxPath::Path(wrapper.path()));
         }
         let s: &str = FromLua::from_lua(vm, index)?;
         Ok(SandboxPath::String(s))
@@ -212,8 +212,11 @@ impl FromLua<'_> for SandboxPathBuf {
 unsafe impl IntoLua for SandboxPath<'_> {
     fn into_lua(self, vm: &Vm) -> u16 {
         match self {
-            SandboxPath::String(v) => unsandbox(vm, v).map(|path| PathWrapper::new(path.into())).ok().into_lua(vm),
-            SandboxPath::Path(v) => PathWrapper::new(v.into()).into_lua(vm)
+            SandboxPath::String(v) => unsandbox(vm, v)
+                .map(|path| PathWrapper::new(path.into()))
+                .ok()
+                .into_lua(vm),
+            SandboxPath::Path(v) => PathWrapper::new(v.into()).into_lua(vm),
         }
     }
 }
@@ -226,7 +229,7 @@ impl<'a> FromParam<'a> for SandboxPath<'a> {
     unsafe fn from_param(vm: &'a Vm, index: i32) -> Self {
         let wrapper: Option<&PathWrapper> = FromParam::try_from_param(vm, index);
         if let Some(wrapper) = wrapper {
-            return SandboxPath::Path(wrapper.path())
+            return SandboxPath::Path(wrapper.path());
         }
         let s: &str = FromParam::from_param(vm, index);
         SandboxPath::String(s)
@@ -235,7 +238,7 @@ impl<'a> FromParam<'a> for SandboxPath<'a> {
     fn try_from_param(vm: &'a Vm, index: i32) -> Option<Self> {
         let wrapper: Option<&PathWrapper> = FromParam::try_from_param(vm, index);
         if let Some(wrapper) = wrapper {
-            return Some(SandboxPath::Path(wrapper.path()))
+            return Some(SandboxPath::Path(wrapper.path()));
         }
         let wrapper: Option<&str> = FromParam::try_from_param(vm, index);
         wrapper.map(|v| SandboxPath::String(v))

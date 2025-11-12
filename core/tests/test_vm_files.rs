@@ -26,21 +26,25 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::path::Path;
 use bp3d_lua::libs::files::chroot::{access, set_access, set_chroot, Permissions};
 use bp3d_lua::libs::files::{Files, SandboxPath};
 use bp3d_lua::libs::Lib;
 use bp3d_lua::vm::RootVm;
+use std::path::Path;
 
 #[test]
 fn test_vm_files() {
     let vm = RootVm::new();
     Files.register(&vm).unwrap();
     set_chroot(&vm, Path::new("/root")); // for testing only
-    let path: SandboxPath = vm.run_code(c"return bp3d.files.Path.new('/myfile')").unwrap();
+    let path: SandboxPath = vm
+        .run_code(c"return bp3d.files.Path.new('/myfile')")
+        .unwrap();
     let path = path.to_path(&vm).unwrap();
     assert_eq!(path, Path::new("/root/myfile"));
-    let spath: SandboxPath = vm.run_code(c"return bp3d.files.Path.new('/data'):join('myfile'):withExtension('txt')").unwrap();
+    let spath: SandboxPath = vm
+        .run_code(c"return bp3d.files.Path.new('/data'):join('myfile'):withExtension('txt')")
+        .unwrap();
     let path = spath.to_path(&vm).unwrap();
     assert_eq!(path, Path::new("/root/data/myfile.txt"));
     let path = spath.to_str(&vm).unwrap();
@@ -55,13 +59,20 @@ fn test_vm_files_security() {
     let vm = RootVm::new();
     Files.register(&vm).unwrap();
     set_chroot(&vm, Path::new("/root")); // for testing only
-    vm.run_code::<()>(c"return bp3d.files.Path.new('../myfile')").unwrap_err();
-    vm.run_code::<()>(c"return bp3d.files.Path.new('/../myfile')").unwrap_err();
-    vm.run_code::<()>(c"return bp3d.files.Path.new('/./../myfile')").unwrap_err();
-    vm.run_code::<()>(c"return bp3d.files.Path.new('.././myfile/.')").unwrap_err();
-    vm.run_code::<()>(c"return bp3d.files.Path.new('/data/../myfile')").unwrap();
-    vm.run_code::<()>(c"return bp3d.files.Path.new('/data/../../myfile')").unwrap_err();
-    vm.run_code::<()>(c"return bp3d.files.Path.new('/../data/myfile')").unwrap_err();
+    vm.run_code::<()>(c"return bp3d.files.Path.new('../myfile')")
+        .unwrap_err();
+    vm.run_code::<()>(c"return bp3d.files.Path.new('/../myfile')")
+        .unwrap_err();
+    vm.run_code::<()>(c"return bp3d.files.Path.new('/./../myfile')")
+        .unwrap_err();
+    vm.run_code::<()>(c"return bp3d.files.Path.new('.././myfile/.')")
+        .unwrap_err();
+    vm.run_code::<()>(c"return bp3d.files.Path.new('/data/../myfile')")
+        .unwrap();
+    vm.run_code::<()>(c"return bp3d.files.Path.new('/data/../../myfile')")
+        .unwrap_err();
+    vm.run_code::<()>(c"return bp3d.files.Path.new('/../data/myfile')")
+        .unwrap_err();
 }
 
 #[test]
@@ -71,17 +82,27 @@ fn test_vm_files_permissions() {
     set_chroot(&vm, Path::new("/root")); // for testing only
     set_access(&vm, "/rodata", Permissions::R);
     set_access(&vm, "/rwdata", Permissions::R | Permissions::W);
-    set_access(&vm, "/data/myfile.lua", Permissions::R | Permissions::W | Permissions::X);
+    set_access(
+        &vm,
+        "/data/myfile.lua",
+        Permissions::R | Permissions::W | Permissions::X,
+    );
     assert_eq!(access(&vm, "/rodata/myfile.txt"), Permissions::R);
     assert_eq!(access(&vm, "/rodata.txt"), Permissions::NONE);
     assert_eq!(access(&vm, "/"), Permissions::NONE);
     assert_eq!(access(&vm, "/rodata"), Permissions::R);
     assert_eq!(access(&vm, "/rwdata"), Permissions::R | Permissions::W);
-    assert_eq!(access(&vm, "/rwdata/myfile.txt"), Permissions::R | Permissions::W);
+    assert_eq!(
+        access(&vm, "/rwdata/myfile.txt"),
+        Permissions::R | Permissions::W
+    );
     assert_eq!(access(&vm, "/data"), Permissions::NONE);
     assert_eq!(access(&vm, "/data/myfile"), Permissions::NONE);
     assert_eq!(access(&vm, "/data/myfile.txt"), Permissions::NONE);
-    assert_eq!(access(&vm, "/data/myfile.lua"), Permissions::R | Permissions::W | Permissions::X);
+    assert_eq!(
+        access(&vm, "/data/myfile.lua"),
+        Permissions::R | Permissions::W | Permissions::X
+    );
 }
 
 #[test]
@@ -92,10 +113,22 @@ fn test_vm_files_permissions2() {
     set_access(&vm, "/", Permissions::R);
     set_access(&vm, "/target", Permissions::R | Permissions::W);
     set_access(&vm, "/bp3d-build", Permissions::R | Permissions::X);
-    assert_eq!(access(&vm, "/target/myfile"), Permissions::R | Permissions::W);
-    assert_eq!(access(&vm, "/bp3d-build/myfile.lua"), Permissions::R | Permissions::X);
-    assert_eq!(access(&vm, "/bp3d-build/package/myfile.lua"), Permissions::R | Permissions::X);
-    assert_eq!(access(&vm, "/target/aarch64/data/1/myfile"), Permissions::R | Permissions::W);
+    assert_eq!(
+        access(&vm, "/target/myfile"),
+        Permissions::R | Permissions::W
+    );
+    assert_eq!(
+        access(&vm, "/bp3d-build/myfile.lua"),
+        Permissions::R | Permissions::X
+    );
+    assert_eq!(
+        access(&vm, "/bp3d-build/package/myfile.lua"),
+        Permissions::R | Permissions::X
+    );
+    assert_eq!(
+        access(&vm, "/target/aarch64/data/1/myfile"),
+        Permissions::R | Permissions::W
+    );
     assert_eq!(access(&vm, "/myfile"), Permissions::R);
     assert_eq!(access(&vm, "/obj/data/1/myfile"), Permissions::R);
 }
@@ -105,7 +138,9 @@ fn test_vm_simple_chroot() {
     let vm = RootVm::new();
     Files.register(&vm).unwrap();
     set_chroot(&vm, Path::new("."));
-    let path: SandboxPath = vm.run_code(c"return bp3d.files.Path.new('/myfile')").unwrap();
+    let path: SandboxPath = vm
+        .run_code(c"return bp3d.files.Path.new('/myfile')")
+        .unwrap();
     let path = path.to_path(&vm).unwrap();
     assert_eq!(path, Path::new("./myfile"));
 }
@@ -115,7 +150,9 @@ fn test_vm_simple_chroot2() {
     let vm = RootVm::new();
     Files.register(&vm).unwrap();
     set_chroot(&vm, Path::new("./"));
-    let path: SandboxPath = vm.run_code(c"return bp3d.files.Path.new('/myfile')").unwrap();
+    let path: SandboxPath = vm
+        .run_code(c"return bp3d.files.Path.new('/myfile')")
+        .unwrap();
     let path = path.to_path(&vm).unwrap();
     assert_eq!(path, Path::new("./myfile"));
 }

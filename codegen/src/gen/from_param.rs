@@ -54,7 +54,7 @@ impl FromParam {
 pub struct Field {
     name: Ident,
     from_param: TokenStream,
-    try_from_param: TokenStream
+    try_from_param: TokenStream,
 }
 
 impl Parser for FromParam {

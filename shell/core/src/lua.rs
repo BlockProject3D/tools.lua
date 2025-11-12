@@ -34,6 +34,7 @@ use crate::scheduler::SchedulerPtr;
 use bp3d_debug::{debug, error, info, trace, warning};
 use bp3d_lua::libs;
 use bp3d_lua::libs::Lib;
+use bp3d_lua::libs::files::chroot::set_chroot;
 use bp3d_lua::libs::lua::Module;
 use bp3d_lua::vm::Vm;
 use bp3d_lua::vm::core::interrupt::{Signal, spawn_interruptible};
@@ -47,7 +48,6 @@ use std::rc::Rc;
 use std::thread::JoinHandle;
 use std::time::Duration;
 use tokio::sync::mpsc;
-use bp3d_lua::libs::files::chroot::set_chroot;
 
 const CHANNEL_BUFFER: usize = 32;
 
@@ -131,10 +131,7 @@ impl Lua {
                 error!("Failed to load util library: {}", e);
             }
             set_chroot(&vm, &args.data);
-            if let Err(e) = libs::lua::Lua::new()
-                .build()
-                .register(vm)
-            {
+            if let Err(e) = libs::lua::Lua::new().build().register(vm) {
                 error!("Failed to load base library: {}", e);
             }
             info!("Loading bp3d-lua-shell library...");

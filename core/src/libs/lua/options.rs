@@ -49,11 +49,6 @@ impl Lua {
     }
 
     pub fn build(self) -> impl Lib {
-        (
-            Base,
-            Call,
-            Load,
-            Require(self.provider.unwrap_or_default()),
-        )
+        (Base, Call, Load, Require(self.provider.unwrap_or_default()))
     }
 }

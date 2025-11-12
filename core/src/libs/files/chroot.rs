@@ -26,18 +26,18 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use crate::vm::core::destructor::Pool;
+use crate::vm::registry::named::Key;
+use crate::vm::registry::types::LuaRef;
+use crate::vm::value::types::RawPtr;
+use crate::vm::Vm;
+use bp3d_debug::trace;
 use std::borrow::Cow;
 use std::collections::HashMap;
 use std::ffi::OsStr;
 use std::fmt::Display;
 use std::ops::{BitAnd, BitOr};
 use std::path::Path;
-use bp3d_debug::trace;
-use crate::vm::core::destructor::Pool;
-use crate::vm::registry::named::Key;
-use crate::vm::registry::types::LuaRef;
-use crate::vm::value::types::RawPtr;
-use crate::vm::Vm;
 
 const CHROOT: Key<LuaRef<&[u8]>> = Key::new("__chroot__");
 
@@ -85,7 +85,7 @@ pub fn is_escaping(path: &str) -> bool {
             level += 1;
         }
     }
-    trace!({level}, "unsandbox {}", path);
+    trace!({ level }, "unsandbox {}", path);
     level < 0
 }
 
@@ -94,7 +94,7 @@ pub fn unsandbox<'a>(vm: &Vm, path: &'a str) -> Result<Cow<'a, Path>, SandboxErr
         return Err(SandboxError);
     }
     if path.len() > 0 && path.as_bytes()[0] == b'/' {
-        return Ok(Cow::Owned(with_chroot(vm, |root| root.join(&path[1..]))))
+        return Ok(Cow::Owned(with_chroot(vm, |root| root.join(&path[1..]))));
     }
     Ok(Cow::Borrowed(Path::new(path)))
 }
@@ -109,7 +109,7 @@ pub fn sandbox<'a>(vm: &Vm, path: &'a Path) -> Result<Cow<'a, str>, SandboxError
         root.len()
     });
     if pos == 0 {
-        return Err(SandboxError)
+        return Err(SandboxError);
     }
     #[cfg(windows)]
     let src = &path.as_os_str().as_encoded_bytes()[pos..];
@@ -218,7 +218,7 @@ pub fn access(vm: &Vm, path: &str) -> Permissions {
         let id = path.rfind('/');
         match id {
             Some(pos) => path = &path[..pos],
-            None => break
+            None => break,
         }
     }
     perms.get_permissions("/").unwrap_or(Permissions::NONE)
