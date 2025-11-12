@@ -15,8 +15,8 @@ publish = false
 
 [dependencies]
 bp3d-util = { version = "2.2.0", features = ["simple-error", "format", "string"] }
-bp3d-debug = "1.0.0"
-bp3d-os = { version = "2.1.0", features = [], optional = true }
+bp3d-debug = "1.0.2"
+bp3d-os = { version = "2.2.3", features = [], optional = true }
 time = { version = "0.3.41", features = ["formatting"], optional = true }
 itertools = { version = "0.14.0" }
 bp3d-lua-codegen = { version = "1.0.0-rc.1.0.0", path = "../codegen", optional = true }
