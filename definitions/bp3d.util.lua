@@ -35,6 +35,20 @@ bp3d.util.table = {}
 bp3d.util.utf8 = {}
 bp3d.util.num = {}
 
+--- Checks if the given `src` string starts with the prefix `prefix`.
+---
+--- @param src string the source string.
+--- @param prefix string the string to search for.
+--- @return boolean whatever true if `src` starts with `prefix`, false otherwise.
+bp3d.util.string.startsWith = function(src, prefix) end
+
+--- Checks if the given `src` string ends with the suffix `suffix`.
+---
+--- @param src string the source string.
+--- @param suffix string the string to search for.
+--- @return boolean whatever true if `src` ends with `suffix`, false otherwise.
+bp3d.util.string.endsWith = function(src, suffix) end
+
 --- Checks if the given sub string `needle` can be found in `src`.
 ---
 --- @param src string the source string.

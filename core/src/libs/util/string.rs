@@ -35,6 +35,18 @@ use bp3d_util::string::BufTools;
 use std::borrow::Cow;
 
 decl_lib_func! {
+    fn starts_with(src: &[u8], prefix: &[u8]) -> bool {
+        src.starts_with(prefix)
+    }
+}
+
+decl_lib_func! {
+    fn ends_with(src: &[u8], suffix: &[u8]) -> bool {
+        src.ends_with(suffix)
+    }
+}
+
+decl_lib_func! {
     fn contains(src: &[u8], needle: &[u8]) -> bool {
         if needle.is_empty() {
             return true;
@@ -78,6 +90,8 @@ impl Lib for String {
             ("split", RFunction::wrap(split)),
             ("capitalise", RFunction::wrap(capitalise)),
             ("decapitalise", RFunction::wrap(decapitalise)),
+            ("startsWith", RFunction::wrap(starts_with)),
+            ("endsWith", RFunction::wrap(ends_with)),
         ])
     }
 }
