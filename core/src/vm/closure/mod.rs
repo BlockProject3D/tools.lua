@@ -32,5 +32,6 @@ mod core;
 mod interface;
 pub mod rc;
 pub mod types;
+mod rust;
 
 pub use interface::*;

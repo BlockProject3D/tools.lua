@@ -26,12 +26,12 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use crate::ffi::lua::{lua_pushcclosure, CFunction, State};
-use crate::vm::closure::{FromUpvalue, IntoUpvalue};
-use crate::vm::function::{FromParam, IntoParam};
-use crate::vm::value::types::RawPtr;
+use crate::ffi::lua::{lua_pushcclosure, CFunction};
+use crate::vm::closure::IntoUpvalue;
 use crate::vm::value::IntoLua;
 use crate::vm::Vm;
+
+pub use super::rust::Guard as RClosureGuard;
 
 pub struct RClosure<T> {
     func: CFunction,
@@ -57,51 +57,5 @@ unsafe impl<T: IntoUpvalue> IntoLua for RClosure<T> {
         let num = self.upvalue.into_upvalue(vm);
         unsafe { lua_pushcclosure(vm.as_ptr(), self.func, num as _) };
         1
-    }
-}
-
-impl RClosure<RawPtr<()>> {
-    #[cfg(feature = "send")]
-    pub fn from_rust<T, R, F: Fn(T) -> R + 'static>(vm: &Vm, fun: F) -> Self
-    where
-        for<'a> T: FromParam<'a>,
-        R: IntoParam,
-        F: Send,
-    {
-        let ptr = crate::vm::core::destructor::Pool::attach_send(vm, Box::new(fun));
-        extern "C-unwind" fn _cfunc<T, R, F: Fn(T) -> R>(l: State) -> i32
-        where
-            for<'a> T: FromParam<'a>,
-            R: IntoParam,
-            F: Send,
-        {
-            let vm = unsafe { Vm::from_raw(l) };
-            let upvalue: RawPtr<F> = unsafe { FromUpvalue::from_upvalue(&vm, 1) };
-            let args: T = unsafe { FromParam::from_param(&vm, 1) };
-            let res = unsafe { (*upvalue.as_ptr())(args) };
-            res.into_param(&vm) as _
-        }
-        RClosure::new(_cfunc::<T, R, F>, RawPtr::new(ptr as _))
-    }
-
-    #[cfg(not(feature = "send"))]
-    pub fn from_rust<T, R, F: Fn(T) -> R + 'static>(vm: &Vm, fun: F) -> Self
-    where
-        for<'a> T: FromParam<'a>,
-        R: IntoParam,
-    {
-        let ptr = crate::vm::core::destructor::Pool::attach(vm, Box::new(fun));
-        extern "C-unwind" fn _cfunc<T, R, F: Fn(T) -> R>(l: State) -> i32
-        where
-            for<'a> T: FromParam<'a>,
-            R: IntoParam,
-        {
-            let vm = unsafe { Vm::from_raw(l) };
-            let upvalue: RawPtr<F> = unsafe { FromUpvalue::from_upvalue(&vm, 1) };
-            let args: T = unsafe { FromParam::from_param(&vm, 1) };
-            let res = unsafe { (*upvalue.as_ptr())(args) };
-            res.into_param(&vm) as _
-        }
-        RClosure::new(_cfunc::<T, R, F>, RawPtr::new(ptr as _))
     }
 }
