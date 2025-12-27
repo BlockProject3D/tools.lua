@@ -38,7 +38,7 @@ use crate::vm::table::ImmutableTable;
 use crate::vm::userdata::{UserData, UserDataImmutable};
 use crate::vm::util::LuaType;
 use crate::vm::value::types::Function;
-use crate::vm::value::util::{check_get_metatable, check_push_value};
+use crate::vm::value::util::{check_get_metatable, check_value_top};
 use crate::vm::value::{FromLua, ImmutableValue, IntoLua};
 use crate::vm::Vm;
 use std::fmt::{Debug, Display};
@@ -213,7 +213,7 @@ impl<'a> FromLua<'a> for AnyUserData<'a> {
 unsafe impl IntoLua for &AnyUserData<'_> {
     #[inline(always)]
     fn into_lua(self, vm: &Vm) -> u16 {
-        check_push_value(self.vm, vm, self.index)
+        check_value_top(self.vm, vm, self.index)
     }
 }
 
