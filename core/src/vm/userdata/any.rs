@@ -26,6 +26,7 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use std::ffi::c_void;
 use crate::ffi::laux::luaL_testudata;
 use crate::ffi::lua::{
     lua_pushvalue, lua_replace, lua_settop, lua_topointer, lua_touserdata, lua_type, Type,
@@ -119,6 +120,11 @@ impl<'a> AnyUserData<'a> {
     #[inline(always)]
     pub unsafe fn from_raw(vm: &'a Vm, index: i32) -> Self {
         Self { vm, index }
+    }
+
+    /// Returns the underlying userdata pointer.
+    pub fn as_ptr(&self) -> *const c_void {
+        unsafe { lua_topointer(self.vm.as_ptr(), self.index) }
     }
 
     /// Returns a unique identifier to that table across the Vm it is attached to.
@@ -245,6 +251,11 @@ impl<'a> ImmutableAnyUserData<'a> {
     #[inline(always)]
     pub unsafe fn from_raw(vm: &'a Vm, index: i32) -> Self {
         Self(AnyUserData::from_raw(vm, index))
+    }
+
+    /// Returns the underlying userdata pointer.
+    pub fn as_ptr(&self) -> *const c_void {
+        self.0.as_ptr()
     }
 
     /// Returns a unique identifier to that table across the Vm it is attached to.
