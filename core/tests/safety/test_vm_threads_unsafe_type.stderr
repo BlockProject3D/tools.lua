@@ -10,6 +10,20 @@ error[E0597]: `vm` does not live long enough
    |                   ----------------------------- argument requires that `vm` is borrowed for `'static`
 38 | }
    | - `vm` dropped here while still borrowed
+   |
+note: requirements that the value outlives `'static` introduced here
+  --> src/vm/core/vm.rs
+   |
+   |     pub fn get_global<'a, R: FromLua<'a>>(&'a self, name: impl AnyStr) -> crate::vm::Result<R> {
+   |                              ^^^^^^^^^^^
+   |
+  ::: src/vm/thread/core.rs
+   |
+   |     pub fn resume<'b, T: FromLua<'b>>(&'b self, args: impl IntoLua) -> crate::vm::Result<Output<T>>
+   |                          ^^^^^^^^^^^
+   |     where
+   |         T: 'static, /* This clause ensures that a future call to collectgarbage or resume does
+   |            ^^^^^^^
 
 error[E0597]: `thread` does not live long enough
   --> tests/safety/test_vm_threads_unsafe_type.rs:37:19
@@ -24,3 +38,12 @@ error[E0597]: `thread` does not live long enough
    |                   argument requires that `thread` is borrowed for `'static`
 38 | }
    | - `thread` dropped here while still borrowed
+   |
+note: requirements that the value outlives `'static` introduced here
+  --> src/vm/thread/core.rs
+   |
+   |     pub fn resume<'b, T: FromLua<'b>>(&'b self, args: impl IntoLua) -> crate::vm::Result<Output<T>>
+   |                          ^^^^^^^^^^^
+   |     where
+   |         T: 'static, /* This clause ensures that a future call to collectgarbage or resume does
+   |            ^^^^^^^

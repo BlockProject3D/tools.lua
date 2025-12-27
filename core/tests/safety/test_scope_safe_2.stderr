@@ -14,3 +14,9 @@ error[E0597]: `vm` does not live long enough
 36 |     });
 37 | }
    | - `vm` dropped here while still borrowed
+   |
+note: requirements that the value outlives `'static` introduced here
+  --> src/vm/core/vm.rs
+   |
+   |     pub fn scope<R: 'static, F: FnOnce(&Vm) -> crate::vm::Result<R>>(
+   |                     ^^^^^^^                    ^^^^^^^^^^^^^^^^^^^^
