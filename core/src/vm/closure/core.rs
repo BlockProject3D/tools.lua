@@ -34,6 +34,7 @@ use crate::vm::value::{FromLua, IntoLua};
 use crate::vm::Vm;
 use std::ffi::OsStr;
 use std::path::Path;
+use crate::vm::userdata::AnyUserData;
 
 macro_rules! impl_from_upvalue_using_from_lua_unchecked {
     ($($t: ty),*) => {
@@ -140,4 +141,21 @@ impl IntoUpvalue for &Path {
 
 impl Upvalue for &Path {
     type From<'a> = &'a Path;
+}
+
+impl<'a> FromUpvalue<'a> for AnyUserData<'a> {
+    #[inline(always)]
+    unsafe fn from_upvalue(vm: &'a Vm, index: i32) -> Self {
+        AnyUserData::from_raw(vm, GLOBALSINDEX - index)
+    }
+}
+
+impl IntoUpvalue for AnyUserData<'_> {
+    fn into_upvalue(self, vm: &Vm) -> u16 {
+        self.into_lua(vm)
+    }
+}
+
+impl Upvalue for AnyUserData<'_> {
+    type From<'a> = AnyUserData<'a>;
 }
