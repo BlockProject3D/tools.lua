@@ -108,6 +108,20 @@ impl<'a> FromParam<'a> for &'a [u8] {
     }
 }
 
+unsafe impl SimpleDrop for () {}
+
+impl LuaType for () {}
+
+impl FromParam<'_> for () {
+    unsafe fn from_param(_: &'_ Vm, _: i32) -> Self {
+        ()
+    }
+
+    fn try_from_param(_: &'_ Vm, _: i32) -> Option<Self> {
+        Some(())
+    }
+}
+
 unsafe impl IntoParam for &str {
     #[inline(always)]
     fn into_param(self, vm: &Vm) -> i32 {
