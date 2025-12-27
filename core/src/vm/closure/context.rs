@@ -42,11 +42,21 @@ pub struct Cell<T> {
     ptr: *mut *const T,
 }
 
+#[cfg(feature = "send")]
+impl<T: Send> Cell<T> {
+    pub fn new(ctx: Context<T>) -> Self {
+        Self { ptr: ctx.ptr }
+    }
+}
+
+#[cfg(not(feature = "send"))]
 impl<T> Cell<T> {
     pub fn new(ctx: Context<T>) -> Self {
         Self { ptr: ctx.ptr }
     }
+}
 
+impl<T> Cell<T> {
     pub fn bind<'a>(&mut self, obj: &'a T) -> Guard<'a, T> {
         unsafe { *self.ptr = obj as _ };
         Guard {
@@ -60,11 +70,21 @@ pub struct CellMut<T> {
     ptr: *mut *const T,
 }
 
+#[cfg(feature = "send")]
+impl<T: Send> CellMut<T> {
+    pub fn new(ctx: ContextMut<T>) -> Self {
+        Self { ptr: ctx.0.ptr }
+    }
+}
+
+#[cfg(not(feature = "send"))]
 impl<T> CellMut<T> {
     pub fn new(ctx: ContextMut<T>) -> Self {
         Self { ptr: ctx.0.ptr }
     }
+}
 
+impl<T> CellMut<T> {
     pub fn bind<'a>(&mut self, obj: &'a mut T) -> Guard<'a, T> {
         unsafe { *self.ptr = obj as _ };
         Guard {
