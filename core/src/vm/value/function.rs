@@ -33,7 +33,7 @@ use crate::util::core::SimpleDrop;
 use crate::vm::core::util::{pcall, push_error_handler};
 use crate::vm::function::{FromParam, IntoParam};
 use crate::vm::registry::{FromIndex, Set};
-use crate::vm::util::LuaType;
+use crate::vm::util::{LuaType, TypeName};
 use crate::vm::value::util::{check_type_equals, check_value_top};
 use crate::vm::value::{FromLua, ImmutableValue, IntoLua};
 use crate::vm::Vm;
@@ -82,7 +82,11 @@ impl Debug for Function<'_> {
 
 unsafe impl SimpleDrop for Function<'_> {}
 
-impl LuaType for Function<'_> {}
+impl LuaType for Function<'_> {
+    fn lua_type() -> Vec<TypeName> {
+        vec![TypeName::Some("function")]
+    }
+}
 
 impl<'a> FromParam<'a> for Function<'a> {
     unsafe fn from_param(vm: &'a Vm, index: i32) -> Self {

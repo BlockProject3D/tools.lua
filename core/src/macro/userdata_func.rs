@@ -29,32 +29,6 @@
 #[macro_export]
 macro_rules! decl_userdata_func {
     (
-        $vis: vis fn $fn_name: ident $(<$lifetime: lifetime>)? ($this: ident: &mut $obj_name: ident, $name: ident: &Vm$(, $($arg_name: ident: $arg_ty: ty),*)?) -> $ret_ty: ty $code: block
-    ) => {
-        impl $obj_name {
-            $vis fn $fn_name() -> std::result::Result<$crate::vm::userdata::core::Function, $crate::vm::userdata::Error> {
-                extern "C-unwind" fn _cfunc(l: $crate::ffi::lua::State) -> i32 {
-                    fn _func $(<$lifetime>)? ($this: &mut $obj_name, $name: &$($lifetime)? $crate::vm::Vm$(, $($arg_name: $arg_ty),*)?) -> $ret_ty $code
-                    use $crate::vm::function::IntoParam;
-                    let this_ptr = unsafe { $crate::ffi::laux::luaL_checkudata(l, 1, <$obj_name as $crate::vm::userdata::UserDataType>::FULL_TYPE.as_ptr()) } as *mut $obj_name;
-                    let vm = unsafe { $crate::vm::Vm::from_raw(l) };
-                    #[inline(always)]
-                    extern "C-unwind" fn _vmfunc $(<$lifetime>)? (this_ptr: *mut $obj_name, vm: &$($lifetime)? $crate::vm::Vm) -> i32 {
-                        $($crate::decl_from_param_unchecked!(vm, 2, $($arg_name: $arg_ty)*);)?
-                        let ret = _func(unsafe { &mut *this_ptr }, vm $(, $($arg_name),*)?);
-                        ret.into_param(vm) as _
-                    }
-                    _vmfunc(this_ptr, &vm)
-                }
-                let mut f = $crate::vm::userdata::core::Builder::new($crate::c_stringify!($fn_name), _cfunc);
-                f.mutable();
-                f.arg::<&$obj_name>();
-                $($(f.arg::<$arg_ty>();)*)?
-                unsafe { f.build() }
-            }
-        }
-    };
-    (
         $vis: vis fn $fn_name: ident $(<$lifetime: lifetime>)? ($this: ident: &mut $obj_name: ident$(, $($arg_name: ident: $arg_ty: ty),*)?) -> $ret_ty: ty $code: block
     ) => {
         impl $obj_name {

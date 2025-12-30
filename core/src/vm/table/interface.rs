@@ -36,7 +36,7 @@ use crate::vm::function::{FromParam, IntoParam};
 use crate::vm::registry::{FromIndex, Set};
 use crate::vm::table::traits::{GetTable, SetTable};
 use crate::vm::table::{ImmutableTable, Table};
-use crate::vm::util::LuaType;
+use crate::vm::util::{LuaType, TypeName};
 use crate::vm::value::util::{check_type_equals, check_value_top};
 use crate::vm::value::{FromLua, ImmutableValue, IntoLua};
 use crate::vm::Vm;
@@ -72,7 +72,12 @@ impl<'a> FromLua<'a> for Table<'a> {
     }
 }
 
-impl LuaType for ImmutableTable<'_> {}
+impl LuaType for ImmutableTable<'_> {
+    fn lua_type() -> Vec<TypeName> {
+        vec![TypeName::Some("table")]
+    }
+}
+
 unsafe impl SimpleDrop for ImmutableTable<'_> {}
 unsafe impl ImmutableValue for ImmutableTable<'_> {}
 
@@ -113,7 +118,11 @@ unsafe impl IntoLua for Table<'_> {
     }
 }
 
-impl LuaType for Table<'_> {}
+impl LuaType for Table<'_> {
+    fn lua_type() -> Vec<TypeName> {
+        vec![TypeName::Some("table")]
+    }
+}
 
 impl_registry_value!(crate::vm::registry::types::Table => Table);
 

@@ -94,6 +94,11 @@ impl Builder {
         if self.is_mutable {
             let initial = &self.args[0];
             for v in self.args.iter().skip(1) {
+                if v == &TypeName::Some("function") || v == &TypeName::Some("table") || v == &TypeName::Some("userdata") {
+                    // Forbid functions, tables and userdata in mutable userdata types.
+                    // This is to ensure no mutable userdata may call back into itself.
+                    return Err(Error::MutViolation(self.f.name));
+                }
                 if initial == v {
                     return Err(Error::MutViolation(self.f.name));
                 }

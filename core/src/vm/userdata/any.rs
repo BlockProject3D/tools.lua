@@ -36,7 +36,7 @@ use crate::util::LuaFunction;
 use crate::vm::error::{Error, TypeError};
 use crate::vm::table::ImmutableTable;
 use crate::vm::userdata::{UserData, UserDataImmutable};
-use crate::vm::util::LuaType;
+use crate::vm::util::{LuaType, TypeName};
 use crate::vm::value::types::Function;
 use crate::vm::value::util::{check_get_metatable, check_value_top};
 use crate::vm::value::{FromLua, ImmutableValue, IntoLua};
@@ -305,5 +305,14 @@ impl<'a> FromLua<'a> for ImmutableAnyUserData<'a> {
 
 unsafe impl SimpleDrop for ImmutableAnyUserData<'_> {}
 unsafe impl SimpleDrop for AnyUserData<'_> {}
-impl LuaType for AnyUserData<'_> {}
-impl LuaType for ImmutableAnyUserData<'_> {}
+impl LuaType for AnyUserData<'_> {
+    fn lua_type() -> Vec<TypeName> {
+        vec![TypeName::Some("userdata")]
+    }
+}
+
+impl LuaType for ImmutableAnyUserData<'_> {
+    fn lua_type() -> Vec<TypeName> {
+        vec![TypeName::Some("userdata")]
+    }
+}
