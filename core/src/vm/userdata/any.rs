@@ -26,7 +26,6 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::ffi::c_void;
 use crate::ffi::laux::luaL_testudata;
 use crate::ffi::lua::{
     lua_pushvalue, lua_replace, lua_settop, lua_topointer, lua_touserdata, lua_type, Type,
@@ -41,6 +40,7 @@ use crate::vm::value::types::Function;
 use crate::vm::value::util::{check_get_metatable, check_value_top};
 use crate::vm::value::{FromLua, ImmutableValue, IntoLua};
 use crate::vm::Vm;
+use std::ffi::c_void;
 use std::fmt::{Debug, Display};
 
 pub struct AnyUserData<'a> {

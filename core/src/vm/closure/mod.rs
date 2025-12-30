@@ -31,7 +31,7 @@ pub mod context;
 mod core;
 mod interface;
 pub mod rc;
-pub mod types;
 mod rust;
+pub mod types;
 
 pub use interface::*;

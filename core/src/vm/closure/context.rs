@@ -218,10 +218,7 @@ impl<T> MutPtr<T> {
     pub fn borrow<'a>(self) -> Mut<'a, T> {
         let value = unsafe { &mut **self.0 };
         unsafe { *self.0 = std::ptr::null_mut() };
-        Mut {
-            value,
-            ptr: self.0
-        }
+        Mut { value, ptr: self.0 }
     }
 }
 
@@ -236,7 +233,7 @@ impl<T: 'static> Deref for Ref<'_, T> {
 
 pub struct Mut<'a, T> {
     value: &'a mut T,
-    ptr: *mut *mut T
+    ptr: *mut *mut T,
 }
 
 impl<'a, T> Drop for Mut<'a, T> {

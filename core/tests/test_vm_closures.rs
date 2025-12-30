@@ -28,12 +28,12 @@
 
 #![cfg(all(feature = "root-vm", feature = "util-namespace"))]
 
-use std::cell::Cell;
 use bp3d_lua::decl_closure;
 use bp3d_lua::util::Namespace;
 use bp3d_lua::vm::closure::context::{CellMut, ContextMut};
 use bp3d_lua::vm::closure::types::RClosure;
 use bp3d_lua::vm::RootVm;
+use std::cell::Cell;
 
 struct TestContext {
     value: i32,
@@ -150,7 +150,8 @@ fn test_vm_context() {
 fn test_vm_rust_closure_2() {
     let vm = RootVm::new();
     let top = vm.top();
-    let (closure, _guard) = RClosure::from_rust_temporary(&vm, |val: f32| format!("this is a test: {}", val));
+    let (closure, _guard) =
+        RClosure::from_rust_temporary(&vm, |val: f32| format!("this is a test: {}", val));
     vm.set_global(c"test", closure).unwrap();
     assert_eq!(top, vm.top());
     let s: &str = vm.run_code(c"return test(42.42)").unwrap();
@@ -169,7 +170,8 @@ fn test_vm_rust_closure_3() {
         vm.set_global(c"test2", fun2)?;
         vm.run_code::<()>(c"assert(test() == 0)")?;
         vm.run_code::<()>(c"test2(42)")
-    }).unwrap();
+    })
+    .unwrap();
     assert!(vm.run_code::<()>(c"test()").is_err());
     assert!(vm.run_code::<()>(c"test2(4242)").is_err());
     assert_eq!(value.get(), 42);

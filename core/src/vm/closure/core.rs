@@ -29,12 +29,12 @@
 use crate::ffi::lua::GLOBALSINDEX;
 use crate::vm::closure::{FromUpvalue, IntoUpvalue, Upvalue};
 use crate::vm::function::IntoParam;
+use crate::vm::userdata::AnyUserData;
 use crate::vm::value::types::RawPtr;
 use crate::vm::value::{FromLua, IntoLua};
 use crate::vm::Vm;
 use std::ffi::OsStr;
 use std::path::Path;
-use crate::vm::userdata::AnyUserData;
 
 macro_rules! impl_from_upvalue_using_from_lua_unchecked {
     ($($t: ty),*) => {

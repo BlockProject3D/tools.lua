@@ -26,21 +26,21 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::marker::PhantomData;
 use crate::ffi::laux::luaL_error;
 use crate::ffi::lua::{lua_newuserdata, lua_touserdata, State};
-use crate::vm::closure::FromUpvalue;
 use crate::vm::closure::types::RClosure;
+use crate::vm::closure::FromUpvalue;
 use crate::vm::function::{FromParam, IntoParam};
 use crate::vm::userdata::AnyUserData;
 use crate::vm::value::types::RawPtr;
 use crate::vm::Vm;
+use std::marker::PhantomData;
 
 pub struct Guard<'a, F> {
     ptr: *mut *const F,
     #[allow(unused)] // Hold the box until the guard should drop and delete the Box with it.
     bx: Box<F>,
-    vm: PhantomData<&'a Vm>
+    vm: PhantomData<&'a Vm>,
 }
 
 impl<'a, F> Drop for Guard<'a, F> {
@@ -50,10 +50,13 @@ impl<'a, F> Drop for Guard<'a, F> {
 }
 
 impl<'a> RClosure<AnyUserData<'a>> {
-    pub fn from_rust_temporary<'b, T, R, F: Fn(T) -> R + 'a>(vm: &'a Vm, fun: F) -> (RClosure<AnyUserData<'a>>, Guard<'a, F>)
+    pub fn from_rust_temporary<'b, T, R, F: Fn(T) -> R + 'a>(
+        vm: &'a Vm,
+        fun: F,
+    ) -> (RClosure<AnyUserData<'a>>, Guard<'a, F>)
     where
-            T: FromParam<'b>,
-            R: IntoParam
+        T: FromParam<'b>,
+        R: IntoParam,
     {
         let bx = Box::new(fun);
         let rptr = &*bx as *const F;
@@ -63,34 +66,46 @@ impl<'a> RClosure<AnyUserData<'a>> {
         let value = unsafe { AnyUserData::from_raw(vm, vm.top()) };
         extern "C-unwind" fn _cfunc<'a, T, R, F: Fn(T) -> R>(l: State) -> i32
         where
-                T: FromParam<'a>,
-                R: IntoParam,
+            T: FromParam<'a>,
+            R: IntoParam,
         {
             let vm = unsafe { Vm::from_raw(l) };
             let upvalue: RawPtr<*const F> = unsafe { FromUpvalue::from_upvalue(&vm, 1) };
             let args: T = unsafe { FromParam::from_param(std::mem::transmute(&vm), 1) };
             let ptr = unsafe { *upvalue.as_ptr() };
             if ptr.is_null() {
-                unsafe { luaL_error(vm.as_ptr(), c"Attempt to call a dropped temporary rust closure".as_ptr()) };
+                unsafe {
+                    luaL_error(
+                        vm.as_ptr(),
+                        c"Attempt to call a dropped temporary rust closure".as_ptr(),
+                    )
+                };
                 unsafe { std::hint::unreachable_unchecked() };
             }
             let res = unsafe { (*ptr)(args) };
             res.into_param(&vm) as _
         }
-        (RClosure::new(_cfunc::<T, R, F>, value), Guard { ptr, bx, vm: PhantomData })
+        (
+            RClosure::new(_cfunc::<T, R, F>, value),
+            Guard {
+                ptr,
+                bx,
+                vm: PhantomData,
+            },
+        )
     }
 }
 
 impl RClosure<RawPtr<()>> {
     fn __from_rust<'a, T, R, F: Fn(T) -> R + 'static>(ptr: *mut F) -> Self
     where
-            T: FromParam<'a>,
-            R: IntoParam
+        T: FromParam<'a>,
+        R: IntoParam,
     {
         extern "C-unwind" fn _cfunc<'a, T, R, F: Fn(T) -> R>(l: State) -> i32
         where
-                T: FromParam<'a>,
-                R: IntoParam,
+            T: FromParam<'a>,
+            R: IntoParam,
         {
             let vm = unsafe { Vm::from_raw(l) };
             let upvalue: RawPtr<F> = unsafe { FromUpvalue::from_upvalue(&vm, 1) };
@@ -104,9 +119,9 @@ impl RClosure<RawPtr<()>> {
     #[cfg(feature = "send")]
     pub fn from_rust<'a, T, R, F: Fn(T) -> R + 'static>(vm: &Vm, fun: F) -> Self
     where
-            T: FromParam<'a>,
-            R: IntoParam,
-            F: Send,
+        T: FromParam<'a>,
+        R: IntoParam,
+        F: Send,
     {
         let ptr = crate::vm::core::destructor::Pool::attach_send(vm, Box::new(fun));
         Self::__from_rust(ptr)
@@ -115,8 +130,8 @@ impl RClosure<RawPtr<()>> {
     #[cfg(not(feature = "send"))]
     pub fn from_rust<'a, T, R, F: Fn(T) -> R + 'static>(vm: &Vm, fun: F) -> Self
     where
-            T: FromParam<'a>,
-            R: IntoParam,
+        T: FromParam<'a>,
+        R: IntoParam,
     {
         let ptr = crate::vm::core::destructor::Pool::attach(vm, Box::new(fun));
         Self::__from_rust(ptr)
