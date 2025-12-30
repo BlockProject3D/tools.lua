@@ -50,25 +50,25 @@ impl<'a, F> Drop for Guard<'a, F> {
 }
 
 impl<'a> RClosure<AnyUserData<'a>> {
-    pub fn from_rust_temporary<T, R, F: FnMut(T) -> R + 'a>(vm: &'a Vm, fun: F) -> (RClosure<AnyUserData<'a>>, Guard<'a, F>)
+    pub fn from_rust_temporary<'b, T, R, F: Fn(T) -> R + 'a>(vm: &'a Vm, fun: F) -> (RClosure<AnyUserData<'a>>, Guard<'a, F>)
     where
-            for<'b> T: FromParam<'b>,
+            T: FromParam<'b>,
             R: IntoParam
     {
-        let mut bx = Box::new(fun);
-        let rptr = &mut *bx as *mut F;
-        unsafe { lua_newuserdata(vm.as_ptr(), size_of::<*mut F>()) };
+        let bx = Box::new(fun);
+        let rptr = &*bx as *const F;
+        unsafe { lua_newuserdata(vm.as_ptr(), size_of::<*const F>()) };
         let ptr = unsafe { lua_touserdata(vm.as_ptr(), -1) } as *mut *const F;
         unsafe { *ptr = rptr };
         let value = unsafe { AnyUserData::from_raw(vm, vm.top()) };
-        extern "C-unwind" fn _cfunc<T, R, F: FnMut(T) -> R>(l: State) -> i32
+        extern "C-unwind" fn _cfunc<'a, T, R, F: Fn(T) -> R>(l: State) -> i32
         where
-                for<'a> T: FromParam<'a>,
+                T: FromParam<'a>,
                 R: IntoParam,
         {
             let vm = unsafe { Vm::from_raw(l) };
-            let upvalue: RawPtr<*mut F> = unsafe { FromUpvalue::from_upvalue(&vm, 1) };
-            let args: T = unsafe { FromParam::from_param(&vm, 1) };
+            let upvalue: RawPtr<*const F> = unsafe { FromUpvalue::from_upvalue(&vm, 1) };
+            let args: T = unsafe { FromParam::from_param(std::mem::transmute(&vm), 1) };
             let ptr = unsafe { *upvalue.as_ptr() };
             if ptr.is_null() {
                 unsafe { luaL_error(vm.as_ptr(), c"Attempt to call a dropped temporary rust closure".as_ptr()) };
@@ -82,19 +82,19 @@ impl<'a> RClosure<AnyUserData<'a>> {
 }
 
 impl RClosure<RawPtr<()>> {
-    fn __from_rust<T, R, F: Fn(T) -> R + 'static>(ptr: *mut F) -> Self
+    fn __from_rust<'a, T, R, F: Fn(T) -> R + 'static>(ptr: *mut F) -> Self
     where
-            for<'a> T: FromParam<'a>,
+            T: FromParam<'a>,
             R: IntoParam
     {
-        extern "C-unwind" fn _cfunc<T, R, F: Fn(T) -> R>(l: State) -> i32
+        extern "C-unwind" fn _cfunc<'a, T, R, F: Fn(T) -> R>(l: State) -> i32
         where
-                for<'a> T: FromParam<'a>,
+                T: FromParam<'a>,
                 R: IntoParam,
         {
             let vm = unsafe { Vm::from_raw(l) };
             let upvalue: RawPtr<F> = unsafe { FromUpvalue::from_upvalue(&vm, 1) };
-            let args: T = unsafe { FromParam::from_param(&vm, 1) };
+            let args: T = unsafe { FromParam::from_param(std::mem::transmute(&vm), 1) };
             let res = unsafe { (*upvalue.as_ptr())(args) };
             res.into_param(&vm) as _
         }
@@ -102,9 +102,9 @@ impl RClosure<RawPtr<()>> {
     }
 
     #[cfg(feature = "send")]
-    pub fn from_rust<T, R, F: Fn(T) -> R + 'static>(vm: &Vm, fun: F) -> Self
+    pub fn from_rust<'a, T, R, F: Fn(T) -> R + 'static>(vm: &Vm, fun: F) -> Self
     where
-            for<'a> T: FromParam<'a>,
+            T: FromParam<'a>,
             R: IntoParam,
             F: Send,
     {
@@ -113,9 +113,9 @@ impl RClosure<RawPtr<()>> {
     }
 
     #[cfg(not(feature = "send"))]
-    pub fn from_rust<T, R, F: Fn(T) -> R + 'static>(vm: &Vm, fun: F) -> Self
+    pub fn from_rust<'a, T, R, F: Fn(T) -> R + 'static>(vm: &Vm, fun: F) -> Self
     where
-            for<'a> T: FromParam<'a>,
+            T: FromParam<'a>,
             R: IntoParam,
     {
         let ptr = crate::vm::core::destructor::Pool::attach(vm, Box::new(fun));
