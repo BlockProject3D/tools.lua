@@ -64,6 +64,34 @@ impl<T> Cell<T> {
             ud: self.ptr,
         }
     }
+
+    /// Unsafely binds a reference to this [Cell].
+    ///
+    /// # Arguments
+    ///
+    /// * `obj`: the reference to the context object.
+    ///
+    /// returns: ()
+    ///
+    /// # Safety
+    ///
+    /// The given object must be valid until a call to unbind, the [bind](Cell::bind) function must
+    /// also never be called until a call to [unbind_unchecked](Cell::unbind_unchecked). If any of
+    /// these constrains are not satisfied, this function is UB.
+    #[inline(always)]
+    pub unsafe fn bind_unchecked(&mut self, obj: &T) {
+        *self.ptr = obj as _;
+    }
+
+    /// Unsafely unbinds the current reference bound in this [Cell].
+    ///
+    /// # Safety
+    ///
+    /// No [Guard] should exist at this point otherwise this is UB.
+    #[inline(always)]
+    pub unsafe fn unbind_unchecked(&mut self) {
+        *self.ptr = std::ptr::null();
+    }
 }
 
 pub struct CellMut<T> {
@@ -91,6 +119,34 @@ impl<T> CellMut<T> {
             useless: PhantomData,
             ud: self.ptr,
         }
+    }
+
+    /// Unsafely binds a reference to this [CellMut].
+    ///
+    /// # Arguments
+    ///
+    /// * `obj`: the reference to the context object.
+    ///
+    /// returns: ()
+    ///
+    /// # Safety
+    ///
+    /// The given object must be valid until a call to unbind, the [bind](CellMut::bind) function must
+    /// also never be called until a call to [unbind_unchecked](CellMut::unbind_unchecked). If any of
+    /// these constrains are not satisfied, this function is UB.
+    #[inline(always)]
+    pub unsafe fn bind_unchecked(&mut self, obj: &mut T) {
+        *self.ptr = obj as _;
+    }
+
+    /// Unsafely unbinds the current reference bound in this [CellMut].
+    ///
+    /// # Safety
+    ///
+    /// No [Guard] should exist at this point otherwise this is UB.
+    #[inline(always)]
+    pub unsafe fn unbind_unchecked(&mut self) {
+        *self.ptr = std::ptr::null();
     }
 }
 
@@ -156,7 +212,18 @@ impl<T> Drop for Guard<'_, T> {
 pub struct Ref<'a, T>(&'a T);
 
 #[repr(transparent)]
-pub struct Mut<'a, T>(&'a mut T);
+pub struct MutPtr<T>(*mut *mut T);
+
+impl<T> MutPtr<T> {
+    pub fn borrow<'a>(self) -> Mut<'a, T> {
+        let value = unsafe { &mut **self.0 };
+        unsafe { *self.0 = std::ptr::null_mut() };
+        Mut {
+            value,
+            ptr: self.0
+        }
+    }
+}
 
 impl<T: 'static> Deref for Ref<'_, T> {
     type Target = T;
@@ -167,24 +234,36 @@ impl<T: 'static> Deref for Ref<'_, T> {
     }
 }
 
+pub struct Mut<'a, T> {
+    value: &'a mut T,
+    ptr: *mut *mut T
+}
+
+impl<'a, T> Drop for Mut<'a, T> {
+    #[inline(always)]
+    fn drop(&mut self) {
+        unsafe { *self.ptr = self.value as *mut _ };
+    }
+}
+
 impl<T: 'static> Deref for Mut<'_, T> {
     type Target = T;
 
     #[inline(always)]
     fn deref(&self) -> &Self::Target {
-        self.0
+        self.value
     }
 }
 
 impl<T: 'static> DerefMut for Mut<'_, T> {
     #[inline(always)]
     fn deref_mut(&mut self) -> &mut Self::Target {
-        self.0
+        self.value
     }
 }
 
 unsafe impl<T: 'static> SimpleDrop for Ref<'_, T> {}
-unsafe impl<T: 'static> SimpleDrop for Mut<'_, T> {}
+unsafe impl<T: 'static> SimpleDrop for MutPtr<T> {}
 
 impl<'a, T: 'static> FromUpvalue<'a> for Ref<'a, T> {
     unsafe fn from_upvalue(vm: &'a Vm, index: i32) -> Self {
@@ -197,11 +276,11 @@ impl<'a, T: 'static> FromUpvalue<'a> for Ref<'a, T> {
             // luaL_error raises a lua exception and unwinds, so this cannot be reached.
             std::hint::unreachable_unchecked();
         }
-        Ref(unsafe { &**ptr.as_ptr() })
+        Ref(&**ptr.as_ptr())
     }
 }
 
-impl<'a, T: 'static> FromUpvalue<'a> for Mut<'a, T> {
+impl<'a, T: 'static> FromUpvalue<'a> for MutPtr<T> {
     unsafe fn from_upvalue(vm: &'a Vm, index: i32) -> Self {
         let ptr: RawPtr<*mut T> = FromUpvalue::from_upvalue(vm, index);
         if (*ptr.as_ptr()).is_null() {
@@ -212,7 +291,7 @@ impl<'a, T: 'static> FromUpvalue<'a> for Mut<'a, T> {
             // luaL_error raises a lua exception and unwinds, so this cannot be reached.
             std::hint::unreachable_unchecked();
         }
-        Mut(unsafe { &mut **ptr.as_ptr() })
+        MutPtr(ptr.as_mut_ptr())
     }
 }
 
@@ -235,5 +314,5 @@ impl<T: 'static> Upvalue for Context<T> {
 }
 
 impl<T: 'static> Upvalue for ContextMut<T> {
-    type From<'a> = Mut<'a, T>;
+    type From<'a> = MutPtr<T>;
 }

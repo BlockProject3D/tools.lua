@@ -38,14 +38,14 @@ struct TestContext {
 
 decl_closure! {
     fn context_push |ctx: ContextMut<TestContext>| (val: u64) -> () {
-        let mut ctx = ctx;
+        let mut ctx = ctx.borrow();
         ctx.value3.push(val);
     }
 }
 
 decl_closure! {
     fn context_pop |ctx: ContextMut<TestContext>| () -> Option<u64> {
-        let mut ctx = ctx;
+        let mut ctx = ctx.borrow();
         ctx.value3.pop()
     }
 }
