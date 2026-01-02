@@ -1,4 +1,4 @@
-// Copyright (c) 2025, BlockProject 3D
+// Copyright (c) 2026, BlockProject 3D
 //
 // All rights reserved.
 //
@@ -52,31 +52,35 @@ decl_lib_func! {
 
 impl_userdata! {
     impl PathWrapper {
-        fn join(this: &Path, vm: &Vm, other: SandboxPath) -> Result<PathWrapper, SandboxError> {
+        fn join(this: &PathWrapper, vm: &Vm, other: SandboxPath) -> Result<PathWrapper, SandboxError> {
             let path = other.to_str(vm)?;
             Ok(PathWrapper(this.0.join(path.as_ref())))
         }
 
-        fn with_extension(this: &Path, extension: &str) -> PathWrapper {
+        fn with_extension(this: &PathWrapper, extension: &str) -> PathWrapper {
             PathWrapper(this.0.with_extension(extension))
         }
 
-        fn with_name(this: &Path, name: &str) -> PathWrapper {
+        fn with_name(this: &PathWrapper, name: &str) -> PathWrapper {
             let mut path = this.0.clone();
             path.set_file_name(name);
             PathWrapper(path)
         }
 
-        fn name(this: &Path) -> Option<String> {
+        fn name(this: &PathWrapper) -> Option<String> {
             this.0.file_name().map(|v| v.to_string_lossy().into())
         }
 
-        fn extension(this: &Path) -> Option<String> {
+        fn extension(this: &PathWrapper) -> Option<String> {
             this.0.extension().map(|v| v.to_string_lossy().into())
         }
 
-        fn __tostring<'a>(this: &Path, vm: &Vm) -> Cow<'a, str> {
+        fn __tostring<'a>(this: &PathWrapper, vm: &Vm) -> Cow<'a, str> {
             sandbox(vm, &this.0).unwrap_or(Cow::Borrowed("<sandbox error>"))
+        }
+
+        fn __eq(this: &PathWrapper, other: SandboxPath) -> bool {
+            SandboxPath::Path(this.path()) == other
         }
     }
     static {
