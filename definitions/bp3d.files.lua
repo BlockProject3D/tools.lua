@@ -166,3 +166,14 @@ bp3d.files.list = function(path) end
 --- @param path string | Path
 --- @return { r: boolean, w: boolean, x: boolean }
 bp3d.files.access = function(path) end
+
+--- Deletes a single file.
+---
+--- @param path string | Path file path.
+bp3d.files.delete = function(path) end
+
+--- Renames a file. This function fails if src does not exist or if dst already exists.
+---
+--- @param src string | Path the source path.
+--- @param dst string | Path the destination path.
+bp3d.files.rename = function(src, dst) end

@@ -1,4 +1,4 @@
-// Copyright (c) 2025, BlockProject 3D
+// Copyright (c) 2026, BlockProject 3D
 //
 // All rights reserved.
 //
@@ -57,6 +57,8 @@ impl Lib for Files {
             ("createDir", RFunction::wrap(lib::create_dir)),
             ("deleteDir", RFunction::wrap(lib::delete_dir)),
             ("access", RFunction::wrap(lib::lua_access)),
+            ("delete", RFunction::wrap(lib::delete)),
+            ("rename", RFunction::wrap(lib::rename))
         ])
     }
 }

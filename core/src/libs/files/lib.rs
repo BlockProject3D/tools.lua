@@ -1,4 +1,4 @@
-// Copyright (c) 2025, BlockProject 3D
+// Copyright (c) 2026, BlockProject 3D
 //
 // All rights reserved.
 //
@@ -32,7 +32,7 @@ use crate::libs::files::SandboxPath;
 use crate::vm::table::Table;
 use bp3d_util::simple_error;
 use std::fs::File;
-use std::io::Read;
+use std::io::{ErrorKind, Read};
 
 const MAX_FILE_SIZE: usize = 5000000; //5Mb
 
@@ -195,5 +195,38 @@ decl_lib_func! {
             tbl.set(c"x", false)?;
         }
         Ok(tbl)
+    }
+}
+
+decl_lib_func! {
+    pub fn delete(vm: &Vm, path: SandboxPath) -> Result<(), Error> {
+        if !(path.access(vm) & Permissions::W) {
+            return Err(Error::Permission);
+        }
+        let path = path.to_path(vm).map_err(|_| Error::Sandbox)?;
+        std::fs::remove_file(path).map_err(Error::Io)
+    }
+}
+
+decl_lib_func! {
+    pub fn rename(vm: &Vm, src: SandboxPath, dst: SandboxPath) -> Result<(), Error> {
+        if !(src.access(vm) & Permissions::W) {
+            return Err(Error::Permission);
+        }
+        if !(src.access(vm) & Permissions::R) {
+            return Err(Error::Permission);
+        }
+        if !(dst.access(vm) & Permissions::W) {
+            return Err(Error::Permission);
+        }
+        let src_path = src.to_path(vm).map_err(|_| Error::Sandbox)?;
+        let dst_path = dst.to_path(vm).map_err(|_| Error::Sandbox)?;
+        if !src_path.exists() {
+            return Err(Error::Io(std::io::Error::new(ErrorKind::NotFound, "source file not found")));
+        }
+        if dst_path.exists() {
+            return Err(Error::Io(std::io::Error::new(ErrorKind::AlreadyExists, "destination file already exists")));
+        }
+        std::fs::rename(src_path, dst_path).map_err(Error::Io)
     }
 }
