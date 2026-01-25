@@ -1,4 +1,4 @@
-// Copyright (c) 2025, BlockProject 3D
+// Copyright (c) 2026, BlockProject 3D
 //
 // All rights reserved.
 //
@@ -188,7 +188,15 @@ extern "C" {
         l: State,
         reader: Reader,
         dt: *mut c_void,
+        chunkname: *const c_char
+    ) -> ThreadStatus;
+
+    pub fn lua_loadx(
+        l: State,
+        reader: Reader,
+        dt: *mut c_void,
         chunkname: *const c_char,
+        mode: *const c_char
     ) -> ThreadStatus;
 
     pub fn lua_dump(l: State, writer: Writer, data: *mut c_void) -> c_int;
