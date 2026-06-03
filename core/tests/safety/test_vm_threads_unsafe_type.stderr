@@ -14,15 +14,15 @@ error[E0597]: `vm` does not live long enough
 note: requirements that the value outlives `'static` introduced here
   --> src/vm/core/vm.rs
    |
-   |     pub fn get_global<'a, R: FromLua<'a>>(&'a self, name: impl AnyStr) -> crate::vm::Result<R> {
+   |     pub fn get_global<'a, R: FromLua<'a>>(&'a self, name: impl AnyStr) ...
    |                              ^^^^^^^^^^^
    |
   ::: src/vm/thread/core.rs
    |
-   |     pub fn resume<'b, T: FromLua<'b>>(&'b self, args: impl IntoLua) -> crate::vm::Result<Output<T>>
+   |     pub fn resume<'b, T: FromLua<'b>>(&'b self, args: impl IntoLua) -> ...
    |                          ^^^^^^^^^^^
    |     where
-   |         T: 'static, /* This clause ensures that a future call to collectgarbage or resume does
+   |         T: 'static, /* This clause ensures that a future call to collec...
    |            ^^^^^^^
 
 error[E0597]: `thread` does not live long enough
@@ -42,8 +42,8 @@ error[E0597]: `thread` does not live long enough
 note: requirements that the value outlives `'static` introduced here
   --> src/vm/thread/core.rs
    |
-   |     pub fn resume<'b, T: FromLua<'b>>(&'b self, args: impl IntoLua) -> crate::vm::Result<Output<T>>
+   |     pub fn resume<'b, T: FromLua<'b>>(&'b self, args: impl IntoLua) -> ...
    |                          ^^^^^^^^^^^
    |     where
-   |         T: 'static, /* This clause ensures that a future call to collectgarbage or resume does
+   |         T: 'static, /* This clause ensures that a future call to collec...
    |            ^^^^^^^

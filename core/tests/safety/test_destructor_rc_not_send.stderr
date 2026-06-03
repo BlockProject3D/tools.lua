@@ -5,5 +5,9 @@ error[E0277]: `std::rc::Rc<UnSendType>` cannot be sent between threads safely
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `std::rc::Rc<UnSendType>` cannot be sent between threads safely
    |
    = help: the trait `Send` is not implemented for `std::rc::Rc<UnSendType>`
-   = help: the trait `RawSend` is implemented for `std::sync::Arc<T>`
+help: the trait `RawSend` is implemented for `std::sync::Arc<T>`
+  --> src/vm/core/destructor.rs
+   |
+   | impl<T: Send + Sync> RawSend for Arc<T> {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    = note: required for `std::rc::Rc<UnSendType>` to implement `RawSend`

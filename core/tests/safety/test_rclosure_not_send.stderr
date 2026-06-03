@@ -22,13 +22,13 @@ note: required because it appears within the type `UnSendType`
 note: required because it's used within this closure
   --> tests/safety/test_rclosure_not_send.rs:40:30
    |
-40 |     RClosure::from_rust(&vm, move |val: f32| format!("this is a test: {} - {:?}", val, ty));
+40 |     RClosure::from_rust(&vm, move |val: f32| format!("this is a test: {...
    |                              ^^^^^^^^^^^^^^^
 note: required by a bound in `closure::rust::<impl RClosure<RawPtr<()>>>::from_rust`
   --> src/vm/closure/rust.rs
    |
-   |     pub fn from_rust<'a, T, R, F: Fn(T) -> R + 'static>(vm: &Vm, fun: F) -> Self
+   |     pub fn from_rust<'a, T, R, F: Fn(T) -> R + 'static>(vm: &Vm, fun: F...
    |            --------- required by a bound in this associated function
 ...
-   |             F: Send,
-   |                ^^^^ required by this bound in `closure::rust::<impl RClosure<RawPtr<()>>>::from_rust`
+   |         F: Send,
+   |            ^^^^ required by this bound in `closure::rust::<impl RClosure<RawPtr<()>>>::from_rust`

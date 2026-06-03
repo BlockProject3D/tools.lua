@@ -5,7 +5,11 @@ error[E0277]: `*const ()` cannot be sent between threads safely
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `*const ()` cannot be sent between threads safely
    |
    = help: within `UnSendType`, the trait `Send` is not implemented for `*const ()`
-   = help: the trait `RawSend` is implemented for `std::sync::Arc<T>`
+help: the trait `RawSend` is implemented for `std::sync::Arc<T>`
+  --> src/vm/core/destructor.rs
+   |
+   | impl<T: Send + Sync> RawSend for Arc<T> {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 note: required because it appears within the type `PhantomData<*const ()>`
   --> $RUST/core/src/marker.rs
    |
@@ -16,7 +20,7 @@ note: required because it appears within the type `UnSendType`
    |
 34 | struct UnSendType(PhantomData<*const ()>);
    |        ^^^^^^^^^^
-   = note: required for `Unique<UnSendType>` to implement `Send`
+   = note: required for `std::ptr::Unique<UnSendType>` to implement `Send`
 note: required because it appears within the type `Box<UnSendType>`
   --> $RUST/alloc/src/boxed.rs
    |
