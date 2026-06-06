@@ -1,4 +1,4 @@
-// Copyright (c) 2025, BlockProject 3D
+// Copyright (c) 2026, BlockProject 3D
 //
 // All rights reserved.
 //
@@ -31,7 +31,8 @@ use crate::ffi::lua::lua_close;
 use crate::vm::core::destructor::Pool;
 use crate::vm::registry::named::{handle_root_vm_init, handle_root_vm_uninit};
 use crate::vm::Vm;
-use bp3d_debug::debug;
+use bp3d_debug::{debug, error, warning};
+use crate::util::LuaThread;
 
 #[cfg(not(feature = "send"))]
 thread_local! {
@@ -62,6 +63,12 @@ impl UnsafeRootVm {
 
 impl Drop for UnsafeRootVm {
     fn drop(&mut self) {
+        debug_assert_eq!(LuaThread::get_live_threads(&self.0), 0);
+        if LuaThread::get_live_threads(&self.0) > 0 {
+            error!("Unable to delete RootVm, there are still live threads!");
+            warning!("The underlying lua VM will be leaked!");
+            return;
+        }
         debug!("Deleting destructor pool");
         let funcs = Pool::extract_post_close(&mut self.0);
         unsafe {

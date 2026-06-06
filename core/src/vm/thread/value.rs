@@ -1,4 +1,4 @@
-// Copyright (c) 2025, BlockProject 3D
+// Copyright (c) 2026, BlockProject 3D
 //
 // All rights reserved.
 //
@@ -37,7 +37,7 @@ use std::fmt::{Debug, Display};
 
 /// Represents a thread object value on a lua stack.
 pub struct Thread<'a> {
-    pub(super) vm: &'a Vm,
+    pub(crate) vm: &'a Vm,
     index: i32,
     thread: core::Thread<'static>,
 }

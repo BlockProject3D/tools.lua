@@ -7,7 +7,7 @@ error[E0277]: `*mut c_void` cannot be sent between threads safely
    |  _____|__________________within this `{closure@$DIR/tests/safety/test_multi_root_vms_not_send.rs:33:24: 33:31}`
    | |     |
    | |     required by a bound introduced by this call
-34 | |         // Should fail to build because UnSendRootVm is not supposed ...
+34 | |         // Should fail to build because UnSendRootVm is not supposed to be Send.
 35 | |         root.run_code::<()>(c"").unwrap();
 36 | |     });
    | |_____^ `*mut c_void` cannot be sent between threads safely

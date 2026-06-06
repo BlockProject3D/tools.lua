@@ -27,7 +27,12 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::vm::registry::core::Key;
+use crate::vm::registry::types::LuaRef;
+use crate::vm::registry::lua_ref::LuaRef as LuaRefV;
+use crate::vm::registry::named::Key as NamedKey;
 use crate::vm::Vm;
+
+static KEY: NamedKey<LuaRef<u32>> = NamedKey::new("__live_threads__");
 
 pub struct LuaThread {
     key: Key<crate::vm::registry::types::Thread>,
@@ -38,13 +43,18 @@ impl LuaThread {
     pub fn create(value: crate::vm::thread::value::Thread) -> Self {
         let thread =
             unsafe { crate::vm::thread::core::Thread::from_raw(value.as_thread().as_ptr()) };
+        let _ = value.vm.scope(|vm| {
+            let v = KEY.push(value.vm).map(|v| v.get()).unwrap_or(0);
+            let val = LuaRefV::new(vm, v + 1);
+            KEY.set(val);
+            Ok(())
+        });
         Self {
             key: Key::new(value),
             thread,
         }
     }
 
-    //TODO: Check if this is indeed safe.
     #[inline(always)]
     pub fn as_thread(&self) -> &crate::vm::thread::core::Thread<'static> {
         &self.thread
@@ -52,7 +62,20 @@ impl LuaThread {
 
     #[inline(always)]
     pub fn delete(self, vm: &Vm) {
+        let _ = vm.scope(|vm| {
+            let v = KEY.push(vm).map(|v| v.get()).unwrap_or(0);
+            let val = LuaRefV::new(vm, v - 1);
+            KEY.set(val);
+            Ok(())
+        });
         self.key.delete(vm)
+    }
+
+    pub fn get_live_threads(vm: &Vm) -> u32 {
+        vm.scope(|vm| {
+            let v = KEY.push(vm).map(|v| v.get()).unwrap_or(0);
+            Ok(v)
+        }).unwrap()
     }
 }
 
