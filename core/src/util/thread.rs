@@ -1,4 +1,4 @@
-// Copyright (c) 2025, BlockProject 3D
+// Copyright (c) 2026, BlockProject 3D
 //
 // All rights reserved.
 //
@@ -55,3 +55,45 @@ impl LuaThread {
         self.key.delete(vm)
     }
 }
+
+#[cfg(feature="send")]
+pub struct UnsafeLuaThread(LuaThread);
+
+#[cfg(feature="send")]
+impl UnsafeLuaThread {
+    /// Creates an unsafe [LuaThread].
+    ///
+    /// # Safety
+    ///
+    /// WARNING: Only use this type if you know what you're doing, this type exists only as a way
+    /// to bypass Rust thread safety rules in certain cases where using a Lua context across threads
+    /// is possible by construction or external synchronization primitives.
+    ///
+    /// An unsafe [LuaThread] is only available with the send feature which ensures registry keys
+    /// are safe to share across threads. This however does not make using Lua across threads safe.
+    ///
+    /// The user of this method shall make sure the result [UnsafeLuaThread] is not used by multiple
+    /// threads in parallel; failure to do so will result in complete UB.
+    ///
+    /// # Arguments
+    ///
+    /// * `thread`: the safe [LuaThread] to wrap.
+    ///
+    /// returns: SendLuaThread
+    pub unsafe fn wrap(thread: LuaThread) -> Self {
+        Self(thread)
+    }
+
+    #[inline(always)]
+    pub fn as_thread(&self) -> &crate::vm::thread::core::Thread<'static> {
+        self.0.as_thread()
+    }
+
+    #[inline(always)]
+    pub fn delete(self, vm: &Vm) {
+        self.0.delete(vm)
+    }
+}
+
+#[cfg(feature="send")]
+unsafe impl Send for UnsafeLuaThread {}
