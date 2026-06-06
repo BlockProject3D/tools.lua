@@ -1,0 +1,10 @@
+[package]
+name = "bp3d-lua-build"
+version = "1.0.0-rc.1.0.0"
+edition = "2024"
+publish = false
+
+[dependencies]
+bp3d-os = { version = "2.2.3", features = ["fs"] }
+phf = { version = "0.11.3", features = ["macros"] }
+cc = "1.2.15"

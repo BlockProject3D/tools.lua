@@ -1,0 +1,118 @@
+diff --git a/src/lj_err.c b/src/lj_err.c
+index 03b5030b..8a1377e6 100644
+--- a/src/lj_err.c
++++ b/src/lj_err.c
+@@ -175,7 +175,7 @@ static void *err_unwind(lua_State *L, void *stopcf, int errcode)
+     case FRAME_PCALLH:  /* FF pcall() frame inside hook. */
+       if (errcode) {
+ 	global_State *g;
+-	if (errcode == LUA_YIELD) {
++	if (errcode == LUA_YIELD || errcode == LUA_ERRCCATCH) {
+ 	  frame = frame_prevd(frame);
+ 	  break;
+ 	}
+@@ -825,7 +825,7 @@ LJ_NOINLINE void lj_err_mem(lua_State *L)
+ }
+ 
+ /* Find error function for runtime errors. Requires an extra stack traversal. */
+-static ptrdiff_t finderrfunc(lua_State *L)
++static ptrdiff_t finderrfunc(lua_State *L, int errcode)
+ {
+   cTValue *frame = L->base-1, *bot = tvref(L->stack)+LJ_FR2;
+   void *cf = L->cframe;
+@@ -864,6 +864,10 @@ static ptrdiff_t finderrfunc(lua_State *L)
+       break;
+     case FRAME_PCALL:
+     case FRAME_PCALLH:
++      if (errcode == LUA_ERRCCATCH) {
++        frame = frame_prevd(frame);
++        break;
++      }
+       if (frame_func(frame_prevd(frame))->c.ffid == FF_xpcall)
+ 	return savestack(L, frame_prevd(frame)+1);  /* xpcall's errorfunc. */
+       return 0;
+@@ -878,7 +882,7 @@ static ptrdiff_t finderrfunc(lua_State *L)
+ /* Runtime error. */
+ LJ_NOINLINE void LJ_FASTCALL lj_err_run(lua_State *L)
+ {
+-  ptrdiff_t ef = (LJ_HASJIT && tvref(G(L)->jit_base)) ? 0 : finderrfunc(L);
++  ptrdiff_t ef = (LJ_HASJIT && tvref(G(L)->jit_base)) ? 0 : finderrfunc(L, LUA_ERRRUN);
+   if (ef) {
+     TValue *errfunc, *top;
+     lj_state_checkstack(L, LUA_MINSTACK * 2);  /* Might raise new error. */
+@@ -899,6 +903,29 @@ LJ_NOINLINE void LJ_FASTCALL lj_err_run(lua_State *L)
+   lj_err_throw(L, LUA_ERRRUN);
+ }
+ 
++LJ_NOINLINE void LJ_FASTCALL lj_err_ccatch(lua_State *L)
++{
++  ptrdiff_t ef = (LJ_HASJIT && tvref(G(L)->jit_base)) ? 0 : finderrfunc(L, LUA_ERRCCATCH);
++  if (ef) {
++    TValue *errfunc, *top;
++    lj_state_checkstack(L, LUA_MINSTACK * 2);  /* Might raise new error. */
++    lj_trace_abort(G(L));
++    errfunc = restorestack(L, ef);
++    top = L->top;
++    if (!tvisfunc(errfunc) || L->status == LUA_ERRERR) {
++      setstrV(L, top-1, lj_err_str(L, LJ_ERR_ERRERR));
++      lj_err_throw(L, LUA_ERRERR);
++    }
++    L->status = LUA_ERRERR;
++    copyTV(L, top+LJ_FR2, top-1);
++    copyTV(L, top-1, errfunc);
++    if (LJ_FR2) setnilV(top++);
++    L->top = top+1;
++    lj_vm_call(L, top, 1+1);  /* Stack: |errfunc|msg| -> |msg| */
++  }
++  lj_err_throw(L, LUA_ERRCCATCH);
++}
++
+ /* Stack overflow error. */
+ void LJ_FASTCALL lj_err_stkov(lua_State *L)
+ {
+@@ -912,6 +939,8 @@ LJ_NOINLINE void LJ_FASTCALL lj_err_trace(lua_State *L, int errcode)
+ {
+   if (errcode == LUA_ERRRUN)
+     lj_err_run(L);
++  else if (errcode == LUA_ERRCCATCH)
++    lj_err_ccatch(L);
+   else
+     lj_err_throw(L, errcode);
+ }
+@@ -1122,6 +1151,12 @@ LUA_API int lua_error(lua_State *L)
+   return 0;  /* unreachable */
+ }
+ 
++LUA_API int lua_ext_ccatch_error(lua_State *L)
++{
++  lj_err_ccatch(L);
++  return 0;  /* unreachable */
++}
++
+ LUALIB_API int luaL_argerror(lua_State *L, int narg, const char *msg)
+ {
+   err_argmsg(L, narg, msg);
+diff --git a/src/lj_err.h b/src/lj_err.h
+index 0cb945b0..37b80a42 100644
+--- a/src/lj_err.h
++++ b/src/lj_err.h
+@@ -25,6 +25,7 @@ LJ_FUNCA_NORET void LJ_FASTCALL lj_err_throw(lua_State *L, int errcode);
+ LJ_FUNC_NORET void lj_err_mem(lua_State *L);
+ LJ_FUNC_NORET void LJ_FASTCALL lj_err_stkov(lua_State *L);
+ LJ_FUNC_NORET void LJ_FASTCALL lj_err_run(lua_State *L);
++LJ_FUNC_NORET void LJ_FASTCALL lj_err_ccatch(lua_State *L);
+ #if LJ_HASJIT
+ LJ_FUNCA_NORET void LJ_FASTCALL lj_err_trace(lua_State *L, int errcode);
+ #endif
+diff --git a/src/lua.h b/src/lua.h
+index 6d1634d1..0eb0917b 100644
+--- a/src/lua.h
++++ b/src/lua.h
+@@ -46,6 +46,7 @@
+ #define LUA_ERRSYNTAX	3
+ #define LUA_ERRMEM	4
+ #define LUA_ERRERR	5
++#define LUA_ERRCCATCH	6
+ 
+ 
+ typedef struct lua_State lua_State;

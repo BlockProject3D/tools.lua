@@ -1,0 +1,90 @@
+{
+    name: "send",
+    enums: [
+        {
+            name: "Type",
+            variants: {
+                "Terminate": 0,
+                "RunCode": 1,
+                "RunFile": 2
+            }
+        }
+    ],
+    structs: [
+        {
+            name: "Header",
+            fields: [
+                {
+                    name: "type",
+                    raw: {
+                        type: "unsigned",
+                        bits: 8
+                    },
+                    view: {
+                        type: "enum",
+                        name: "Type"
+                    }
+                }
+            ]
+        }
+    ],
+    messages: [
+        {
+            name: "RunFile",
+            fields: [
+                {
+                    name: "path",
+                    value: {
+                        type: "string"
+                    }
+                }
+            ]
+        },
+        {
+            name: "RunCode",
+            fields: [
+                {
+                    name: "name",
+                    optional: true,
+                    value: {
+                        type: "string"
+                    }
+                },
+                {
+                    name: "code",
+                    value: {
+                        type: "string"
+                    }
+                }
+            ]
+        },
+        {
+            name: "Main",
+            fields: [
+                {
+                    name: "hdr",
+                    item_type: "Header"
+                },
+                {
+                    name: "msg",
+                    header: "hdr",
+                    value: {
+                        type: "union",
+                        name: "Message"
+                    }
+                }
+            ]
+        }
+    ],
+    unions: [
+        {
+            name: "Message",
+            discriminant: "Header.type",
+            cases: [
+                { name: "Terminate", case: "Terminate" },
+                { name: "RunCode", case: "RunCode", item_type: "RunCode" },
+                { name: "RunFile", case: "RunFile", item_type: "RunFile" }
+            ]
+        }
+    ]
+}

@@ -1,0 +1,461 @@
+// Copyright (c) 2025, BlockProject 3D
+//
+// All rights reserved.
+//
+// Redistribution and use in source and binary forms, with or without modification,
+// are permitted provided that the following conditions are met:
+//
+//     * Redistributions of source code must retain the above copyright notice,
+//       this list of conditions and the following disclaimer.
+//     * Redistributions in binary form must reproduce the above copyright notice,
+//       this list of conditions and the following disclaimer in the documentation
+//       and/or other materials provided with the distribution.
+//     * Neither the name of BlockProject 3D nor the names of its contributors
+//       may be used to endorse or promote products derived from this software
+//       without specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+// "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+// LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+// A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
+// CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+// EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+// PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+// PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+// LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+// NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+// SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+use crate::ffi::ext::{
+    lua_ext_checkinteger64, lua_ext_checkuinteger64, lua_ext_fast_checkboolean,
+    lua_ext_fast_checkinteger, lua_ext_fast_checknumber, lua_ext_pushinteger64,
+    lua_ext_pushuinteger64,
+};
+use crate::ffi::laux::{
+    luaL_checkinteger, luaL_checklstring, luaL_checknumber, luaL_checkudata, luaL_testudata,
+};
+use crate::ffi::lua::{
+    lua_isnumber, lua_pushboolean, lua_pushinteger, lua_pushnil, lua_pushnumber, lua_toboolean,
+    lua_tointeger, lua_tonumber, lua_type, RawInteger, RawNumber, Type,
+};
+use crate::util::core::SimpleDrop;
+use crate::vm::function::{FromParam, IntoParam};
+use crate::vm::userdata::UserData;
+use crate::vm::util::{lua_rust_error, LuaType, TypeName};
+use crate::vm::value::types::{Boolean, Integer, Number};
+use crate::vm::value::{FromLua, IntoLua};
+use crate::vm::Vm;
+use std::borrow::Cow;
+use std::error::Error;
+use std::slice;
+
+impl<'a, T: FromParam<'a> + SimpleDrop> FromParam<'a> for Option<T> {
+    unsafe fn from_param(vm: &'a Vm, index: i32) -> Self {
+        let l = vm.as_ptr();
+        let ty = lua_type(l, index);
+        if ty == Type::Nil || ty == Type::None {
+            None
+        } else {
+            Some(T::from_param(vm, index))
+        }
+    }
+
+    fn try_from_param(vm: &'a Vm, index: i32) -> Option<Self> {
+        let l = vm.as_ptr();
+        let ty = unsafe { lua_type(l, index) };
+        if ty == Type::Nil || ty == Type::None {
+            None
+        } else {
+            Some(T::try_from_param(vm, index))
+        }
+    }
+}
+
+impl LuaType for &str {}
+
+impl<'a> FromParam<'a> for &'a str {
+    unsafe fn from_param(vm: &'a Vm, index: i32) -> Self {
+        let mut len: usize = 0;
+        let str = luaL_checklstring(vm.as_ptr(), index, &mut len as _);
+        let slice = slice::from_raw_parts(str as *const u8, len);
+        match std::str::from_utf8(slice) {
+            Ok(v) => v,
+            Err(e) => {
+                lua_rust_error(vm.as_ptr(), e);
+            }
+        }
+    }
+
+    #[inline(always)]
+    fn try_from_param(vm: &'a Vm, index: i32) -> Option<Self> {
+        FromLua::from_lua(vm, index).ok()
+    }
+}
+
+impl LuaType for &[u8] {}
+
+impl<'a> FromParam<'a> for &'a [u8] {
+    unsafe fn from_param(vm: &'a Vm, index: i32) -> Self {
+        let mut len: usize = 0;
+        let str = luaL_checklstring(vm.as_ptr(), index, &mut len as _);
+        let slice = slice::from_raw_parts(str as *const u8, len);
+        slice
+    }
+
+    #[inline(always)]
+    fn try_from_param(vm: &'a Vm, index: i32) -> Option<Self> {
+        FromLua::from_lua(vm, index).ok()
+    }
+}
+
+unsafe impl SimpleDrop for () {}
+
+impl LuaType for () {}
+
+impl FromParam<'_> for () {
+    unsafe fn from_param(_: &'_ Vm, _: i32) -> Self {
+        ()
+    }
+
+    fn try_from_param(_: &'_ Vm, _: i32) -> Option<Self> {
+        Some(())
+    }
+}
+
+unsafe impl IntoParam for &str {
+    #[inline(always)]
+    fn into_param(self, vm: &Vm) -> i32 {
+        IntoLua::into_lua(self, vm) as _
+    }
+}
+
+unsafe impl IntoParam for &[u8] {
+    #[inline(always)]
+    fn into_param(self, vm: &Vm) -> i32 {
+        IntoLua::into_lua(self, vm) as _
+    }
+}
+
+unsafe impl IntoParam for String {
+    #[inline(always)]
+    fn into_param(self, vm: &Vm) -> i32 {
+        (&*self).into_param(vm)
+    }
+}
+
+unsafe impl IntoParam for Box<[u8]> {
+    #[inline(always)]
+    fn into_param(self, vm: &Vm) -> i32 {
+        self.as_ref().into_param(vm)
+    }
+}
+
+unsafe impl<'a, T: IntoParam + Clone> IntoParam for Cow<'a, T>
+where
+    &'a T: IntoParam,
+{
+    fn into_param(self, vm: &Vm) -> i32 {
+        match self {
+            Cow::Borrowed(v) => v.into_param(vm),
+            Cow::Owned(v) => v.into_param(vm),
+        }
+    }
+}
+
+macro_rules! impl_integer_ty {
+    ($($t: ty),*) => {
+        $(
+            unsafe impl SimpleDrop for $t {}
+
+            impl LuaType for $t {
+                fn lua_type() -> Vec<TypeName> {
+                    vec![TypeName::Some(std::any::type_name::<RawInteger>())]
+                }
+            }
+        )*
+    };
+}
+
+macro_rules! impl_integer {
+    ($($t: ty),*) => {
+        impl_integer_ty!($($t),*);
+        $(
+            impl FromParam<'_> for $t {
+                #[inline(always)]
+                unsafe fn from_param(vm: &Vm, index: i32) -> Self {
+                    lua_ext_fast_checkinteger(vm.as_ptr(), index) as _
+                }
+
+                #[inline(always)]
+                fn try_from_param(vm: &Vm, index: i32) -> Option<Self> {
+                    FromLua::from_lua(vm, index).ok()
+                }
+            }
+
+            unsafe impl IntoParam for $t {
+                #[inline(always)]
+                fn into_param(self, vm: &Vm) -> i32 {
+                    unsafe {
+                        lua_pushinteger(vm.as_ptr(), self as _);
+                        1
+                    }
+                }
+            }
+        )*
+    };
+}
+
+macro_rules! impl_integer_64 {
+    ($t: ty, $func: ident, $push_func: ident) => {
+        #[cfg(target_pointer_width = "64")]
+        impl_integer_ty!($t);
+
+        #[cfg(target_pointer_width = "64")]
+        impl FromParam<'_> for $t {
+            #[inline(always)]
+            unsafe fn from_param(vm: &'_ Vm, index: i32) -> Self {
+                $func(vm.as_ptr(), index) as _
+            }
+
+            #[inline(always)]
+            fn try_from_param(vm: &'_ Vm, index: i32) -> Option<Self> {
+                FromLua::from_lua(vm, index).ok()
+            }
+        }
+
+        #[cfg(target_pointer_width = "64")]
+        unsafe impl IntoParam for $t {
+            #[inline(always)]
+            fn into_param(self, vm: &Vm) -> i32 {
+                unsafe { $push_func(vm.as_ptr(), self as _) }
+            }
+        }
+    };
+}
+
+impl_integer_64!(i64, lua_ext_checkinteger64, lua_ext_pushinteger64);
+impl_integer_64!(u64, lua_ext_checkuinteger64, lua_ext_pushuinteger64);
+
+impl_integer_64!(isize, lua_ext_checkinteger64, lua_ext_pushinteger64);
+impl_integer_64!(usize, lua_ext_checkuinteger64, lua_ext_pushuinteger64);
+
+#[cfg(target_pointer_width = "32")]
+impl_integer!(isize, usize);
+
+impl_integer!(i8, u8, i16, u16, i32, u32);
+
+macro_rules! impl_float {
+    ($($t: ty),*) => {
+        $(
+            unsafe impl SimpleDrop for $t {}
+
+            impl LuaType for $t {
+                fn lua_type() -> Vec<TypeName> {
+                    vec![TypeName::Some(std::any::type_name::<RawNumber>())]
+                }
+            }
+
+            impl FromParam<'_> for $t {
+                #[inline(always)]
+                unsafe fn from_param(vm: &Vm, index: i32) -> Self {
+                    lua_ext_fast_checknumber(vm.as_ptr(), index) as _
+                }
+
+                #[inline(always)]
+                fn try_from_param(vm: &Vm, index: i32) -> Option<Self> {
+                    FromLua::from_lua(vm, index).ok()
+                }
+            }
+
+            unsafe impl IntoParam for $t {
+                #[inline(always)]
+                fn into_param(self, vm: &Vm) -> i32 {
+                    unsafe {
+                        lua_pushnumber(vm.as_ptr(), self as _);
+                        1
+                    }
+                }
+            }
+        )*
+    };
+}
+
+impl_float!(f32, f64);
+
+impl LuaType for bool {}
+
+impl FromParam<'_> for bool {
+    #[inline(always)]
+    unsafe fn from_param(vm: &'_ Vm, index: i32) -> Self {
+        lua_ext_fast_checkboolean(vm.as_ptr(), index) != 0
+    }
+
+    #[inline(always)]
+    fn try_from_param(vm: &'_ Vm, index: i32) -> Option<Self> {
+        FromLua::from_lua(vm, index).ok()
+    }
+}
+
+unsafe impl IntoParam for bool {
+    #[inline(always)]
+    fn into_param(self, vm: &Vm) -> i32 {
+        unsafe { lua_pushboolean(vm.as_ptr(), if self { 1 } else { 0 }) };
+        1
+    }
+}
+
+unsafe impl<T: IntoParam, E: Error> IntoParam for Result<T, E> {
+    fn into_param(self, vm: &Vm) -> i32 {
+        match self {
+            Ok(v) => v.into_param(vm),
+            Err(e) => unsafe {
+                lua_rust_error(vm.as_ptr(), e);
+            },
+        }
+    }
+}
+
+unsafe impl<T: IntoParam> IntoParam for Option<T> {
+    fn into_param(self, vm: &Vm) -> i32 {
+        match self {
+            None => unsafe {
+                lua_pushnil(vm.as_ptr());
+                1
+            },
+            Some(v) => v.into_param(vm),
+        }
+    }
+}
+
+unsafe impl IntoParam for () {
+    #[inline(always)]
+    fn into_param(self, _: &Vm) -> i32 {
+        0
+    }
+}
+
+impl<T: UserData> LuaType for &T {
+    fn lua_type() -> Vec<TypeName> {
+        vec![TypeName::Some(unsafe {
+            T::FULL_TYPE.to_str().unwrap_unchecked()
+        })]
+    }
+}
+
+impl<'a, T: UserData> FromParam<'a> for &'a T {
+    #[inline(always)]
+    unsafe fn from_param(vm: &'a Vm, index: i32) -> &'a T {
+        let obj_ptr = luaL_checkudata(vm.as_ptr(), index, T::FULL_TYPE.as_ptr()) as *const T;
+        unsafe { &*obj_ptr }
+    }
+
+    #[inline(always)]
+    fn try_from_param(vm: &'a Vm, index: i32) -> Option<Self> {
+        let ptr = unsafe { luaL_testudata(vm.as_ptr(), index, T::FULL_TYPE.as_ptr()) } as *const T;
+        if ptr.is_null() {
+            None
+        } else {
+            Some(unsafe { &*ptr })
+        }
+    }
+}
+
+unsafe impl<T: UserData> IntoParam for T {
+    fn into_param(self, vm: &Vm) -> i32 {
+        IntoLua::into_lua(self, vm) as _
+    }
+}
+
+macro_rules! impl_into_param_tuple {
+    ($($name: ident: $name2: tt),*) => {
+        unsafe impl<$($name: IntoParam),*> IntoParam for ($($name),*) {
+            fn into_param(self, vm: &Vm) -> i32 {
+                $(
+                    self.$name2.into_param(vm) +
+                )*
+                0
+            }
+        }
+    };
+}
+
+impl_into_param_tuple!(T: 0, T1: 1);
+impl_into_param_tuple!(T: 0, T1: 1, T2: 2);
+impl_into_param_tuple!(T: 0, T1: 1, T2: 2, T3: 3);
+impl_into_param_tuple!(T: 0, T1: 1, T2: 2, T3: 3, T4: 4);
+impl_into_param_tuple!(T: 0, T1: 1, T2: 2, T3: 3, T4: 4, T5: 5);
+impl_into_param_tuple!(T: 0, T1: 1, T2: 2, T3: 3, T4: 4, T5: 5, T6: 6);
+impl_into_param_tuple!(T: 0, T1: 1, T2: 2, T3: 3, T4: 4, T5: 5, T6: 6, T7: 7);
+impl_into_param_tuple!(T: 0, T1: 1, T2: 2, T3: 3, T4: 4, T5: 5, T6: 6, T7: 7, T8: 8);
+impl_into_param_tuple!(T: 0, T1: 1, T2: 2, T3: 3, T4: 4, T5: 5, T6: 6, T7: 7, T8: 8, T9: 9);
+
+impl<'a> FromParam<'a> for Number {
+    #[inline(always)]
+    unsafe fn from_param(vm: &'a Vm, index: i32) -> Self {
+        Self(luaL_checknumber(vm.as_ptr(), index))
+    }
+
+    fn try_from_param(vm: &'a Vm, index: i32) -> Option<Self> {
+        let l = vm.as_ptr();
+        unsafe {
+            if lua_isnumber(l, index) == 1 {
+                Some(Self(lua_tonumber(l, index)))
+            } else {
+                None
+            }
+        }
+    }
+}
+
+impl<'a> FromParam<'a> for Integer {
+    #[inline(always)]
+    unsafe fn from_param(vm: &'a Vm, index: i32) -> Self {
+        Self(luaL_checkinteger(vm.as_ptr(), index))
+    }
+
+    fn try_from_param(vm: &'a Vm, index: i32) -> Option<Self> {
+        let l = vm.as_ptr();
+        unsafe {
+            if lua_isnumber(l, index) == 1 {
+                Some(Self(lua_tointeger(l, index)))
+            } else {
+                None
+            }
+        }
+    }
+}
+
+impl<'a> FromParam<'a> for Boolean {
+    #[inline(always)]
+    unsafe fn from_param(vm: &'a Vm, index: i32) -> Self {
+        Self(lua_toboolean(vm.as_ptr(), index) == 1)
+    }
+
+    #[inline(always)]
+    fn try_from_param(vm: &'a Vm, index: i32) -> Option<Self> {
+        unsafe { Some(Self::from_param(vm, index)) }
+    }
+}
+
+unsafe impl IntoParam for Number {
+    #[inline(always)]
+    fn into_param(self, vm: &Vm) -> i32 {
+        unsafe { lua_pushnumber(vm.as_ptr(), self.0) }
+        1
+    }
+}
+
+unsafe impl IntoParam for Integer {
+    #[inline(always)]
+    fn into_param(self, vm: &Vm) -> i32 {
+        unsafe { lua_pushinteger(vm.as_ptr(), self.0) }
+        1
+    }
+}
+
+unsafe impl IntoParam for Boolean {
+    fn into_param(self, vm: &Vm) -> i32 {
+        unsafe { lua_pushboolean(vm.as_ptr(), if self.0 { 1 } else { 0 }) }
+        1
+    }
+}

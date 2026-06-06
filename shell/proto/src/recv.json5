@@ -1,0 +1,84 @@
+{
+    name: "recv",
+    imports: [
+        { protocol: "completion", type: "AddUpdate" },
+        { protocol: "completion", type: "Delete" }
+    ],
+    enums: [
+        {
+            name: "Type",
+            variants: {
+                "End": 0,
+                "Log": 1,
+                "AutocompleteAddUpdate": 2,
+                "AutocompleteDelete": 3
+            }
+        }
+    ],
+    structs: [
+        {
+            name: "Header",
+            fields: [
+                {
+                    name: "type",
+                    raw: {
+                        type: "unsigned",
+                        bits: 8
+                    },
+                    view: {
+                        type: "enum",
+                        name: "Type"
+                    }
+                }
+            ]
+        }
+    ],
+    messages: [
+        {
+            name: "Log",
+            fields: [
+                {
+                    name: "source",
+                    value: {
+                        type: "string"
+                    }
+                },
+                {
+                    name: "msg",
+                    value: {
+                        type: "string"
+                    }
+                }
+            ]
+        },
+        {
+            name: "Main",
+            fields: [
+                {
+                    name: "hdr",
+                    item_type: "Header"
+                },
+                {
+                    name: "msg",
+                    header: "hdr",
+                    value: {
+                        type: "union",
+                        name: "Message"
+                    }
+                }
+            ]
+        }
+    ],
+    unions: [
+        {
+            name: "Message",
+            discriminant: "Header.type",
+            cases: [
+                { name: "End", case: "End" },
+                { name: "Log", case: "Log", item_type: "Log" },
+                { name: "AutocompleteAddUpdate", case: "AutocompleteAddUpdate", item_type: "AddUpdate" },
+                { name: "AutocompleteDelete", case: "AutocompleteDelete", item_type: "Delete" }
+            ]
+        }
+    ]
+}

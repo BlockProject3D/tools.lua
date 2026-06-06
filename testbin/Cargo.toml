@@ -1,0 +1,15 @@
+[package]
+name = "testbin"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+mlua = { version = "0.11.1", features = ["luajit"] }
+bp3d-lua = { version = "1.0.0-rc.4.0.0", path = "../core", features = ["root-vm"] }
+bp3d-os = { version = "2.2.3", features = ["time"] }
+
+[workspace]
+members = []

@@ -1,0 +1,122 @@
+// Copyright (c) 2026, BlockProject 3D
+//
+// All rights reserved.
+//
+// Redistribution and use in source and binary forms, with or without modification,
+// are permitted provided that the following conditions are met:
+//
+//     * Redistributions of source code must retain the above copyright notice,
+//       this list of conditions and the following disclaimer.
+//     * Redistributions in binary form must reproduce the above copyright notice,
+//       this list of conditions and the following disclaimer in the documentation
+//       and/or other materials provided with the distribution.
+//     * Neither the name of BlockProject 3D nor the names of its contributors
+//       may be used to endorse or promote products derived from this software
+//       without specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+// "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+// LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+// A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
+// CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+// EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+// PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+// PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+// LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+// NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+// SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+use crate::vm::registry::core::Key;
+use crate::vm::registry::types::LuaRef;
+use crate::vm::registry::lua_ref::LuaRef as LuaRefV;
+use crate::vm::registry::named::Key as NamedKey;
+use crate::vm::Vm;
+
+static KEY: NamedKey<LuaRef<u32>> = NamedKey::new("__live_threads__");
+
+pub struct LuaThread {
+    key: Key<crate::vm::registry::types::Thread>,
+    thread: crate::vm::thread::core::Thread<'static>,
+}
+
+impl LuaThread {
+    pub fn create(value: crate::vm::thread::value::Thread) -> Self {
+        let thread =
+            unsafe { crate::vm::thread::core::Thread::from_raw(value.as_thread().as_ptr()) };
+        let _ = value.vm.scope(|vm| {
+            let v = KEY.push(value.vm).map(|v| v.get()).unwrap_or(0);
+            let val = LuaRefV::new(vm, v + 1);
+            KEY.set(val);
+            Ok(())
+        });
+        Self {
+            key: Key::new(value),
+            thread,
+        }
+    }
+
+    #[inline(always)]
+    pub fn as_thread(&self) -> &crate::vm::thread::core::Thread<'static> {
+        &self.thread
+    }
+
+    #[inline(always)]
+    pub fn delete(self, vm: &Vm) {
+        let _ = vm.scope(|vm| {
+            let v = KEY.push(vm).map(|v| v.get()).unwrap_or(0);
+            let val = LuaRefV::new(vm, v - 1);
+            KEY.set(val);
+            Ok(())
+        });
+        self.key.delete(vm)
+    }
+
+    pub fn get_live_threads(vm: &Vm) -> u32 {
+        vm.scope(|vm| {
+            let v = KEY.push(vm).map(|v| v.get()).unwrap_or(0);
+            Ok(v)
+        }).unwrap()
+    }
+}
+
+#[cfg(feature="send")]
+pub struct UnsafeLuaThread(LuaThread);
+
+#[cfg(feature="send")]
+impl UnsafeLuaThread {
+    /// Creates an unsafe [LuaThread].
+    ///
+    /// # Safety
+    ///
+    /// WARNING: Only use this type if you know what you're doing, this type exists only as a way
+    /// to bypass Rust thread safety rules in certain cases where using a Lua context across threads
+    /// is possible by construction or external synchronization primitives.
+    ///
+    /// An unsafe [LuaThread] is only available with the send feature which ensures registry keys
+    /// are safe to share across threads. This however does not make using Lua across threads safe.
+    ///
+    /// The user of this method shall make sure the result [UnsafeLuaThread] is not used by multiple
+    /// threads in parallel; failure to do so will result in complete UB.
+    ///
+    /// # Arguments
+    ///
+    /// * `thread`: the safe [LuaThread] to wrap.
+    ///
+    /// returns: SendLuaThread
+    pub unsafe fn wrap(thread: LuaThread) -> Self {
+        Self(thread)
+    }
+
+    #[inline(always)]
+    pub fn as_thread(&self) -> &crate::vm::thread::core::Thread<'static> {
+        self.0.as_thread()
+    }
+
+    #[inline(always)]
+    pub fn delete(self, vm: &Vm) {
+        self.0.delete(vm)
+    }
+}
+
+#[cfg(feature="send")]
+unsafe impl Send for UnsafeLuaThread {}
