@@ -1,4 +1,4 @@
-// Copyright (c) 2025, BlockProject 3D
+// Copyright (c) 2026, BlockProject 3D
 //
 // All rights reserved.
 //
@@ -26,6 +26,7 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use std::borrow::Cow;
 use crate::ffi::lua::{lua_pushnil, lua_toboolean, lua_tonumber, lua_type, Type};
 use crate::util::core::SimpleDrop;
 use crate::vm::error::{Error, TypeError};
@@ -52,8 +53,8 @@ pub enum AnyValue<'a, T, U, R> {
     Int64(i64),
     UInt64(u64),
     Boolean(bool),
-    String(&'a str),
-    Buffer(&'a [u8]),
+    String(Cow<'a, str>),
+    Buffer(Cow<'a, [u8]>),
     Function(Function<'a>),
     Table(T),
     UserData(U),
@@ -191,8 +192,8 @@ impl<'a, T: FromLua<'a>, U: FromLua<'a>, R: FromLua<'a>> FromLua<'a> for AnyValu
             Type::String => {
                 let buffer: &[u8] = unsafe { FromLua::from_lua_unchecked(vm, index) };
                 match std::str::from_utf8(buffer) {
-                    Ok(s) => Ok(AnyValue::String(s)),
-                    Err(_) => Ok(AnyValue::Buffer(buffer)),
+                    Ok(s) => Ok(AnyValue::String(s.into())),
+                    Err(_) => Ok(AnyValue::Buffer(buffer.into())),
                 }
             }
             Type::Table => Ok(unsafe { AnyValue::Table(FromLua::from_lua_unchecked(vm, index)) }),

@@ -1,4 +1,4 @@
-// Copyright (c) 2025, BlockProject 3D
+// Copyright (c) 2026, BlockProject 3D
 //
 // All rights reserved.
 //
@@ -71,7 +71,7 @@ fn list_table_completions(
                     root.last_mut()
                         .unwrap()
                         .items
-                        .push(Item::from_lua(name, &v));
+                        .push(Item::from_lua(&*name, &v));
                 }
             }
             _ => continue,
