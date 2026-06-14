@@ -173,6 +173,7 @@ bp3d.util.utf8.split = function(src, pattern) end
 --- @param src string input source string.
 --- @param pattern string search string.
 --- @param replacement string replacement string
+--- @return string
 bp3d.util.utf8.replace = function(src, pattern, replacement) end
 
 --- Count the number of unicode characters in the source string.
