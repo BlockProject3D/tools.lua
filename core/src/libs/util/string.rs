@@ -1,4 +1,4 @@
-// Copyright (c) 2025, BlockProject 3D
+// Copyright (c) 2026, BlockProject 3D
 //
 // All rights reserved.
 //
@@ -79,6 +79,24 @@ decl_lib_func! {
     }
 }
 
+decl_lib_func! {
+    fn trim(src: &[u8]) -> &[u8] {
+        src.trim_ascii()
+    }
+}
+
+decl_lib_func! {
+    fn trim_start(src: &[u8]) -> &[u8] {
+        src.trim_ascii_start()
+    }
+}
+
+decl_lib_func! {
+    fn trim_end(src: &[u8]) -> &[u8] {
+        src.trim_ascii_end()
+    }
+}
+
 pub struct String;
 
 impl Lib for String {
@@ -92,6 +110,9 @@ impl Lib for String {
             ("decapitalise", RFunction::wrap(decapitalise)),
             ("startsWith", RFunction::wrap(starts_with)),
             ("endsWith", RFunction::wrap(ends_with)),
+            ("trim", RFunction::wrap(trim)),
+            ("trimStart", RFunction::wrap(trim_start)),
+            ("trimEnd", RFunction::wrap(trim_end))
         ])
     }
 }

@@ -79,6 +79,30 @@ bp3d.util.string.capitalise = function(src) end
 --- @return string
 bp3d.util.string.decapitalise = function(src) end
 
+--- Trim the given string.
+---
+--- Note: This function ignores UTF-8 characters.
+---
+--- @param src string the string to trim.
+--- @return string
+bp3d.util.string.trim = function(src) end
+
+--- Trim the given string.
+---
+--- Note: This function ignores UTF-8 characters.
+---
+--- @param src string the string to trim.
+--- @return string
+bp3d.util.string.trimStart = function(src) end
+
+--- Trim the given string.
+---
+--- Note: This function ignores UTF-8 characters.
+---
+--- @param src string the string to trim.
+--- @return string
+bp3d.util.string.trimEnd = function(src) end
+
 --- Merges the keys of 1 table into another.
 ---
 --- @param dst table the destination table.
