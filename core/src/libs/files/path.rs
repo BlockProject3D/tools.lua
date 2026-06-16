@@ -63,6 +63,12 @@ impl_userdata! {
 
         fn with_name(this: &PathWrapper, name: &str) -> PathWrapper {
             let mut path = this.0.clone();
+            path.set_file_name(String::from(name) + &this.0.extension().map(|v| String::from(".") + &v.to_string_lossy()).unwrap_or_default());
+            PathWrapper(path)
+        }
+
+        fn with_full_name(this: &PathWrapper, name: &str) -> PathWrapper {
+            let mut path = this.0.clone();
             path.set_file_name(name);
             PathWrapper(path)
         }
@@ -72,6 +78,10 @@ impl_userdata! {
         }
 
         fn name(this: &PathWrapper) -> Option<String> {
+            this.0.file_stem().map(|v| v.to_string_lossy().into())
+        }
+
+        fn full_name(this: &PathWrapper) -> Option<String> {
             this.0.file_name().map(|v| v.to_string_lossy().into())
         }
 

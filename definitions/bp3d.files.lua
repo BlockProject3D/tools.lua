@@ -52,8 +52,17 @@ function Path:withExtension(ext) end
 --- @return Path
 function Path:withName(name) end
 
+--- Changes the file name of this path including its extension.
+---
+--- @param name string the new file name to set.
+--- @return Path
+function Path:withFullName(name) end
+
 --- @return string whatever the file name.
 function Path:name() end
+
+--- @return string whatever the file name including its extension.
+function Path:fullName() end
 
 --- @return Path whatever the parent path.
 function Path:parent() end
