@@ -67,6 +67,10 @@ impl_userdata! {
             PathWrapper(path)
         }
 
+        fn parent(this: &PathWrapper) -> Option<PathWrapper> {
+            this.0.parent().map(|p| PathWrapper(p.into()))
+        }
+
         fn name(this: &PathWrapper) -> Option<String> {
             this.0.file_name().map(|v| v.to_string_lossy().into())
         }

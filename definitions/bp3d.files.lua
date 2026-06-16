@@ -55,6 +55,9 @@ function Path:withName(name) end
 --- @return string whatever the file name.
 function Path:name() end
 
+--- @return Path whatever the parent path.
+function Path:parent() end
+
 --- @return string whatever the file extension.
 function Path:extension() end
 
