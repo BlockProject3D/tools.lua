@@ -1,4 +1,4 @@
-// Copyright (c) 2025, BlockProject 3D
+// Copyright (c) 2026, BlockProject 3D
 //
 // All rights reserved.
 //
@@ -205,9 +205,9 @@ impl ModuleManager {
     pub fn new() -> Self {
         let mut lock = ModuleLoader::lock();
         #[cfg(feature = "send")]
-        lock.add_public_dependency("bp3d-lua", VERSION, ["send"]);
+        lock.add_public_dependency("bp3d-lua", VERSION, ["send", "*"]);
         #[cfg(not(feature = "send"))]
-        lock.add_public_dependency("bp3d-lua", VERSION, ["-send"]);
+        lock.add_public_dependency("bp3d-lua", VERSION, ["-send", "*"]);
         lock.add_public_dependency("time", TIME_VERSION, ["*"]);
         Self {
             set: Default::default(),
