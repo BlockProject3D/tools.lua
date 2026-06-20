@@ -1,4 +1,4 @@
-// Copyright (c) 2025, BlockProject 3D
+// Copyright (c) 2026, BlockProject 3D
 //
 // All rights reserved.
 //
@@ -113,7 +113,7 @@ impl Signal {
         let thread = std::thread::current().id();
         SIG_BOUND.call_once(|| {
             let mut sig: libc::sigaction = unsafe { MaybeUninit::zeroed().assume_init() };
-            sig.sa_sigaction = signal_handler as _;
+            sig.sa_sigaction = signal_handler as *const () as _;
             let ret = unsafe { libc::sigaction(SIGUSR1, &sig as _, std::ptr::null_mut()) };
             assert_eq!(ret, 0);
         });
