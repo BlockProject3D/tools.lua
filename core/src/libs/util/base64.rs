@@ -26,28 +26,50 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-mod num;
-mod string;
-mod table;
-mod utf8;
+use base64::Engine;
+use base64::engine::general_purpose::URL_SAFE;
+use base64::prelude::BASE64_STANDARD;
+use crate::decl_lib_func;
+use crate::libs::Lib;
+use crate::util::Namespace;
+use crate::vm::function::types::RFunction;
+use crate::vm::value::types::{Int53, UInt53};
 
-#[cfg(feature="base64")]
-mod base64;
+decl_lib_func! {
+    fn decode(src: &str) -> Result<Box<[u8]>, base64::DecodeError> {
+        BASE64_STANDARD.decode(src).map(|v| v.into_boxed_slice())
+    }
+}
 
-pub use num::Num;
-pub use string::String;
-pub use table::Table;
-pub use utf8::Utf8;
+decl_lib_func! {
+    fn encode(src: &[u8]) -> String {
+        BASE64_STANDARD.encode(src)
+    }
+}
 
-#[cfg(feature="base64")]
-pub use base64::Base64;
+decl_lib_func! {
+    fn decode_url_safe(src: &str) -> Result<Box<[u8]>, base64::DecodeError> {
+        URL_SAFE.decode(src).map(|v| v.into_boxed_slice())
+    }
+}
 
-// Workaround for language defect #22259.
-#[allow(non_upper_case_globals)]
-#[cfg(feature="base64")]
-pub const Util: (Table, String, Utf8, Num, Base64) = (Table, String, Utf8, Num, Base64);
+decl_lib_func! {
+    fn encode_url_safe(src: &[u8]) -> String {
+        URL_SAFE.encode(src)
+    }
+}
 
-// Workaround for language defect #22259.
-#[allow(non_upper_case_globals)]
-#[cfg(not(feature="base64"))]
-pub const Util: (Table, String, Utf8, Num) = (Table, String, Utf8, Num);
+pub struct Base64;
+
+impl Lib for Base64 {
+    const NAMESPACE: &'static str = "bp3d.util.base64";
+
+    fn load(&self, namespace: &mut Namespace) -> crate::vm::Result<()> {
+        namespace.add([
+            ("encode", RFunction::wrap(encode)),
+            ("decode", RFunction::wrap(decode)),
+            ("encodeUrlSafe", RFunction::wrap(encode_url_safe)),
+            ("decodeUrlSafe", RFunction::wrap(decode_url_safe))
+        ])
+    }
+}
