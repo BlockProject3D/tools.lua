@@ -34,6 +34,7 @@ bp3d.util.string = {}
 bp3d.util.table = {}
 bp3d.util.utf8 = {}
 bp3d.util.num = {}
+bp3d.util.base64 = {}
 
 --- Checks if the given `src` string starts with the prefix `prefix`.
 ---
@@ -310,3 +311,27 @@ bp3d.util.num.parseint64 = function(str) end
 --- @param str string
 --- @return [number?, string?]
 bp3d.util.num.parseuint64 = function(str) end
+
+--- Encodes the given byte buffer as base64.
+---
+--- @param src string
+--- @return string
+bp3d.util.base64.encode = function(src) end
+
+--- Decodes the given byte buffer as base64.
+---
+--- @param src string
+--- @return string
+bp3d.util.base64.decode = function(src) end
+
+--- Encodes the given byte buffer as base64 (replacing / and + by _ and -).
+---
+--- @param src string
+--- @return string
+bp3d.util.base64.encodeUrlSafe = function(src) end
+
+--- Decodes the given byte buffer as base64 (replacing / and + by _ and -).
+---
+--- @param src string
+--- @return string
+bp3d.util.base64.decodeUrlSafe = function(src) end
