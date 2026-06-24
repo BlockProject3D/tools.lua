@@ -33,7 +33,6 @@ use crate::decl_lib_func;
 use crate::libs::Lib;
 use crate::util::Namespace;
 use crate::vm::function::types::RFunction;
-use crate::vm::value::types::{Int53, UInt53};
 
 decl_lib_func! {
     fn decode(src: &str) -> Result<Box<[u8]>, base64::DecodeError> {
