@@ -1,4 +1,4 @@
-// Copyright (c) 2025, BlockProject 3D
+// Copyright (c) 2026, BlockProject 3D
 //
 // All rights reserved.
 //
@@ -34,6 +34,8 @@ use bp3d_lua::vm::core::util::ChunkNameBuilder;
 use bp3d_lua::vm::core::Load;
 use bp3d_lua::vm::{RootVm, Vm};
 use std::fmt::Write;
+use bp3d_lua::decl_lib_func;
+use bp3d_lua::vm::function::types::RFunction;
 
 struct BrokenReader;
 
@@ -97,4 +99,24 @@ fn test_vm_run() {
     let func = vm.load_code(c"return 1 + b").unwrap();
     func.call::<()>(()).unwrap_err();
     assert_eq!(vm.top(), top + 1);
+}
+
+decl_lib_func! {
+    fn test_func(v: Option<bool>) -> bool {
+        v.unwrap_or_default()
+    }
+}
+
+#[test]
+fn test_vm_bools() {
+    let vm = RootVm::new();
+    assert_eq!(vm.run_code::<bool>(c"return true").unwrap(), true);
+    assert_eq!(vm.run_code::<bool>(c"return false").unwrap(), false);
+    assert_eq!(vm.run_code::<Option<bool>>(c"return nil").unwrap(), None);
+    assert_eq!(vm.run_code::<Option<bool>>(c"return true").unwrap(), Some(true));
+    assert_eq!(vm.run_code::<Option<bool>>(c"return false").unwrap(), Some(false));
+    vm.set_global(c"test_func", RFunction::wrap(test_func)).unwrap();
+    assert_eq!(vm.run_code::<bool>(c"return test_func(nil)").unwrap(), false);
+    assert_eq!(vm.run_code::<bool>(c"return test_func(true)").unwrap(), true);
+    assert_eq!(vm.run_code::<bool>(c"return test_func(false)").unwrap(), false);
 }

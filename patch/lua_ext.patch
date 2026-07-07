@@ -70,7 +70,7 @@ index e9fc25b4..68996ee0 100644
 +{
 +  cTValue *o = index2adr(L, idx);
 +  if (LJ_LIKELY(tvisbool(o))) {
-+    return (int)intV(o);
++    return (int)tvistruecond(o);
 +  } else {
 +    lj_err_argt(L, idx, LUA_TNUMBER);
 +  }
