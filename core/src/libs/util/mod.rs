@@ -31,23 +31,11 @@ mod string;
 mod table;
 mod utf8;
 
-#[cfg(feature="base64")]
-mod base64;
-
 pub use num::Num;
 pub use string::String;
 pub use table::Table;
 pub use utf8::Utf8;
 
-#[cfg(feature="base64")]
-pub use base64::Base64;
-
 // Workaround for language defect #22259.
 #[allow(non_upper_case_globals)]
-#[cfg(feature="base64")]
-pub const Util: (Table, String, Utf8, Num, Base64) = (Table, String, Utf8, Num, Base64);
-
-// Workaround for language defect #22259.
-#[allow(non_upper_case_globals)]
-#[cfg(not(feature="base64"))]
 pub const Util: (Table, String, Utf8, Num) = (Table, String, Utf8, Num);
