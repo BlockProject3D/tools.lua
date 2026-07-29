@@ -1,4 +1,4 @@
-// Copyright (c) 2025, BlockProject 3D
+// Copyright (c) 2026, BlockProject 3D
 //
 // All rights reserved.
 //
@@ -81,7 +81,9 @@ fn run_build(build_dir: &Path) -> std::io::Result<Lib> {
 fn main() {
     // Rerun this script if any of the patch files changed.
     println!("cargo:rerun-if-changed=build.rs");
-    println!("cargo:rerun-if-changed=../patch");
+    for name in PATCH_LIST {
+        println!("cargo:rerun-if-changed=../patch/{}.patch", name);
+    }
 
     // Create build directory.
     let out = std::env::var_os("OUT_DIR").expect("Failed to acquire output directory");

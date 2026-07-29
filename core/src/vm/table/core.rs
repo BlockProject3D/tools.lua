@@ -1,4 +1,4 @@
-// Copyright (c) 2025, BlockProject 3D
+// Copyright (c) 2026, BlockProject 3D
 //
 // All rights reserved.
 //
@@ -118,6 +118,12 @@ impl<'a> Table<'a> {
             return size as _;
         }
         Iter::from_raw(self.vm, self.index).count() as _
+    }
+
+    pub fn is_array(&self) -> bool {
+        let mut size: MSize = 0;
+        let ret = unsafe { lua_ext_tab_len(self.vm.as_ptr(), self.index, &mut size) };
+        ret == 0
     }
 
     pub fn set_metatable(&mut self, other: Table) {

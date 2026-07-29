@@ -20,7 +20,7 @@ index e9fc25b4..68996ee0 100644
  
  /* -- Common helper functions --------------------------------------------- */
  
-@@ -1317,3 +1321,191 @@ LUA_API void lua_setallocf(lua_State *L, lua_Alloc f, void *ud)
+@@ -1317,3 +1321,193 @@ LUA_API void lua_setallocf(lua_State *L, lua_Alloc f, void *ud)
    g->allocf = f;
  }
  
@@ -32,8 +32,10 @@ index e9fc25b4..68996ee0 100644
 +{
 +    TValue* o = index2adr(L, idx);
 +    GCtab* tab = tabV(o);
-+    if (LJ_LIKELY(tab->hmask == 0))
-+        return lj_tab_len(tab);
++    if (LJ_LIKELY(tab->hmask == 0)) {
++        *outsize = lj_tab_len(tab);
++        return 0;
++    }
 +    // Return an error as the table has a hash part.
 +    return -1;
 +}

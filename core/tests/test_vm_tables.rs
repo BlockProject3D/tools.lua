@@ -1,4 +1,4 @@
-// Copyright (c) 2025, BlockProject 3D
+// Copyright (c) 2026, BlockProject 3D
 //
 // All rights reserved.
 //
@@ -107,7 +107,22 @@ fn test_vm_tables_collect_complex() {
     sub2.push("Hello").unwrap();
     sub2.push("World").unwrap();
     tbl.push(sub2).unwrap();
+    assert!(tbl.is_array());
+    assert_eq!(tbl.len(), 2);
     let res: Vec<Vec<String>> = tbl.collect().unwrap();
     assert_eq!(res, vec![vec!["Hello", "World"], vec!["Hello", "World"]]);
     assert_eq!(vm.top(), top + 1); // One value on the stack (the original table 'tbl')
+}
+
+#[test]
+fn test_vm_tables_is_array() {
+    let vm = RootVm::new();
+    let mut tbl = Table::new(&vm);
+    tbl.push("Hello").unwrap();
+    tbl.push("world").unwrap();
+    assert!(tbl.is_array());
+    assert_eq!(tbl.len(), 2);
+    tbl.set(c"a", 42).unwrap();
+    assert!(!tbl.is_array());
+    assert_eq!(tbl.len(), 3);
 }
