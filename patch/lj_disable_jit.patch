@@ -1,5 +1,5 @@
 diff --git a/src/lib_jit.c b/src/lib_jit.c
-index fd8e585b..882f4425 100644
+index 6e01e374..168352d2 100644
 --- a/src/lib_jit.c
 +++ b/src/lib_jit.c
 @@ -43,19 +43,15 @@
@@ -57,7 +57,7 @@ index fd8e585b..882f4425 100644
  #if LJ_HASJIT
    if (L->base < L->top && tvisnumber(L->base)) {
      int traceno = lj_lib_checkint(L, 1);
-@@ -87,535 +92,29 @@ LJLIB_CF(jit_flush)
+@@ -87,551 +92,29 @@ LJLIB_CF(jit_flush)
    return setjitmode(L, LUAJIT_MODE_FLUSH);
  }
  
@@ -183,8 +183,7 @@ index fd8e585b..882f4425 100644
 -  }
 -  return 1;
 -}
-+/* -- JIT compiler configuration ----------------------------------------- */
- 
+-
 -/* local ins, m = jit.util.funcbc(func, pc) */
 -LJLIB_CF(jit_util_funcbc)
 -{
@@ -200,10 +199,8 @@ index fd8e585b..882f4425 100644
 -    return 2;
 -  }
 -  return 0;
-+LUA_API uint32_t lua_ext_getjitflags(lua_State *L) {
-+    return L2J(L)->flags;
- }
- 
+-}
+-
 -/* local k = jit.util.funck(func, idx) */
 -LJLIB_CF(jit_util_funck)
 -{
@@ -213,13 +210,7 @@ index fd8e585b..882f4425 100644
 -    if (idx < (ptrdiff_t)pt->sizekn) {
 -      copyTV(L, L->top-1, proto_knumtv(pt, idx));
 -      return 1;
-+LUA_API int lua_ext_setjitflags(lua_State *L, uint32_t flags) {
-+    jit_State *J = L2J(L);
-+    uint32_t current = J->flags;
-+    if ((current & JIT_F_ON) != (flags & JIT_F_ON)) {
-+        // we have attempted to change the global JIT mode outside of the setjitmode ext function, error.
-+        return -1;
-     }
+-    }
 -  } else {
 -    if (~idx < (ptrdiff_t)pt->sizekgc) {
 -      GCobj *gc = proto_kgc(pt, idx);
@@ -325,11 +316,12 @@ index fd8e585b..882f4425 100644
 -  return 0;
 -}
 -
--/* local snap = jit.util.tracesnap(tr, sn) */
+-/* local snap = jit.util.tracesnap(tr, sn[, getpos]) */
 -LJLIB_CF(jit_util_tracesnap)
 -{
 -  GCtrace *T = jit_checktrace(L);
 -  SnapNo sn = (SnapNo)lj_lib_checkint(L, 2);
+-  int getpos = (L->base+2 < L->top && tvistruecond(L->base+2));
 -  if (T && sn < T->nsnap) {
 -    SnapShot *snap = &T->snap[sn];
 -    SnapEntry *map = &T->snapmap[snap->mapofs];
@@ -342,6 +334,12 @@ index fd8e585b..882f4425 100644
 -    for (n = 0; n < nent; n++)
 -      setintV(lj_tab_setint(L, t, (int32_t)(n+2)), (int32_t)map[n]);
 -    setintV(lj_tab_setint(L, t, (int32_t)(nent+2)), (int32_t)SNAP(255, 0, 0));
+-    if (getpos) {
+-      const BCIns *pc = snap_pc(&map[nent]), *startpc = pc;
+-      while (bc_op(*startpc) < BC_FUNCF) startpc--;
+-      setintV(L->top++, (int)(pc - startpc));
+-      return 2;
+-    }
 -    return 1;
 -  }
 -  return 0;
@@ -464,12 +462,21 @@ index fd8e585b..882f4425 100644
 -    size_t len = *(const uint8_t *)lst;
 -    lj_assertJ(len != 0, "bad JIT_P_STRING");
 -    if (strncmp(str, lst+1, len) == 0 && str[len] == '=') {
--      int32_t n = 0;
+-      uint32_t n = 0;
 -      const char *p = &str[len+1];
 -      while (*p >= '0' && *p <= '9')
 -	n = n*10 + (*p++ - '0');
--      if (*p) return 0;  /* Malformed number. */
--      J->param[i] = n;
+-      if (*p || (int32_t)n < 0) return 0;  /* Malformed number. */
+-      if (i == JIT_P_sizemcode) {  /* Adjust to required range here. */
+-#if LJ_TARGET_JUMPRANGE
+-	uint32_t maxkb = ((1 << (LJ_TARGET_JUMPRANGE - 10)) - 64);
+-#else
+-	uint32_t maxkb = ((1 << (31 - 10)) - 64);
+-#endif
+-	n = (n + (LJ_PAGESIZE >> 10) - 1) & ~((LJ_PAGESIZE >> 10) - 1);
+-	if (n > maxkb) n = maxkb;
+-      }
+-      J->param[i] = (int32_t)n;
 -      if (i == JIT_P_hotloop)
 -	lj_dispatch_init_hotcount(J2G(J));
 -      return 1;  /* Ok. */
@@ -478,7 +485,8 @@ index fd8e585b..882f4425 100644
 -  }
 -  return 0;  /* No match. */
 -}
--
++/* -- JIT compiler configuration ----------------------------------------- */
+ 
 -/* jit.opt.start(flags...) */
 -LJLIB_CF(jit_opt_start)
 -{
@@ -497,8 +505,10 @@ index fd8e585b..882f4425 100644
 -    }
 -  }
 -  return 0;
--}
--
++LUA_API uint32_t lua_ext_getjitflags(lua_State *L) {
++    return L2J(L)->flags;
+ }
+ 
 -#include "lj_libdef.h"
 -
 -#endif
@@ -511,8 +521,8 @@ index fd8e585b..882f4425 100644
 -
 -/* Not loaded by default, use: local profile = require("jit.profile") */
 -
--#define KEY_PROFILE_THREAD	(U64x(80000000,00000000)|'t')
--#define KEY_PROFILE_FUNC	(U64x(80000000,00000000)|'f')
+-#define KEY_PROFILE_THREAD	(U64x(81000000,00000000)|'t')
+-#define KEY_PROFILE_FUNC	(U64x(81000000,00000000)|'f')
 -
 -static void jit_profile_callback(lua_State *L2, lua_State *L, int samples,
 -				 int vmstate)
@@ -532,7 +542,13 @@ index fd8e585b..882f4425 100644
 -    if (status) {
 -      if (G(L2)->panic) G(L2)->panic(L2);
 -      exit(EXIT_FAILURE);
--    }
++LUA_API int lua_ext_setjitflags(lua_State *L, uint32_t flags) {
++    jit_State *J = L2J(L);
++    uint32_t current = J->flags;
++    if ((current & JIT_F_ON) != (flags & JIT_F_ON)) {
++        // we have attempted to change the global JIT mode outside of the setjitmode ext function, error.
++        return -1;
+     }
 -    lj_trace_abort(G(L2));
 -  }
 -}
@@ -606,7 +622,7 @@ index fd8e585b..882f4425 100644
  /* -- JIT compiler initialization ----------------------------------------- */
  
  #if LJ_HASJIT
-@@ -725,20 +224,9 @@ LUALIB_API int luaopen_jit(lua_State *L)
+@@ -756,20 +239,9 @@ LUALIB_API int luaopen_jit(lua_State *L)
  #endif
    lua_pushliteral(L, LJ_OS_NAME);
    lua_pushliteral(L, LJ_ARCH_NAME);
@@ -629,10 +645,10 @@ index fd8e585b..882f4425 100644
  }
  
 diff --git a/src/lj_dispatch.c b/src/lj_dispatch.c
-index 78608316..94f0077e 100644
+index 9879a95b..750827c7 100644
 --- a/src/lj_dispatch.c
 +++ b/src/lj_dispatch.c
-@@ -241,6 +241,24 @@ static void setptmode_all(global_State *g, GCproto *pt, int mode)
+@@ -249,6 +249,24 @@ static void setptmode_all(global_State *g, GCproto *pt, int mode)
  }
  #endif
  
@@ -649,7 +665,7 @@ index 78608316..94f0077e 100644
 +            G2J(g)->flags &= ~(uint32_t)JIT_F_ON;
 +        else
 +            G2J(g)->flags |= (uint32_t)JIT_F_ON;
-+        lj_dispatch_update(g);
++        lj_dispatch_update(g, 0);
 +    }
 +    return 0;
 +}

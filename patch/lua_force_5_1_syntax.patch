@@ -1,0 +1,2833 @@
+From d664e350126d1ef11efc43b8bbda9ace9764e49c Mon Sep 17 00:00:00 2001
+From: Yuri Edward <yuri6037@outlook.com>
+Date: Sat, 1 Aug 2026 13:23:31 +0200
+Subject: [PATCH] Revert "Backport some v3.0 syntax extensions."
+
+This reverts commit a2ce8114f107464473070427e69e84f4923bd08a.
+---
+ doc/extensions.html |  28 --
+ src/Makefile.dep    |   9 +-
+ src/lj_bc.h         |  11 +-
+ src/lj_bcdump.h     |   3 +-
+ src/lj_bcwrite.c    |   5 +-
+ src/lj_carith.c     |  31 --
+ src/lj_carith.h     |   1 -
+ src/lj_crecord.c    |  35 +-
+ src/lj_crecord.h    |   5 +-
+ src/lj_dispatch.h   |   1 -
+ src/lj_errmsg.h     |   4 -
+ src/lj_ffrecord.c   |   2 +-
+ src/lj_ir.h         |   2 +-
+ src/lj_lex.c        |  49 +--
+ src/lj_lex.h        |  12 +-
+ src/lj_meta.c       |  75 -----
+ src/lj_meta.h       |   2 -
+ src/lj_obj.h        |   1 -
+ src/lj_opt_fold.c   |   2 +-
+ src/lj_parse.c      | 781 ++++++++++++--------------------------------
+ src/lj_record.c     |  40 ---
+ src/vm_arm.dasc     |  75 -----
+ src/vm_arm64.dasc   |  64 ----
+ src/vm_mips.dasc    |  75 -----
+ src/vm_mips64.dasc  |  77 -----
+ src/vm_ppc.dasc     | 100 ------
+ src/vm_x64.dasc     | 125 +------
+ src/vm_x86.dasc     | 132 +-------
+ 28 files changed, 234 insertions(+), 1513 deletions(-)
+
+diff --git a/doc/extensions.html b/doc/extensions.html
+index 73edf11f..b8cb7d48 100644
+--- a/doc/extensions.html
++++ b/doc/extensions.html
+@@ -411,34 +411,6 @@ LuaJIT supports some extensions from Lua&nbsp;5.3:
+ </li>
+ </ul>
+ 
+-<h2 id="lj30_bp_syntax">Backported Syntax Extensions from LuaJIT 3.0</h2>
+-<p>
+-LuaJIT 2.1 supports some
+-<a href="https://github.com/LuaJIT/LuaJIT/issues/1475#issuecomment-4769582883"><span class="ext">&raquo;</span>&nbsp;syntax extensions backported from LuaJIT&nbsp;3.0</a>:
+-</p>
+-<ul>
+-  <li>Bit Operators: unary <tt>~</tt>, binary <tt>&amp; | ~ &lt;&lt; &gt;&gt; ~&gt;&gt;</tt></li>
+-  <li>Customary Operators: <tt>! && || !=</tt></li>
+-  <li>Ternary <tt>?:</tt> conditional operator</li>
+-  <li>Safe Navigation Operator <tt>?.</tt></li>
+-  <li>nil-Coalescing Operator <tt>??</tt></li>
+-  <li>Compound Assignment Operators: <tt>+= -= *= /= %= &amp;= |= ~= &lt;&lt;= &gt;&gt;= ~&gt;&gt;= ..=</tt></li>
+-  <li><tt>continue</tt> Statement</li>
+-  <li><tt>const</tt> Declaration</li>
+-  <li>Short Function Expression</li>
+-  <li>Underscores in Number Literals</li>
+-</ul>
+-<p>
+-Not backported are:
+-bit operator metamethods,
+-floor division operator <tt>//</tt>,
+-compound assignment metamethods,
+-named vararg parameter <tt>...name</tt>.
+-</p>
+-<p>
+-Bytecode that uses a bit operator can only be loaded by LuaJIT 2.1.1784535649 or higher.
+-</p>
+-
+ <h2 id="exceptions">C++ Exception Interoperability</h2>
+ <p>
+ LuaJIT has built-in support for interoperating with C++&nbsp;exceptions.
+diff --git a/src/Makefile.dep b/src/Makefile.dep
+index 709107c2..e10a6b29 100644
+--- a/src/Makefile.dep
++++ b/src/Makefile.dep
+@@ -149,8 +149,7 @@ lj_mcode.o: lj_mcode.c lj_obj.h lua.h luaconf.h lj_def.h lj_arch.h \
+  lj_dispatch.h lj_bc.h lj_traceerr.h lj_prng.h lj_vm.h
+ lj_meta.o: lj_meta.c lj_obj.h lua.h luaconf.h lj_def.h lj_arch.h lj_gc.h \
+  lj_err.h lj_errmsg.h lj_buf.h lj_str.h lj_tab.h lj_meta.h lj_frame.h \
+- lj_bc.h lj_vm.h lj_strscan.h lj_strfmt.h lj_lib.h lj_ctype.h lj_cdata.h \
+- lj_carith.h
++ lj_bc.h lj_vm.h lj_strscan.h lj_strfmt.h lj_lib.h
+ lj_obj.o: lj_obj.c lj_obj.h lua.h luaconf.h lj_def.h lj_arch.h
+ lj_opt_dce.o: lj_opt_dce.c lj_obj.h lua.h luaconf.h lj_def.h lj_arch.h \
+  lj_ir.h lj_jit.h lj_iropt.h
+@@ -182,9 +181,9 @@ lj_profile.o: lj_profile.c lj_obj.h lua.h luaconf.h lj_def.h lj_arch.h \
+  lj_jit.h lj_ir.h lj_trace.h lj_traceerr.h lj_profile.h luajit.h
+ lj_record.o: lj_record.c lj_obj.h lua.h luaconf.h lj_def.h lj_arch.h \
+  lj_err.h lj_errmsg.h lj_str.h lj_tab.h lj_meta.h lj_frame.h lj_bc.h \
+- lj_ctype.h lj_gc.h lj_crecord.h lj_jit.h lj_ir.h lj_ffrecord.h lj_ff.h \
+- lj_ffdef.h lj_debug.h lj_ircall.h lj_iropt.h lj_trace.h lj_dispatch.h \
+- lj_traceerr.h lj_record.h lj_snap.h lj_vm.h lj_prng.h
++ lj_ctype.h lj_gc.h lj_ff.h lj_ffdef.h lj_debug.h lj_ir.h lj_jit.h \
++ lj_ircall.h lj_iropt.h lj_trace.h lj_dispatch.h lj_traceerr.h \
++ lj_record.h lj_ffrecord.h lj_snap.h lj_vm.h lj_prng.h
+ lj_serialize.o: lj_serialize.c lj_obj.h lua.h luaconf.h lj_def.h \
+  lj_arch.h lj_err.h lj_errmsg.h lj_buf.h lj_gc.h lj_str.h lj_tab.h \
+  lj_udata.h lj_ctype.h lj_cdata.h lj_ir.h lj_serialize.h
+diff --git a/src/lj_bc.h b/src/lj_bc.h
+index cbadc9ab..54d529e3 100644
+--- a/src/lj_bc.h
++++ b/src/lj_bc.h
+@@ -98,7 +98,7 @@
+   _(UNM,	dst,	___,	var,	unm) \
+   _(LEN,	dst,	___,	var,	len) \
+   \
+-  /* Binary ops. ORDER OPR. ORDER ARITH. VV last, POW must be next. */ \
++  /* Binary ops. ORDER OPR. VV last, POW must be next. */ \
+   _(ADDVN,	dst,	var,	num,	add) \
+   _(SUBVN,	dst,	var,	num,	sub) \
+   _(MULVN,	dst,	var,	num,	mul) \
+@@ -186,15 +186,6 @@
+   \
+   _(JMP,	rbase,	___,	jump,	___) \
+   \
+-  /* Bit operators. ORDER OPR. ORDER BIT. */ \
+-  _(BNOT,	dst,	___,	var,	___) \
+-  _(BAND,	dst,	var,	var,	___) \
+-  _(BOR,	dst,	var,	var,	___) \
+-  _(BXOR,	dst,	var,	var,	___) \
+-  _(BSHL,	dst,	var,	var,	___) \
+-  _(BSHR,	dst,	var,	var,	___) \
+-  _(BSAR,	dst,	var,	var,	___) \
+-  \
+   /* Function headers. I/J = interp/JIT, F/V/C = fixarg/vararg/C func. */ \
+   _(FUNCF,	rbase,	___,	___,	___) \
+   _(IFUNCF,	rbase,	___,	___,	___) \
+diff --git a/src/lj_bcdump.h b/src/lj_bcdump.h
+index 3d2c95ac..074ac0fd 100644
+--- a/src/lj_bcdump.h
++++ b/src/lj_bcdump.h
+@@ -43,9 +43,8 @@
+ #define BCDUMP_F_STRIP		0x02
+ #define BCDUMP_F_FFI		0x04
+ #define BCDUMP_F_FR2		0x08
+-#define BCDUMP_F_BITOP		0x10
+ 
+-#define BCDUMP_F_KNOWN		(BCDUMP_F_BITOP*2-1)
++#define BCDUMP_F_KNOWN		(BCDUMP_F_FR2*2-1)
+ 
+ #define BCDUMP_F_DETERMINISTIC	0x80000000
+ 
+diff --git a/src/lj_bcwrite.c b/src/lj_bcwrite.c
+index fb557e58..a0230eff 100644
+--- a/src/lj_bcwrite.c
++++ b/src/lj_bcwrite.c
+@@ -340,7 +340,7 @@ static void bcwrite_proto(BCWriteCtx *ctx, GCproto *pt)
+   p += 5;  /* Leave room for final size. */
+ 
+   /* Write prototype header. */
+-  *p++ = (pt->flags & (PROTO_CHILD|PROTO_VARARG|PROTO_FFI|PROTO_BITOP));
++  *p++ = (pt->flags & (PROTO_CHILD|PROTO_VARARG|PROTO_FFI));
+   *p++ = pt->numparams;
+   *p++ = pt->framesize;
+   *p++ = pt->sizeuv;
+@@ -397,8 +397,7 @@ static void bcwrite_header(BCWriteCtx *ctx)
+   *p++ = BCDUMP_VERSION;
+   *p++ = (ctx->flags & (BCDUMP_F_STRIP | BCDUMP_F_FR2)) +
+ 	 LJ_BE*BCDUMP_F_BE +
+-	 ((ctx->pt->flags & PROTO_FFI) ? BCDUMP_F_FFI : 0) +
+-	 ((ctx->pt->flags & PROTO_BITOP) ? BCDUMP_F_BITOP : 0);
++	 ((ctx->pt->flags & PROTO_FFI) ? BCDUMP_F_FFI : 0);
+   if (!(ctx->flags & BCDUMP_F_STRIP)) {
+     p = lj_strfmt_wuleb128(p, len);
+     p = lj_buf_wmem(p, name, len);
+diff --git a/src/lj_carith.c b/src/lj_carith.c
+index 10f46158..cb408fb8 100644
+--- a/src/lj_carith.c
++++ b/src/lj_carith.c
+@@ -353,37 +353,6 @@ uint64_t lj_carith_check64(lua_State *L, int narg, CTypeID *id)
+   }
+ }
+ 
+-/* Check bit operator arguments. No coercion from strings. */
+-uint64_t lj_carith_checkbit64(lua_State *L, cTValue *o, CTypeID *id)
+-{
+-  if (tviscdata(o)) {
+-    CTState *cts = ctype_cts(L);
+-    uint8_t *sp = (uint8_t *)cdataptr(cdataV(o));
+-    CTypeID sid = cdataV(o)->ctypeid;
+-    CType *s = ctype_get(cts, sid);
+-    uint64_t x;
+-    if (ctype_isref(s->info)) {
+-      sp = *(void **)sp;
+-      sid = ctype_cid(s->info);
+-    }
+-    s = ctype_raw(cts, sid);
+-    if (ctype_isenum(s->info)) s = ctype_child(cts, s);
+-    if ((s->info & (CTMASK_NUM|CTF_BOOL|CTF_FP|CTF_UNSIGNED)) ==
+-	CTINFO(CT_NUM, CTF_UNSIGNED) && s->size == 8)
+-      *id = CTID_UINT64;  /* Use uint64_t, since it has the highest rank. */
+-    else if (!*id)
+-      *id = CTID_INT64;  /* Use int64_t, unless already set. */
+-    lj_cconv_ct_ct(cts, ctype_get(cts, *id), s,
+-		   (uint8_t *)&x, sp, 0);
+-    return x;
+-  } else if (LJ_LIKELY(tvisint(o))) {
+-    return (uint64_t)intV(o);  /* Sign-extended. */
+-  } else {
+-    if (!tvisnum(o)) lj_err_optype(L, o, LJ_ERR_OPARITH);
+-    return (uint64_t)lj_num2bit(numV(o));  /* Sign-extended. */
+-  }
+-}
+-
+ /* -- 64 bit integer arithmetic helpers ----------------------------------- */
+ 
+ #if LJ_32 && LJ_HASJIT
+diff --git a/src/lj_carith.h b/src/lj_carith.h
+index 700e4879..93fa41f2 100644
+--- a/src/lj_carith.h
++++ b/src/lj_carith.h
+@@ -21,7 +21,6 @@ LJ_FUNC uint64_t lj_carith_ror64(uint64_t x, int32_t sh);
+ #endif
+ LJ_FUNC uint64_t lj_carith_shift64(uint64_t x, int32_t sh, int op);
+ LJ_FUNC uint64_t lj_carith_check64(lua_State *L, int narg, CTypeID *id);
+-LJ_FUNC uint64_t lj_carith_checkbit64(lua_State *L, cTValue *o, CTypeID *id);
+ 
+ #if LJ_32 && LJ_HASJIT
+ LJ_FUNC int64_t lj_carith_mul64(int64_t x, int64_t k);
+diff --git a/src/lj_crecord.c b/src/lj_crecord.c
+index 7899720e..216b1a21 100644
+--- a/src/lj_crecord.c
++++ b/src/lj_crecord.c
+@@ -1884,23 +1884,24 @@ int LJ_FASTCALL recff_bit64_nary(jit_State *J, RecordFFData *rd)
+   return 0;
+ }
+ 
+-int recff_bit64_shift(jit_State *J, TRef *rb, TRef *rc,
+-		      TValue *rbv, TValue *rcv, IROp op)
++int LJ_FASTCALL recff_bit64_shift(jit_State *J, RecordFFData *rd)
+ {
+   CTState *cts = ctype_ctsG(J2G(J));
+   CTypeID id;
+   TRef tsh = 0;
+-  if (*rb && tref_iscdata(*rc)) {
+-    tsh = crec_bit64_arg(J, ctype_get(cts, CTID_INT64), *rc, rcv);
++  if (J->base[0] && tref_iscdata(J->base[1])) {
++    tsh = crec_bit64_arg(J, ctype_get(cts, CTID_INT64),
++			 J->base[1], &rd->argv[1]);
+     if (LJ_32 && !tref_isinteger(tsh))
+       tsh = emitconv(tsh, IRT_INT, tref_type(tsh), 0);
+-    *rc = tsh;
++    J->base[1] = tsh;
+   }
+-  id = crec_bit64_type(cts, rbv);
++  id = crec_bit64_type(cts, &rd->argv[0]);
+   if (id) {
+-    TRef tr = crec_bit64_arg(J, ctype_get(cts, id), *rb, rbv);
++    TRef tr = crec_bit64_arg(J, ctype_get(cts, id), J->base[0], &rd->argv[0]);
++    uint32_t op = rd->data;
+     IRType t;
+-    if (!tsh) tsh = lj_opt_narrow_tobit(J, *rc);
++    if (!tsh) tsh = lj_opt_narrow_tobit(J, J->base[1]);
+     t = tref_isinteger(tsh) ? IRT_INT : tref_type(tsh);
+     if (!(op < IR_BROL ? LJ_TARGET_MASKSHIFT : LJ_TARGET_MASKROT) &&
+ 	!tref_isk(tsh))
+@@ -1912,7 +1913,7 @@ int recff_bit64_shift(jit_State *J, TRef *rb, TRef *rc,
+     }
+ #endif
+     tr = emitir(IRT(op, id-CTID_INT64+IRT_I64), tr, tsh);
+-    *rb = emitir(IRTG(IR_CNEWI, IRT_CDATA), lj_ir_kint(J, id), tr);
++    J->base[0] = emitir(IRTG(IR_CNEWI, IRT_CDATA), lj_ir_kint(J, id), tr);
+     return 1;
+   }
+   return 0;
+@@ -1954,22 +1955,6 @@ TRef recff_bit64_tohex(jit_State *J, RecordFFData *rd, TRef hdr)
+   return lj_ir_call(J, IRCALL_lj_strfmt_putfxint, hdr, lj_ir_kint(J, sf), tr);
+ }
+ 
+-TRef recff_bit64_bitop(jit_State *J, TRef rb, TRef rc,
+-		       TValue *rbv, TValue *rcv, IROp op)
+-{
+-  CTState *cts = ctype_ctsG(J2G(J));
+-  CTypeID id = crec_bit64_type(cts, rbv);
+-  CTypeID id2 = rcv ? crec_bit64_type(cts, rcv) : 0;
+-  CType *ct;
+-  TRef tr, tr2;
+-  if (id < id2) id = id2;
+-  ct = ctype_get(cts, id);
+-  tr = crec_bit64_arg(J, ct, rb, rbv);
+-  tr2 = rcv ? crec_bit64_arg(J, ct, rc, rcv) : 0;
+-  tr = emitir(IRT(op, id-CTID_INT64+IRT_I64), tr, tr2);
+-  return emitir(IRTG(IR_CNEWI, IRT_CDATA), lj_ir_kint(J, id), tr);
+-}
+-
+ /* -- Miscellaneous library functions ------------------------------------- */
+ 
+ void LJ_FASTCALL lj_crecord_tonumber(jit_State *J, RecordFFData *rd)
+diff --git a/src/lj_crecord.h b/src/lj_crecord.h
+index ad2d3e25..ad99b725 100644
+--- a/src/lj_crecord.h
++++ b/src/lj_crecord.h
+@@ -29,11 +29,8 @@ LJ_FUNC void LJ_FASTCALL recff_ffi_gc(jit_State *J, RecordFFData *rd);
+ LJ_FUNC void LJ_FASTCALL recff_bit64_tobit(jit_State *J, RecordFFData *rd);
+ LJ_FUNC int LJ_FASTCALL recff_bit64_unary(jit_State *J, RecordFFData *rd);
+ LJ_FUNC int LJ_FASTCALL recff_bit64_nary(jit_State *J, RecordFFData *rd);
+-LJ_FUNC int recff_bit64_shift(jit_State *J, TRef *rb, TRef *rc,
+-			      TValue *rbv, TValue *rcv, IROp op);
++LJ_FUNC int LJ_FASTCALL recff_bit64_shift(jit_State *J, RecordFFData *rd);
+ LJ_FUNC TRef recff_bit64_tohex(jit_State *J, RecordFFData *rd, TRef hdr);
+-LJ_FUNC TRef recff_bit64_bitop(jit_State *J, TRef rb, TRef rc,
+-			       TValue *rbv, TValue *rcv, IROp op);
+ 
+ LJ_FUNC void LJ_FASTCALL lj_crecord_tonumber(jit_State *J, RecordFFData *rd);
+ LJ_FUNC TRef lj_crecord_loadiu64(jit_State *J, TRef tr, cTValue *o);
+diff --git a/src/lj_dispatch.h b/src/lj_dispatch.h
+index 755590e6..9baf762b 100644
+--- a/src/lj_dispatch.h
++++ b/src/lj_dispatch.h
+@@ -49,7 +49,6 @@ extern double __divdf3(double a, double b);
+   _(lj_dispatch_profile) _(lj_err_throw) \
+   _(lj_ffh_coroutine_wrap_err) _(lj_func_closeuv) _(lj_func_newL_gc) \
+   _(lj_gc_barrieruv) _(lj_gc_step) _(lj_gc_step_fixtop) _(lj_meta_arith) \
+-  _(lj_meta_bitop) \
+   _(lj_meta_call) _(lj_meta_cat) _(lj_meta_comp) _(lj_meta_equal) \
+   _(lj_meta_for) _(lj_meta_istype) _(lj_meta_len) _(lj_meta_tget) \
+   _(lj_meta_tset) _(lj_state_growstack) _(lj_strfmt_number) \
+diff --git a/src/lj_errmsg.h b/src/lj_errmsg.h
+index ad8581c9..daf7fb6b 100644
+--- a/src/lj_errmsg.h
++++ b/src/lj_errmsg.h
+@@ -140,13 +140,9 @@ ERRDEF(XDOTS,	"cannot use " LUA_QL("...") " outside a vararg function")
+ ERRDEF(XSYNTAX,	"syntax error")
+ ERRDEF(XFOR,	LUA_QL("=") " or " LUA_QL("in") " expected")
+ ERRDEF(XBREAK,	"no loop to break")
+-ERRDEF(XCONT,	"no loop to continue")
+ ERRDEF(XLUNDEF,	"undefined label " LUA_QS)
+ ERRDEF(XLDUP,	"duplicate label " LUA_QS)
+ ERRDEF(XGSCOPE,	"<goto %s> jumps into the scope of local " LUA_QS)
+-ERRDEF(XCSCOPE,	"<continue> jumps into the scope of local " LUA_QS)
+-ERRDEF(XCONSTA,	"attempt to assign to const variable " LUA_QS)
+-ERRDEF(XCONSTR,	"attempt to re-declare const variable " LUA_QS)
+ 
+ /* Bytecode reader errors. */
+ ERRDEF(BCFMT,	"cannot load incompatible bytecode")
+diff --git a/src/lj_ffrecord.c b/src/lj_ffrecord.c
+index ef8e554b..8f41b525 100644
+--- a/src/lj_ffrecord.c
++++ b/src/lj_ffrecord.c
+@@ -745,7 +745,7 @@ static void LJ_FASTCALL recff_bit_nary(jit_State *J, RecordFFData *rd)
+ static void LJ_FASTCALL recff_bit_shift(jit_State *J, RecordFFData *rd)
+ {
+ #if LJ_HASFFI
+-  if (recff_bit64_shift(J, &J->base[0], &J->base[1], &rd->argv[0], &rd->argv[1], rd->data))
++  if (recff_bit64_shift(J, rd))
+     return;
+ #endif
+   {
+diff --git a/src/lj_ir.h b/src/lj_ir.h
+index 879196a5..b9f5e2c1 100644
+--- a/src/lj_ir.h
++++ b/src/lj_ir.h
+@@ -53,7 +53,7 @@
+   _(KINT64,	N , cst, ___) \
+   _(KSLOT,	N , ref, lit) \
+   \
+-  /* Bit ops. ORDER BIT */ \
++  /* Bit ops. */ \
+   _(BNOT,	N , ref, ___) \
+   _(BSWAP,	N , ref, ___) \
+   _(BAND,	C , ref, ref) \
+diff --git a/src/lj_lex.c b/src/lj_lex.c
+index 4bbe1835..a585cb58 100644
+--- a/src/lj_lex.c
++++ b/src/lj_lex.c
+@@ -97,18 +97,12 @@ static void lex_number(LexState *ls, TValue *tv)
+   StrScanFmt fmt;
+   LexChar c, xp = 'e';
+   lj_assertLS(lj_char_isdigit(ls->c), "bad usage");
+-  if ((c = ls->c) == '0') {
+-    lex_save(ls, c);
+-    do { c = lex_next(ls); } while (c == '_');
+-    if ((c | 0x20) == 'x') xp = 'p';
+-  }
++  if ((c = ls->c) == '0' && (lex_savenext(ls) | 0x20) == 'x')
++    xp = 'p';
+   while (lj_char_isident(ls->c) || ls->c == '.' ||
+ 	 ((ls->c == '-' || ls->c == '+') && (c | 0x20) == xp)) {
+-    if (LJ_LIKELY(ls->c != '_')) {
+-      c = ls->c;
+-      lex_save(ls, ls->c);
+-    }
+-    lex_next(ls);
++    c = ls->c;
++    lex_savenext(ls);
+   }
+   lex_save(ls, '\0');
+   fmt = lj_strscan_scan((const uint8_t *)ls->sb.b, sbuflen(&ls->sb)-1, tv,
+@@ -327,9 +321,7 @@ static LexToken lex_scan(LexState *ls, TValue *tv)
+       continue;
+     case '-':
+       lex_next(ls);
+-      if (ls->c != '-') {
+-	if (ls->c != '>') return '-'; else { lex_next(ls); return TK_arrow; }
+-      }
++      if (ls->c != '-') return '-';
+       lex_next(ls);
+       if (ls->c == '[') {  /* Long comment "--[=*[...]=*]". */
+ 	int sep = lex_skipeq(ls);
+@@ -361,41 +353,16 @@ static LexToken lex_scan(LexState *ls, TValue *tv)
+       if (ls->c != '=') return '='; else { lex_next(ls); return TK_eq; }
+     case '<':
+       lex_next(ls);
+-      if (ls->c == '=') { lex_next(ls); return TK_le; }
+-      if (ls->c == '<') { lex_next(ls); return TK_shl; }
+-      return '<';
++      if (ls->c != '=') return '<'; else { lex_next(ls); return TK_le; }
+     case '>':
+       lex_next(ls);
+-      if (ls->c == '=') { lex_next(ls); return TK_ge; }
+-      if (ls->c == '>') { lex_next(ls); return TK_shr; }
+-      return '>';
++      if (ls->c != '=') return '>'; else { lex_next(ls); return TK_ge; }
+     case '~':
+       lex_next(ls);
+-      if (ls->c == '=') { lex_next(ls); return TK_ne; }
+-      if (ls->c == '>') {
+-	lex_next(ls);
+-	if (ls->c != '>') lj_lex_error(ls, '~', LJ_ERR_XSYMBOL);
+-	lex_next(ls);
+-	return TK_sar;
+-      }
+-      return '~';
+-    case '!':
+-      lex_next(ls);
+-      if (ls->c != '=') return '!'; else { lex_next(ls); return TK_ne_; }
++      if (ls->c != '=') return '~'; else { lex_next(ls); return TK_ne; }
+     case ':':
+       lex_next(ls);
+       if (ls->c != ':') return ':'; else { lex_next(ls); return TK_label; }
+-    case '?':
+-      lex_next(ls);
+-      if (ls->c == '.') { lex_next(ls); return TK_nav; }
+-      if (ls->c == '?') { lex_next(ls); return TK_coal; }
+-      return '?';
+-    case '&':
+-      lex_next(ls);
+-      if (ls->c != '&') return '&'; else { lex_next(ls); return TK_and_; }
+-    case '|':
+-      lex_next(ls);
+-      if (ls->c != '|') return '|'; else { lex_next(ls); return TK_or_; }
+     case '"':
+     case '\'':
+       lex_string(ls, tv);
+diff --git a/src/lj_lex.h b/src/lj_lex.h
+index e5b78337..8d5c9a33 100644
+--- a/src/lj_lex.h
++++ b/src/lj_lex.h
+@@ -13,12 +13,10 @@
+ 
+ /* Lua lexer tokens. */
+ #define TKDEF(_, __) \
+-  _(and) _(break) _(const) _(continue) _(do) _(else) _(elseif) _(end) _(false) \
++  _(and) _(break) _(do) _(else) _(elseif) _(end) _(false) \
+   _(for) _(function) _(goto) _(if) _(in) _(local) _(nil) _(not) _(or) \
+   _(repeat) _(return) _(then) _(true) _(until) _(while) \
+   __(concat, ..) __(dots, ...) __(eq, ==) __(ge, >=) __(le, <=) __(ne, ~=) \
+-  __(nav, ?.) __(coal, \?\?) __(shl, <<) __(shr, >>)  __(sar, ~>>) \
+-  __(and_, &&) __(or_, ||) __(ne_, !=) __(arrow, ->) \
+   __(label, ::) __(number, <number>) __(name, <name>) __(string, <string>) \
+   __(eof, <eof>)
+ 
+@@ -41,12 +39,6 @@ typedef struct BCInsLine {
+   BCLine line;		/* Line number for this bytecode. */
+ } BCInsLine;
+ 
+-/* Index into variable stack. */
+-typedef uint16_t VarIndex;
+-
+-#define LJ_VINDEX_HSIZE	32	/* Hash table size. Must be a power of 2. */
+-#define LJ_VINDEX_MASK	(LJ_VINDEX_HSIZE-1)
+-
+ /* Info for local variables. Only used during bytecode generation. */
+ typedef struct VarInfo {
+   GCRef name;		/* Local variable name or goto/label name. */
+@@ -54,7 +46,6 @@ typedef struct VarInfo {
+   BCPos endpc;		/* First point where the local variable is dead. */
+   uint8_t slot;		/* Variable slot. */
+   uint8_t info;		/* Variable/goto/label info. */
+-  VarIndex prev;	/* Previous entry in variable hash chain. */
+ } VarInfo;
+ 
+ /* Lua lexer state. */
+@@ -84,7 +75,6 @@ typedef struct LexState {
+   uint32_t level;	/* Syntactical nesting level. */
+   int endmark;		/* Trust bytecode end marker, even if not at EOF. */
+   int fr2;		/* Generate bytecode for LJ_FR2 mode. */
+-  VarIndex vhash[LJ_VINDEX_HSIZE];	/* Variable hash chain anchors. */
+ } LexState;
+ 
+ LJ_FUNC int lj_lex_setup(lua_State *L, LexState *ls);
+diff --git a/src/lj_meta.c b/src/lj_meta.c
+index 5a08cf94..1e7262a4 100644
+--- a/src/lj_meta.c
++++ b/src/lj_meta.c
+@@ -22,11 +22,6 @@
+ #include "lj_strscan.h"
+ #include "lj_strfmt.h"
+ #include "lj_lib.h"
+-#if LJ_HASFFI
+-#include "lj_ctype.h"
+-#include "lj_cdata.h"
+-#include "lj_carith.h"
+-#endif
+ 
+ /* -- Metamethod handling ------------------------------------------------- */
+ 
+@@ -239,76 +234,6 @@ TValue *lj_meta_arith(lua_State *L, TValue *ra, cTValue *rb, cTValue *rc,
+   }
+ }
+ 
+-/* Helper for bit operators. No bitop metamethods in v2.1. */
+-void lj_meta_bitop(lua_State *L, TValue *ra, cTValue *rb, cTValue *rc, BCReg op)
+-{
+-#if LJ_HASFFI
+-  CTypeID id = 0, id_ignore = 0;
+-  uint64_t b = lj_carith_checkbit64(L, rb, &id);
+-  uint64_t c = lj_carith_checkbit64(L, rc, op >= BC_BSHL ? &id_ignore : &id);
+-  if (id) {
+-    if (tvisnum(rb)) {
+-      b = id == CTID_UINT64 ? lj_num2u64(numV(rb)) : (uint64_t)lj_num2i64(numV(rb));
+-    }
+-    if (tvisnum(rc)) {
+-      c = id == CTID_UINT64 ? lj_num2u64(numV(rc)) : (uint64_t)lj_num2i64(numV(rc));
+-    }
+-  }
+-  switch (op) {
+-  case BC_BNOT: b = ~b; break;
+-  case BC_BAND: b &= c; break;
+-  case BC_BOR: b |= c; break;
+-  case BC_BXOR: b ^= c; break;
+-  default:
+-    if (id) {
+-      b = lj_carith_shift64(b, (int32_t)c, op-BC_BSHL);
+-    } else if (op == BC_BSHL) {
+-      b = (uint64_t)((uint32_t)b << ((uint32_t)c & 31));
+-    } else if (op == BC_BSHR) {
+-      b = (uint64_t)((uint32_t)b >> ((uint32_t)c & 31));
+-    } else {
+-      lj_assertL(op == BC_BSAR, "bad bytecode op %d", op);
+-      b = (uint64_t)(uint32_t)((int32_t)b >> ((uint32_t)c & 31));
+-    }
+-    break;
+-  }
+-  if (id) {
+-    GCcdata *cd = lj_cdata_new_(L, id, 8);
+-    *(uint64_t *)cdataptr(cd) = b;
+-    setcdataV(L, ra, cd);
+-  } else {
+-    setintV(ra, (int32_t)b);
+-  }
+-#else
+-#if LJ_DUALNUM
+-  uint32_t b = 0, c = 0;
+-  if (tvisint(rb)) b = (uint32_t)intV(rb);
+-  else if (tvisnum(rb)) b = (uint32_t)lj_num2bit(numV(rb));
+-  else goto err;
+-  if (tvisint(rc)) c = (uint32_t)intV(rc);
+-  else if (tvisnum(rc)) c = (uint32_t)lj_num2bit(numV(rc));
+-  else goto err;
+-  switch (op) {
+-  case BC_BNOT: b = ~b; break;
+-  case BC_BAND: b &= c; break;
+-  case BC_BOR: b |= c; break;
+-  case BC_BXOR: b ^= c; break;
+-  case BC_BSHL: b <<= (c & 31); break;
+-  case BC_BSHR: b >>= (c & 31); break;
+-  case BC_BSAR: b = (uint32_t)((int32_t)b >> (c & 31)); break;
+-  default:
+-    lj_assertL(0, "bad bytecode op %d", op);
+-    break;
+-  }
+-  setintV(ra, (int32_t)b);
+-  return;
+-err:
+-#endif
+-  UNUSED(ra); UNUSED(op);
+-  lj_err_optype(L, tvisnumber(rb) ? rc : rb, LJ_ERR_OPARITH);
+-#endif
+-}
+-
+ /* Helper for CAT. Coercion, iterative concat, __concat metamethod. */
+ TValue *lj_meta_cat(lua_State *L, TValue *top, int left)
+ {
+diff --git a/src/lj_meta.h b/src/lj_meta.h
+index 28e6c8bb..3d6a71c0 100644
+--- a/src/lj_meta.h
++++ b/src/lj_meta.h
+@@ -26,8 +26,6 @@ LJ_FUNCA cTValue *lj_meta_tget(lua_State *L, cTValue *o, cTValue *k);
+ LJ_FUNCA TValue *lj_meta_tset(lua_State *L, cTValue *o, cTValue *k);
+ LJ_FUNCA TValue *lj_meta_arith(lua_State *L, TValue *ra, cTValue *rb,
+ 			       cTValue *rc, BCReg op);
+-LJ_FUNCA void lj_meta_bitop(lua_State *L, TValue *ra, cTValue *rb,
+-			    cTValue *rc, BCReg op);
+ LJ_FUNCA TValue *lj_meta_cat(lua_State *L, TValue *top, int left);
+ LJ_FUNCA TValue * LJ_FASTCALL lj_meta_len(lua_State *L, cTValue *o);
+ LJ_FUNCA TValue *lj_meta_equal(lua_State *L, GCobj *o1, GCobj *o2, int ne);
+diff --git a/src/lj_obj.h b/src/lj_obj.h
+index 30991a7e..89bd8b5c 100644
+--- a/src/lj_obj.h
++++ b/src/lj_obj.h
+@@ -401,7 +401,6 @@ typedef struct GCproto {
+ #define PROTO_FFI		0x04	/* Uses BC_KCDATA for FFI datatypes. */
+ #define PROTO_NOJIT		0x08	/* JIT disabled for this function. */
+ #define PROTO_ILOOP		0x10	/* Patched bytecode with ILOOP etc. */
+-#define PROTO_BITOP		0x80	/* Uses bit operator bytecodes. */
+ /* Only used during parsing. */
+ #define PROTO_HAS_RETURN	0x20	/* Already emitted a return. */
+ #define PROTO_FIXUP_RETURN	0x40	/* Need to fixup emitted returns. */
+diff --git a/src/lj_opt_fold.c b/src/lj_opt_fold.c
+index 092e2176..68632d6d 100644
+--- a/src/lj_opt_fold.c
++++ b/src/lj_opt_fold.c
+@@ -382,8 +382,8 @@ static uint64_t kfold_int64arith(jit_State *J, uint64_t k1, uint64_t k2,
+   case IR_BSAR: k1 = (uint64_t)((int64_t)k1 >> (k2 & 63)); break;
+   case IR_BROL: k1 = lj_rol(k1, (k2 & 63)); break;
+   case IR_BROR: k1 = lj_ror(k1, (k2 & 63)); break;
+-#endif
+   default: lj_assertJ(0, "bad IR op %d", op); break;
++#endif
+   }
+   return k1;
+ }
+diff --git a/src/lj_parse.c b/src/lj_parse.c
+index 00a64382..66e5a034 100644
+--- a/src/lj_parse.c
++++ b/src/lj_parse.c
+@@ -49,7 +49,6 @@ typedef enum {
+   VRELOCABLE,	/* info = instruction PC */
+   VNONRELOC,	/* info = result register */
+   VCALL,	/* info = instruction PC, aux = base */
+-  VCALLNAV,	/* info = instruction PC, aux = base */
+   VVOID
+ } ExpKind;
+ 
+@@ -80,18 +79,6 @@ typedef struct ExpDesc {
+ #define expr_numtv(e)		check_exp(expr_isnumk((e)), &(e)->u.nval)
+ #define expr_numberV(e)		numberVnum(expr_numtv((e)))
+ 
+-/* Expression flags. */
+-#define EXPR_F_NORES		0x01	/* Result will not be used. */
+-#define EXPR_F_NOCOLON		0x02	/* Disallow colon for method call.*/
+-#define EXPR_F_NONAV		0x04	/* Disallow safe navigation. */
+-#define EXPR_F_RET1		0x08	/* Return a single expr. */
+-
+-static LJ_AINLINE int32_t expr_bitV(ExpDesc *e)
+-{
+-  TValue *o = expr_numtv(e);
+-  return tvisint(o) ? intV(o) : lj_num2bit(numV(o));
+-}
+-
+ /* Initialize expression. */
+ static LJ_AINLINE void expr_init(ExpDesc *e, ExpKind k, uint32_t info)
+ {
+@@ -120,22 +107,17 @@ typedef struct FuncScope {
+ #define FSCOPE_GOLA		0x04	/* Goto or label used in scope. */
+ #define FSCOPE_UPVAL		0x08	/* Upvalue in scope. */
+ #define FSCOPE_NOCLOSE		0x10	/* Do not close upvalues. */
+-#define FSCOPE_CONT		0x20	/* Continue used in scope. */
+ 
+ #define NAME_BREAK		((GCstr *)(uintptr_t)1)
+-#define NAME_CONT		((GCstr *)(uintptr_t)2)
+ 
+-/* Index into variable stack. See VarIndex in lj_lex.h. */
+-#define VINDEX_NONE		0xffff
++/* Index into variable stack. */
++typedef uint16_t VarIndex;
+ #define LJ_MAX_VSTACK		(65536 - LJ_MAX_UPVAL)
+ 
+-#define LJ_HASH_VSTACK		0x20	/* Must be a power of 2. */
+-
+ /* Variable/goto/label info. */
+ #define VSTACK_VAR_RW		0x01	/* R/W variable. */
+ #define VSTACK_GOTO		0x02	/* Pending goto. */
+ #define VSTACK_LABEL		0x04	/* Label. */
+-#define VSTACK_CONST		0x08	/* Constant variable. */
+ 
+ /* Per-function state. */
+ typedef struct FuncState {
+@@ -166,11 +148,10 @@ typedef struct FuncState {
+ /* Binary and unary operators. ORDER OPR */
+ typedef enum BinOpr {
+   OPR_ADD, OPR_SUB, OPR_MUL, OPR_DIV, OPR_MOD, OPR_POW,  /* ORDER ARITH */
+-  OPR_BAND, OPR_BOR, OPR_BXOR, OPR_BSHL, OPR_BSHR, OPR_BSAR, /* ORDER BIT */
+   OPR_CONCAT,
+   OPR_NE, OPR_EQ,
+   OPR_LT, OPR_GE, OPR_LE, OPR_GT,
+-  OPR_AND, OPR_OR, OPR_COAL,
++  OPR_AND, OPR_OR,
+   OPR_NOBINOPR
+ } BinOpr;
+ 
+@@ -477,7 +458,7 @@ static void expr_discharge(FuncState *fs, ExpDesc *e)
+       ins = BCINS_ABC(BC_TGETV, 0, e->u.s.info, rc);
+     }
+     bcreg_free(fs, e->u.s.info);
+-  } else if (e->k == VCALL || e->k == VCALLNAV) {
++  } else if (e->k == VCALL) {
+     e->u.s.info = e->u.s.aux;
+     e->k = VNONRELOC;
+     return;
+@@ -642,13 +623,11 @@ static void bcemit_store(FuncState *fs, ExpDesc *var, ExpDesc *e)
+ {
+   BCIns ins;
+   if (var->k == VLOCAL) {
+-    lj_assertFS(!(fs->ls->vstack[var->u.s.aux].info & VSTACK_CONST), "unchecked const assignment");
+     fs->ls->vstack[var->u.s.aux].info |= VSTACK_VAR_RW;
+     expr_free(fs, e);
+     expr_toreg(fs, e, var->u.s.info);
+     return;
+   } else if (var->k == VUPVAL) {
+-    lj_assertFS(!(fs->ls->vstack[var->u.s.aux].info & VSTACK_CONST), "unchecked const assignment");
+     fs->ls->vstack[var->u.s.aux].info |= VSTACK_VAR_RW;
+     expr_toval(fs, e);
+     if (e->k <= VKTRUE)
+@@ -814,39 +793,17 @@ static int foldarith(BinOpr opr, ExpDesc *e1, ExpDesc *e2)
+   return 1;
+ }
+ 
+-/* Try constant-folding of bit operators. */
+-static int foldbitop(BinOpr opr, ExpDesc *e1, ExpDesc *e2)
+-{
+-  if (expr_isnumk_nojump(e1) && expr_isnumk_nojump(e2)) {
+-    int32_t k1 = expr_bitV(e1), k2 = expr_bitV(e2);
+-    switch (opr) {
+-    case OPR_BAND: k1 &= k2; break;
+-    case OPR_BOR: k1 |= k2; break;
+-    case OPR_BXOR: k1 ^= k2; break;
+-    case OPR_BSHL: k1 <<= (k2 & 31); break;
+-    case OPR_BSHR: k1 = (int32_t)((uint32_t)k1 >> (k2 & 31)); break;
+-    case OPR_BSAR: k1 >>= (k2 & 31); break;
+-    default: lj_assertX(0, "bad OPR %d", opr); break;
+-    }
+-    setintV(&e1->u.nval, k1);
+-    return 1;
+-  }
+-  return 0;
+-}
+-
+ /* Emit arithmetic operator. */
+ static void bcemit_arith(FuncState *fs, BinOpr opr, ExpDesc *e1, ExpDesc *e2)
+ {
+   BCReg rb, rc, t;
+   uint32_t op;
++  if (foldarith(opr, e1, e2))
++    return;
+   if (opr == OPR_POW) {
+     op = BC_POW;
+     rc = expr_toanyreg(fs, e2);
+     rb = expr_toanyreg(fs, e1);
+-  } else if (opr >= OPR_BAND) {
+-    op = opr-OPR_BAND+BC_BAND;
+-    rc = expr_toanyreg(fs, e2);
+-    rb = expr_toanyreg(fs, e1);
+   } else {
+     op = opr-OPR_ADD+BC_ADDVV;
+     /* Must discharge 2nd operand first since VINDEXED might free regs. */
+@@ -930,13 +887,6 @@ static void bcemit_binop_left(FuncState *fs, BinOpr op, ExpDesc *e)
+     bcemit_branch_t(fs, e);
+   } else if (op == OPR_OR) {
+     bcemit_branch_f(fs, e);
+-  } else if (op == OPR_COAL) {
+-    BCReg reg;
+-    expr_tonextreg(fs, e);
+-    reg = e->u.s.info;
+-    bcemit_INS(fs, BCINS_AD(BC_ISNEP, reg, VKNIL));
+-    e->u.s.aux = bcemit_jmp(fs);
+-    bcreg_free(fs, reg);
+   } else if (op == OPR_CONCAT) {
+     expr_tonextreg(fs, e);
+   } else if (op == OPR_EQ || op == OPR_NE) {
+@@ -950,12 +900,7 @@ static void bcemit_binop_left(FuncState *fs, BinOpr op, ExpDesc *e)
+ static void bcemit_binop(FuncState *fs, BinOpr op, ExpDesc *e1, ExpDesc *e2)
+ {
+   if (op <= OPR_POW) {
+-    if (!foldarith(op, e1, e2)) bcemit_arith(fs, op, e1, e2);
+-  } else if (op <= OPR_BSAR) {
+-    if (!foldbitop(op, e1, e2)) {
+-      fs->flags |= PROTO_BITOP;
+-      bcemit_arith(fs, op, e1, e2);
+-    }
++    bcemit_arith(fs, op, e1, e2);
+   } else if (op == OPR_AND) {
+     lj_assertFS(e1->t == NO_JMP, "jump list not closed");
+     expr_discharge(fs, e2);
+@@ -966,9 +911,6 @@ static void bcemit_binop(FuncState *fs, BinOpr op, ExpDesc *e1, ExpDesc *e2)
+     expr_discharge(fs, e2);
+     jmp_append(fs, &e2->t, e1->t);
+     *e1 = *e2;
+-  } else if (op == OPR_COAL) {
+-    expr_tonextreg(fs, e2);
+-    jmp_tohere(fs, e1->u.s.aux);
+   } else if (op == OPR_CONCAT) {
+     expr_toval(fs, e2);
+     if (e2->k == VRELOCABLE && bc_op(*bcptr(fs, e2)) == BC_CAT) {
+@@ -1019,41 +961,34 @@ static void bcemit_unop(FuncState *fs, BCOp op, ExpDesc *e)
+       lj_assertFS(e->k == VNONRELOC, "bad expr type %d", e->k);
+     }
+   } else {
+-    lj_assertFS(op == BC_UNM || op == BC_LEN || op == BC_BNOT, "bad unop %d", op);
+-    if (!expr_hasjump(e)) {
+-      if (op == BC_UNM) {  /* Constant-fold negations. */
++    lj_assertFS(op == BC_UNM || op == BC_LEN, "bad unop %d", op);
++    if (op == BC_UNM && !expr_hasjump(e)) {  /* Constant-fold negations. */
+ #if LJ_HASFFI
+-	if (e->k == VKCDATA) {  /* Fold in-place since cdata is not interned. */
+-	  GCcdata *cd = cdataV(&e->u.nval);
+-	  uint64_t *p = (uint64_t *)cdataptr(cd);
+-	  if (cd->ctypeid == CTID_COMPLEX_DOUBLE)
+-	    p[1] ^= U64x(80000000,00000000);
++      if (e->k == VKCDATA) {  /* Fold in-place since cdata is not interned. */
++	GCcdata *cd = cdataV(&e->u.nval);
++	uint64_t *p = (uint64_t *)cdataptr(cd);
++	if (cd->ctypeid == CTID_COMPLEX_DOUBLE)
++	  p[1] ^= U64x(80000000,00000000);
++	else
++	  *p = ~*p+1u;
++	return;
++      } else
++#endif
++      if (expr_isnumk(e) && !expr_numiszero(e)) {  /* Avoid folding to -0. */
++	TValue *o = expr_numtv(e);
++	if (tvisint(o)) {
++	  int32_t k = intV(o), negk = (int32_t)(~(uint32_t)k+1u);
++	  if (k == negk)
++	    setnumV(o, -(lua_Number)k);
+ 	  else
+-	    *p = ~*p+1u;
++	    setintV(o, negk);
++	  return;
++	} else {
++	  o->u64 ^= U64x(80000000,00000000);
+ 	  return;
+-	} else
+-#endif
+-	if (expr_isnumk(e) && !expr_numiszero(e)) {  /* Avoid folding to -0. */
+-	  TValue *o = expr_numtv(e);
+-	  if (tvisint(o)) {
+-	    int32_t k = intV(o), negk = (int32_t)(~(uint32_t)k+1u);
+-	    if (k == negk)
+-	      setnumV(o, -(lua_Number)k);
+-	    else
+-	      setintV(o, negk);
+-	    return;
+-	  } else {
+-	    o->u64 ^= U64x(80000000,00000000);
+-	    return;
+-	  }
+ 	}
+-      } else if (op == BC_BNOT && expr_isnumk(e)) {
+-	/* Constant-fold bitwise not. */
+-	setintV(&e->u.nval, (int32_t)~(uint32_t)expr_bitV(e));
+-	return;
+       }
+     }
+-    if (op == BC_BNOT) fs->flags |= PROTO_BITOP;
+     expr_toanyreg(fs, e);
+   }
+   expr_free(fs, e);
+@@ -1095,20 +1030,11 @@ static void lex_match(LexState *ls, LexToken what, LexToken who, BCLine line)
+   }
+ }
+ 
+-/* Check for a name, including soft keywords. */
+-static LJ_AINLINE int lex_isname(LexToken tok)
+-{
+-  return (tok == TK_name ||
+-	  (!LJ_52 && tok == TK_goto) ||
+-	  tok == TK_continue ||
+-	  tok == TK_const);
+-}
+-
+ /* Check for string token. */
+ static GCstr *lex_str(LexState *ls)
+ {
+   GCstr *s;
+-  if (!lex_isname(ls->tok))
++  if (ls->tok != TK_name && (LJ_52 || ls->tok != TK_goto))
+     err_token(ls, TK_name);
+   s = strV(&ls->tokval);
+   lj_lex_next(ls);
+@@ -1119,31 +1045,11 @@ static GCstr *lex_str(LexState *ls)
+ 
+ #define var_get(ls, fs, i)	((ls)->vstack[(fs)->varmap[(i)]])
+ 
+-typedef intptr_t VarHash;	/* For performance reasons. */
+-
+-/* Hash of a variable name. */
+-static LJ_AINLINE VarHash var_hash(GCstr *name)
+-{
+-  if ((uintptr_t)name < VARNAME__MAX)
+-    return -1;
+-  else
+-    return (name->sid & LJ_VINDEX_MASK);  /* Immutable id, not name->hash! */
+-}
+-
+ /* Define a new local variable. */
+-static MSize var_new(LexState *ls, BCReg n, GCstr *name)
++static void var_new(LexState *ls, BCReg n, GCstr *name)
+ {
+   FuncState *fs = ls->fs;
+   MSize vtop = ls->vtop;
+-  if ((uintptr_t)name >= VARNAME__MAX) {  /* Check for const re-declaration. */
+-    MSize vidx = ls->vhash[var_hash(name)];
+-    while (vidx != VINDEX_NONE) {
+-      VarInfo *v = &ls->vstack[vidx];
+-      if (strref(v->name) == name && (v->info & VSTACK_CONST))
+-       lj_lex_error(ls, 0, LJ_ERR_XCONSTR, strdata(name));
+-      vidx = v->prev;
+-    }
+-  }
+   checklimit(fs, fs->nactvar+n, LJ_MAX_LOCVAR, "local variables");
+   if (LJ_UNLIKELY(vtop >= ls->sizevstack)) {
+     if (ls->sizevstack >= LJ_MAX_VSTACK)
+@@ -1155,11 +1061,8 @@ static MSize var_new(LexState *ls, BCReg n, GCstr *name)
+ 	      "unanchored variable name");
+   /* NOBARRIER: name is anchored in fs->kt and ls->vstack is not a GCobj. */
+   setgcref(ls->vstack[vtop].name, obj2gco(name));
+-  ls->vstack[vtop].info = 0;
+-  /* The other VarInfo fields are filled in by var_add and var_remove. */
+   fs->varmap[fs->nactvar+n] = (uint16_t)vtop;
+   ls->vtop = vtop+1;
+-  return vtop;
+ }
+ 
+ #define var_new_lit(ls, n, v) \
+@@ -1174,15 +1077,10 @@ static void var_add(LexState *ls, BCReg nvars)
+   FuncState *fs = ls->fs;
+   BCReg nactvar = fs->nactvar;
+   while (nvars--) {
+-    intptr_t vidx = fs->varmap[nactvar];
+-    VarInfo *v = &ls->vstack[vidx];
+-    VarHash hash = var_hash(strref(v->name));
++    VarInfo *v = &var_get(ls, fs, nactvar);
+     v->startpc = fs->pc;
+     v->slot = nactvar++;
+-    if (hash != -1) {
+-      v->prev = ls->vhash[hash];
+-      ls->vhash[hash] = vidx;
+-    }
++    v->info = 0;
+   }
+   fs->nactvar = nactvar;
+ }
+@@ -1191,86 +1089,70 @@ static void var_add(LexState *ls, BCReg nvars)
+ static void var_remove(LexState *ls, BCReg tolevel)
+ {
+   FuncState *fs = ls->fs;
+-  while (fs->nactvar > tolevel) {
+-    VarInfo *v = &var_get(ls, fs, --fs->nactvar);
+-    VarHash hash = var_hash(strref(v->name));
+-    v->endpc = fs->pc;
+-    if (hash != -1) {
+-      ls->vhash[hash] = v->prev;
+-    }
++  while (fs->nactvar > tolevel)
++    var_get(ls, fs, --fs->nactvar).endpc = fs->pc;
++}
++
++/* Lookup local variable name. */
++static BCReg var_lookup_local(FuncState *fs, GCstr *n)
++{
++  int i;
++  for (i = fs->nactvar-1; i >= 0; i--) {
++    if (n == strref(var_get(fs->ls, fs, i).name))
++      return (BCReg)i;
+   }
++  return (BCReg)-1;  /* Not found. */
++}
++
++/* Lookup or add upvalue index. */
++static MSize var_lookup_uv(FuncState *fs, MSize vidx, ExpDesc *e)
++{
++  MSize i, n = fs->nuv;
++  for (i = 0; i < n; i++)
++    if (fs->uvmap[i] == vidx)
++      return i;  /* Already exists. */
++  /* Otherwise create a new one. */
++  checklimit(fs, fs->nuv, LJ_MAX_UPVAL, "upvalues");
++  lj_assertFS(e->k == VLOCAL || e->k == VUPVAL, "bad expr type %d", e->k);
++  fs->uvmap[n] = (uint16_t)vidx;
++  fs->uvtmp[n] = (uint16_t)(e->k == VLOCAL ? vidx : LJ_MAX_VSTACK+e->u.s.info);
++  fs->nuv = n+1;
++  return n;
+ }
+ 
+ /* Forward declaration. */
+ static void fscope_uvmark(FuncState *fs, BCReg level);
+ 
+-/* Lookup variable name. */
+-static MSize var_lookup(LexState *ls, ExpDesc *e, GCstr *name)
+-{
+-  MSize vidx = ls->vhash[var_hash(name)];
+-  while (vidx != VINDEX_NONE) {
+-    VarInfo *v = &ls->vstack[vidx];
+-    if (strref(v->name) == name) {
+-      FuncState *fs = ls->fs;
+-      if (vidx >= fs->vbase) {
+-	expr_init(e, VLOCAL, v->slot);
+-	e->u.s.aux = vidx;
+-      } else {
+-	MSize uvidx, nuv = fs->nuv;
+-	e->u.s.aux = vidx;
+-	for (uvidx = 0; uvidx < nuv; uvidx++) {
+-	  if (fs->uvmap[uvidx] == vidx) {  /* Upvalue already exists. */
+-	    expr_init(e, VUPVAL, uvidx);
+-	    return vidx;
+-	  }
+-	}
+-	expr_init(e, VUPVAL, nuv);
+-	for (;;) {
+-	  /* Create a new upvalue. */
+-	  VarIndex *puvtmp;
+-	  checklimit(fs, nuv, LJ_MAX_UPVAL, "upvalues");
+-	  fs->uvmap[nuv] = (uint16_t)vidx;
+-	  fs->nuv = nuv + 1;
+-	  puvtmp = &fs->uvtmp[nuv];  /* Set below. */
+-	  fs = fs->prev;  /* Continue in parent. */
+-	  lj_assertLS(fs != NULL, "variable hash chain broken");
+-	  if (vidx >= fs->vbase) {  /* Local in that function. */
+-	    *puvtmp = vidx;
+-	    fscope_uvmark(fs, v->slot);
+-	    return vidx;
+-	  }
+-	  /* Not a local in that function. Find or create upvalue. */
+-	  nuv = fs->nuv;
+-	  for (uvidx = 0; uvidx < nuv; uvidx++) {
+-	    if (fs->uvmap[uvidx] == vidx) {  /* Upvalue already exists. */
+-	      *puvtmp = LJ_MAX_VSTACK + uvidx;
+-	      return vidx;
+-	    }
+-	  }
+-	  /* Not yet an upvalue. Create it and continue. */
+-	  *puvtmp = LJ_MAX_VSTACK + nuv;
+-	}
++/* Recursively lookup variables in enclosing functions. */
++static MSize var_lookup_(FuncState *fs, GCstr *name, ExpDesc *e, int first)
++{
++  if (fs) {
++    BCReg reg = var_lookup_local(fs, name);
++    if ((int32_t)reg >= 0) {  /* Local in this function? */
++      expr_init(e, VLOCAL, reg);
++      if (!first)
++	fscope_uvmark(fs, reg);  /* Scope now has an upvalue. */
++      return (MSize)(e->u.s.aux = (uint32_t)fs->varmap[reg]);
++    } else {
++      MSize vidx = var_lookup_(fs->prev, name, e, 0);  /* Var in outer func? */
++      if ((int32_t)vidx >= 0) {  /* Yes, make it an upvalue here. */
++	e->u.s.info = (uint8_t)var_lookup_uv(fs, vidx, e);
++	e->k = VUPVAL;
++	return vidx;
+       }
+-      return vidx;
+     }
+-    vidx = v->prev;
++  } else {  /* Not found in any function, must be a global. */
++    expr_init(e, VGLOBAL, 0);
++    e->u.sval = name;
+   }
+-  expr_init(e, VGLOBAL, 0);
+-  e->u.sval = name;
+-  return vidx;
++  return (MSize)-1;  /* Global. */
+ }
+ 
+-/* Check for const variable assignment. */
+-static void var_assign(LexState *ls, ExpDesc *e)
+-{
+-  if (e->k == VLOCAL || e->k == VUPVAL) {
+-    VarInfo *v = &ls->vstack[e->u.s.aux];
+-    if ((v->info & VSTACK_CONST))
+-      lj_lex_error(ls, 0, LJ_ERR_XCONSTA, strdata(strref(v->name)));
+-  }
+-}
++/* Lookup variable name. */
++#define var_lookup(ls, e) \
++  var_lookup_((ls)->fs, lex_str(ls), (e), 1)
+ 
+-/* -- Goto and label handling --------------------------------------------- */
++/* -- Goto an label handling ---------------------------------------------- */
+ 
+ /* Add a new goto or label. */
+ static MSize gola_new(LexState *ls, GCstr *name, uint8_t info, BCPos pc)
+@@ -1282,8 +1164,7 @@ static MSize gola_new(LexState *ls, GCstr *name, uint8_t info, BCPos pc)
+       lj_lex_error(ls, 0, LJ_ERR_XLIMC, LJ_MAX_VSTACK);
+     lj_mem_growvec(ls->L, ls->vstack, ls->sizevstack, LJ_MAX_VSTACK, VarInfo);
+   }
+-  lj_assertFS(name == NAME_BREAK || name == NAME_CONT ||
+-	      lj_tab_getstr(fs->kt, name) != NULL,
++  lj_assertFS(name == NAME_BREAK || lj_tab_getstr(fs->kt, name) != NULL,
+ 	      "unanchored label name");
+   /* NOBARRIER: name is anchored in fs->kt and ls->vstack is not a GCobj. */
+   setgcref(ls->vstack[vtop].name, obj2gco(name));
+@@ -1338,12 +1219,8 @@ static void gola_resolve(LexState *ls, FuncScope *bl, MSize idx)
+ 	lj_assertLS((uintptr_t)name >= VARNAME__MAX, "expected goto name");
+ 	ls->linenumber = ls->fs->bcbase[vg->startpc].line;
+ 	lj_assertLS(strref(vg->name) != NAME_BREAK, "unexpected break");
+-	if (strref(vg->name) == NAME_CONT) {
+-	  lj_lex_error(ls, 0, LJ_ERR_XCSCOPE, strdata(name));
+-	} else {
+-	  lj_lex_error(ls, 0, LJ_ERR_XGSCOPE,
+-		       strdata(strref(vg->name)), strdata(name));
+-	}
++	lj_lex_error(ls, 0, LJ_ERR_XGSCOPE,
++		     strdata(strref(vg->name)), strdata(name));
+       }
+       gola_patch(ls, vg, vl);
+     }
+@@ -1367,10 +1244,8 @@ static void gola_fixup(LexState *ls, FuncScope *bl)
+ 	    gola_patch(ls, vg, v);
+ 	  }
+       } else if (gola_isgoto(v)) {
+-	if (bl->prev) {  /* Propagate goto, break or continue to outer scope. */
+-	  bl->prev->flags |= name == NAME_BREAK ? FSCOPE_BREAK :
+-			     name == NAME_CONT ? FSCOPE_CONT :
+-			     FSCOPE_GOLA;
++	if (bl->prev) {  /* Propagate goto or break to outer scope. */
++	  bl->prev->flags |= name == NAME_BREAK ? FSCOPE_BREAK : FSCOPE_GOLA;
+ 	  v->slot = bl->nactvar;
+ 	  if ((bl->flags & FSCOPE_UPVAL))
+ 	    gola_close(ls, v);
+@@ -1378,8 +1253,6 @@ static void gola_fixup(LexState *ls, FuncScope *bl)
+ 	  ls->linenumber = ls->fs->bcbase[v->startpc].line;
+ 	  if (name == NAME_BREAK)
+ 	    lj_lex_error(ls, 0, LJ_ERR_XBREAK);
+-	  else if (name == NAME_CONT)
+-	    lj_lex_error(ls, 0, LJ_ERR_XCONT);
+ 	  else
+ 	    lj_lex_error(ls, 0, LJ_ERR_XLUNDEF, strdata(name));
+ 	}
+@@ -1423,30 +1296,18 @@ static void fscope_end(FuncState *fs)
+   lj_assertFS(bl->nactvar == fs->nactvar, "bad regalloc");
+   if ((bl->flags & (FSCOPE_UPVAL|FSCOPE_NOCLOSE)) == FSCOPE_UPVAL)
+     bcemit_AJ(fs, BC_UCLO, bl->nactvar, 0);
+-  lj_assertFS((bl->flags & (FSCOPE_LOOP|FSCOPE_CONT)) != (FSCOPE_LOOP|FSCOPE_CONT), "dangling continue");
+-  if ((bl->flags & (FSCOPE_LOOP|FSCOPE_BREAK)) == (FSCOPE_LOOP|FSCOPE_BREAK)) {
+-    MSize idx;
+-    bl->flags &= ~FSCOPE_BREAK;
+-    idx = gola_new(ls, NAME_BREAK, VSTACK_LABEL, fs->pc);
+-    ls->vtop = idx;  /* Drop break label immediately. */
+-    gola_resolve(ls, bl, idx);
+-  }
+-  if ((bl->flags & (FSCOPE_GOLA|FSCOPE_BREAK|FSCOPE_CONT))) {
+-    gola_fixup(ls, bl);
++  if ((bl->flags & FSCOPE_BREAK)) {
++    if ((bl->flags & FSCOPE_LOOP)) {
++      MSize idx = gola_new(ls, NAME_BREAK, VSTACK_LABEL, fs->pc);
++      ls->vtop = idx;  /* Drop break label immediately. */
++      gola_resolve(ls, bl, idx);
++    } else {  /* Need the fixup step to propagate the breaks. */
++      gola_fixup(ls, bl);
++      return;
++    }
+   }
+-}
+-
+-/* Add continue label. */
+-static void fscope_continue(FuncState *fs, BCPos cont)
+-{
+-  FuncScope *bl = fs->bl;
+-  if ((bl->flags & FSCOPE_CONT)) {
+-    LexState *ls = fs->ls;
+-    MSize idx;
+-    bl->flags &= ~FSCOPE_CONT;
+-    idx = gola_new(ls, NAME_CONT, VSTACK_LABEL, cont);
+-    ls->vtop = idx;  /* Drop continue label immediately. */
+-    gola_resolve(ls, bl, idx);
++  if ((bl->flags & FSCOPE_GOLA)) {
++    gola_fixup(ls, bl);
+   }
+ }
+ 
+@@ -1599,7 +1460,7 @@ static void fs_fixup_line(FuncState *fs, GCproto *pt,
+ /* Prepare variable info for prototype. */
+ static size_t fs_prep_var(LexState *ls, FuncState *fs, size_t *ofsvar)
+ {
+-  VarInfo *vs = ls->vstack, *ve;
++  VarInfo *vs =ls->vstack, *ve;
+   MSize i, n;
+   BCPos lastpc;
+   lj_buf_reset(&ls->sb);  /* Copy to temp. string buffer. */
+@@ -1772,7 +1633,7 @@ static void fs_init(LexState *ls, FuncState *fs)
+ /* -- Expressions --------------------------------------------------------- */
+ 
+ /* Forward declaration. */
+-static void expr(LexState *ls, ExpDesc *v, int nocolon);
++static void expr(LexState *ls, ExpDesc *v);
+ 
+ /* Return string expression. */
+ static void expr_str(LexState *ls, ExpDesc *e)
+@@ -1819,6 +1680,7 @@ static void expr_field(LexState *ls, ExpDesc *v)
+   FuncState *fs = ls->fs;
+   ExpDesc key;
+   expr_toanyreg(fs, v);
++  lj_lex_next(ls);  /* Skip dot or colon. */
+   expr_str(ls, &key);
+   expr_index(fs, v, &key);
+ }
+@@ -1827,7 +1689,7 @@ static void expr_field(LexState *ls, ExpDesc *v)
+ static void expr_bracket(LexState *ls, ExpDesc *v)
+ {
+   lj_lex_next(ls);  /* Skip '['. */
+-  expr(ls, v, 0);
++  expr(ls, v);
+   expr_toval(ls->fs, v);
+   lex_check(ls, ']');
+ }
+@@ -1869,7 +1731,8 @@ static void expr_table(LexState *ls, ExpDesc *e)
+       if (!expr_isk(&key)) expr_index(fs, e, &key);
+       if (expr_isnumk(&key) && expr_numiszero(&key)) needarr = 1; else nhash++;
+       lex_check(ls, '=');
+-    } else if (lex_isname(ls->tok) && lj_lex_lookahead(ls) == '=') {
++    } else if ((ls->tok == TK_name || (!LJ_52 && ls->tok == TK_goto)) &&
++	       lj_lex_lookahead(ls) == '=') {
+       expr_str(ls, &key);
+       lex_check(ls, '=');
+       nhash++;
+@@ -1879,7 +1742,7 @@ static void expr_table(LexState *ls, ExpDesc *e)
+       narr++;
+       needarr = vcall = 1;
+     }
+-    expr(ls, &val, 0);
++    expr(ls, &val);
+     if (expr_isk(&key) && key.k != VKNIL &&
+ 	(key.k == VKSTR || expr_isk_nojump(&val))) {
+       TValue k, *v;
+@@ -1903,10 +1766,7 @@ static void expr_table(LexState *ls, ExpDesc *e)
+       }
+     } else {
+     nonconst:
+-      if (val.k != VCALL) {
+-	expr_toanyreg(fs, &val);
+-	vcall = 0;
+-      }
++      if (val.k != VCALL) { expr_toanyreg(fs, &val); vcall = 0; }
+       if (expr_isk(&key)) expr_index(fs, e, &key);
+       bcemit_store(fs, e, &val);
+     }
+@@ -1948,17 +1808,16 @@ static void expr_table(LexState *ls, ExpDesc *e)
+ }
+ 
+ /* Parse function parameters. */
+-static BCReg parse_params(LexState *ls, int needself,
+-			  LexToken before, LexToken after)
++static BCReg parse_params(LexState *ls, int needself)
+ {
+   FuncState *fs = ls->fs;
+   BCReg nparams = 0;
+-  lex_check(ls, before);
++  lex_check(ls, '(');
+   if (needself)
+     var_new_lit(ls, nparams++, "self");
+-  if (ls->tok != after) {
++  if (ls->tok != ')') {
+     do {
+-      if (lex_isname(ls->tok)) {
++      if (ls->tok == TK_name || (!LJ_52 && ls->tok == TK_goto)) {
+ 	var_new(ls, nparams++, lex_str(ls));
+       } else if (ls->tok == TK_dots) {
+ 	lj_lex_next(ls);
+@@ -1972,96 +1831,54 @@ static BCReg parse_params(LexState *ls, int needself,
+   var_add(ls, nparams);
+   lj_assertFS(fs->nactvar == nparams, "bad regalloc");
+   bcreg_reserve(fs, nparams);
+-  lex_check(ls, after);
++  lex_check(ls, ')');
+   return nparams;
+ }
+ 
+-/* Forward declarations. */
++/* Forward declaration. */
+ static void parse_chunk(LexState *ls);
+-static void parse_return(LexState *ls, int eflags);
+ 
+-/* Begin a new function prototype. */
+-static void proto_begin(FuncState *fs, BCLine line, BCReg nparams)
+-{
+-  FuncState *pfs = fs->prev;
+-  fs->linedefined = line;
+-  fs->numparams = (uint8_t)nparams;
+-  fs->bcbase = pfs->bcbase + pfs->pc;
+-  fs->bclim = pfs->bclim - pfs->pc;
+-  bcemit_AD(fs, BC_FUNCF, 0, 0);  /* Placeholder. */
+-}
+-
+-/* Finish a function prototype. */
+-static void proto_finish(LexState *ls, ExpDesc *e, ptrdiff_t oldbase)
++/* Parse body of a function. */
++static void parse_body(LexState *ls, ExpDesc *e, int needself, BCLine line)
+ {
+-  MSize flags = (ls->fs->flags & (PROTO_FFI|PROTO_BITOP));
+-  GCproto *pt = fs_finish(ls, (ls->lastline = ls->linenumber));
+-  FuncState *pfs = ls->fs;
++  FuncState fs, *pfs = ls->fs;
++  FuncScope bl;
++  GCproto *pt;
++  ptrdiff_t oldbase = pfs->bcbase - ls->bcstack;
++  fs_init(ls, &fs);
++  fscope_begin(&fs, &bl, 0);
++  fs.linedefined = line;
++  fs.numparams = (uint8_t)parse_params(ls, needself);
++  fs.bcbase = pfs->bcbase + pfs->pc;
++  fs.bclim = pfs->bclim - pfs->pc;
++  bcemit_AD(&fs, BC_FUNCF, 0, 0);  /* Placeholder. */
++  parse_chunk(ls);
++  if (ls->tok != TK_end) lex_match(ls, TK_end, TK_function, line);
++  pt = fs_finish(ls, (ls->lastline = ls->linenumber));
+   pfs->bcbase = ls->bcstack + oldbase;  /* May have been reallocated. */
+   pfs->bclim = (BCPos)(ls->sizebcstack - oldbase);
+   /* Store new prototype in the constant array of the parent. */
+   expr_init(e, VRELOCABLE,
+ 	    bcemit_AD(pfs, BC_FNEW, 0, const_gc(pfs, obj2gco(pt), LJ_TPROTO)));
+-  pfs->flags |= (uint8_t)flags;  /* Inherited flags. */
++#if LJ_HASFFI
++  pfs->flags |= (fs.flags & PROTO_FFI);
++#endif
+   if (!(pfs->flags & PROTO_CHILD)) {
+     if (pfs->flags & PROTO_HAS_RETURN)
+       pfs->flags |= PROTO_FIXUP_RETURN;
+     pfs->flags |= PROTO_CHILD;
+   }
+-}
+-
+-/* Parse body of a function. */
+-static void parse_body(LexState *ls, ExpDesc *e, int needself, BCLine line)
+-{
+-  ptrdiff_t oldbase = ls->fs->bcbase - ls->bcstack;
+-  FuncState fs;
+-  FuncScope bl;
+-  fs_init(ls, &fs);
+-  fscope_begin(&fs, &bl, 0);
+-  proto_begin(&fs, line, parse_params(ls, needself, '(', ')'));
+-  parse_chunk(ls);
+-  if (ls->tok != TK_end) lex_match(ls, TK_end, TK_function, line);
+-  proto_finish(ls, e, oldbase);
+   lj_lex_next(ls);
+ }
+ 
+-/* Parse short function. */
+-static void parse_shortfunc(LexState *ls, ExpDesc *e, GCstr *name,
+-			    int eflags, BCLine line)
+-{
+-  ptrdiff_t oldbase = ls->fs->bcbase - ls->bcstack;
+-  FuncState fs;
+-  FuncScope bl;
+-  BCReg nparams = 0;
+-  fs_init(ls, &fs);
+-  fscope_begin(&fs, &bl, 0);
+-  if (name != NULL) {
+-    setboolV(lj_tab_setstr(ls->L, fs.kt, name), 1);  /* Anchor in new proto. */
+-    var_new(ls, nparams++, name);
+-    var_add(ls, nparams);
+-    bcreg_reserve(&fs, 1);
+-  } else if (!lex_opt(ls, TK_or_)) {
+-    nparams = parse_params(ls, 0, '|', '|');
+-  }
+-  lex_check(ls, TK_arrow);
+-  proto_begin(&fs, line, nparams);
+-  if (lex_opt(ls, TK_do)) {
+-    parse_chunk(ls);
+-    if (!lex_opt(ls, TK_end)) lex_match(ls, TK_end, TK_do, line);
+-  } else {
+-    parse_return(ls, (eflags | EXPR_F_RET1));
+-  }
+-  proto_finish(ls, e, oldbase);
+-}
+-
+ /* Parse expression list. Last expression is left open. */
+ static BCReg expr_list(LexState *ls, ExpDesc *v)
+ {
+   BCReg n = 1;
+-  expr(ls, v, 0);
++  expr(ls, v);
+   while (lex_opt(ls, ',')) {
+     expr_tonextreg(ls->fs, v);
+-    expr(ls, v, 0);
++    expr(ls, v);
+     n++;
+   }
+   return n;
+@@ -2114,102 +1931,48 @@ static void parse_args(LexState *ls, ExpDesc *e)
+   fs->freereg = base+1;  /* Leave one result by default. */
+ }
+ 
+-/* Parse primary expression with safe navigation. */
+-static BCPos expr_primary_nav(LexState *ls, ExpDesc *v, int eflags)
++/* Parse primary expression. */
++static void expr_primary(LexState *ls, ExpDesc *v)
+ {
+   FuncState *fs = ls->fs;
+-  BCPos xpc = NO_JMP;
+   /* Parse prefix expression. */
+   if (ls->tok == '(') {
+     BCLine line = ls->linenumber;
+     lj_lex_next(ls);
+-    expr(ls, v, 0);  /* Don't propagate eflags. */
++    expr(ls, v);
+     lex_match(ls, ')', '(', line);
+     expr_discharge(ls->fs, v);
+-  } else if (lex_isname(ls->tok)) {
+-    BCLine line = ls->linenumber;
+-    GCstr *name = lex_str(ls);
+-    if (!(eflags & EXPR_F_NORES) && ls->tok == TK_arrow) {
+-      parse_shortfunc(ls, v, name, eflags, line);
+-      return xpc;
+-    }
+-    var_lookup(ls, v, name);
++  } else if (ls->tok == TK_name || (!LJ_52 && ls->tok == TK_goto)) {
++    var_lookup(ls, v);
+   } else {
+-  err:
+     err_syntax(ls, LJ_ERR_XSYMBOL);
+   }
+   for (;;) {  /* Parse multiple expression suffixes. */
+-    int nav = 0;
+-    if (!(eflags & EXPR_F_NONAV) && lex_opt(ls, TK_nav)) {
+-      nav = 1;
+-      expr_toanyreg(fs, v);
+-      bcemit_INS(fs, BCINS_AD(BC_ISEQP, v->u.s.info, VKNIL));
+-      jmp_append(fs, &xpc, bcemit_jmp(fs));
+-    }
+-    if (ls->tok == '[') {
++    if (ls->tok == '.') {
++      expr_field(ls, v);
++    } else if (ls->tok == '[') {
+       ExpDesc key;
+       expr_toanyreg(fs, v);
+       expr_bracket(ls, &key);
+       expr_index(fs, v, &key);
+     } else if (ls->tok == ':') {
+       ExpDesc key;
+-      if ((eflags & EXPR_F_NOCOLON)) {
+-	if (nav) goto err;
+-	break;
+-      }
+-      lj_lex_next(ls);  /* Skip ':'. */
++      lj_lex_next(ls);
+       expr_str(ls, &key);
+       bcemit_method(fs, v, &key);
+-      nav = 0;
+-      if (lex_opt(ls, TK_nav)) {
+-	nav = 1;
+-	bcemit_INS(fs, BCINS_AD(BC_ISEQP, v->u.s.info, VKNIL));
+-	jmp_append(fs, &xpc, bcemit_jmp(fs));
+-      }
+-      goto call;
++      parse_args(ls, v);
+     } else if (ls->tok == '(' || ls->tok == TK_string || ls->tok == '{') {
+       expr_tonextreg(fs, v);
+       if (ls->fr2) bcreg_reserve(fs, 1);
+-    call:
+       parse_args(ls, v);
+-      /* Keep nav VCALL if no suffix follows. */
+-      if (nav && !(eflags & EXPR_F_NORES) &&
+-	  !(ls->tok == TK_nav || ls->tok == '[' || ls->tok == ':' ||
+-	    ls->tok == '(' || ls->tok == TK_string || ls->tok == '{' ||
+-	    ls->tok == '.')) break;
+-    } else if (nav || lex_opt(ls, '.')) {
+-      expr_field(ls, v);
+     } else {
+       break;
+     }
+-    if (nav && !(eflags & EXPR_F_NORES)) {
+-      expr_tonextreg(fs, v);
+-    }
+-  }
+-  return xpc;
+-}
+-
+-/* Parse primary expression. */
+-static void expr_primary(LexState *ls, ExpDesc *v, int eflags)
+-{
+-  BCPos xpc = expr_primary_nav(ls, v, eflags);
+-  if (xpc != NO_JMP) {
+-    FuncState *fs = ls->fs;
+-    BCPos around;
+-    around = bcemit_jmp(fs);
+-    jmp_tohere(fs, xpc);
+-    if (v->k == VCALL) {  /* Change to VCALLNAV. Still points to CALL/CALLM. */
+-      v->k = VCALLNAV;
+-      bcemit_AD(fs, BC_KPRI, v->u.s.aux, VKNIL);
+-    } else {
+-      bcemit_AD(fs, BC_KPRI, v->u.s.info, VKNIL);
+-    }
+-    jmp_tohere(fs, around);
+   }
+ }
+ 
+ /* Parse simple expression. */
+-static void expr_simple(LexState *ls, ExpDesc *v, int eflags)
++static void expr_simple(LexState *ls, ExpDesc *v)
+ {
+   switch (ls->tok) {
+   case TK_number:
+@@ -2246,11 +2009,8 @@ static void expr_simple(LexState *ls, ExpDesc *v, int eflags)
+     lj_lex_next(ls);
+     parse_body(ls, v, 0, ls->linenumber);
+     return;
+-  case '|': case TK_or_:
+-    parse_shortfunc(ls, v, NULL, eflags, ls->linenumber);
+-    return;
+   default:
+-    expr_primary(ls, v, eflags);
++    expr_primary(ls, v);
+     return;
+   }
+   lj_lex_next(ls);
+@@ -2275,22 +2035,15 @@ static BinOpr token2binop(LexToken tok)
+   case '/':	return OPR_DIV;
+   case '%':	return OPR_MOD;
+   case '^':	return OPR_POW;
+-  case '&':	return OPR_BAND;
+-  case '|':	return OPR_BOR;
+-  case '~':	return OPR_BXOR;
+-  case TK_shl:	return OPR_BSHL;
+-  case TK_shr:	return OPR_BSHR;
+-  case TK_sar:	return OPR_BSAR;
+   case TK_concat: return OPR_CONCAT;
+-  case TK_ne:	case TK_ne_: return OPR_NE;
++  case TK_ne:	return OPR_NE;
+   case TK_eq:	return OPR_EQ;
+   case '<':	return OPR_LT;
+   case TK_le:	return OPR_LE;
+   case '>':	return OPR_GT;
+   case TK_ge:	return OPR_GE;
+-  case TK_and:	case TK_and_: return OPR_AND;
+-  case TK_or:	case TK_or_: return OPR_OR;
+-  case TK_coal:	return OPR_COAL;
++  case TK_and:	return OPR_AND;
++  case TK_or:	return OPR_OR;
+   default:	return OPR_NOBINOPR;
+   }
+ }
+@@ -2300,91 +2053,69 @@ static const struct {
+   uint8_t left;		/* Left priority. */
+   uint8_t right;	/* Right priority. */
+ } priority[] = {
+-  {10,10}, {10,10}, {11,11}, {11,11}, {11,11},	/* ADD SUB MUL DIV MOD */
+-  {14,13},				/* POW (right associative) */
+-  {6,6}, {4,4}, {5,5},			/* BAND BOR BXOR */
+-  {7,7}, {7,7}, {7,7},			/* BSHL BSHR BSAR */
+-  {9,8},				/* CONCAT (right associative) */
++  {6,6}, {6,6}, {7,7}, {7,7}, {7,7},	/* ADD SUB MUL DIV MOD */
++  {10,9}, {5,4},			/* POW CONCAT (right associative) */
+   {3,3}, {3,3},				/* EQ NE */
+   {3,3}, {3,3}, {3,3}, {3,3},		/* LT GE GT LE */
+-  {2,2}, {1,1}, {1,1}			/* AND OR COAL */
++  {2,2}, {1,1}				/* AND OR */
+ };
+ 
+-#define UNARY_PRIORITY		12  /* Priority for unary operators. */
++#define UNARY_PRIORITY		8  /* Priority for unary operators. */
+ 
+ /* Forward declaration. */
+-static BinOpr expr_binop(LexState *ls, ExpDesc *v, uint32_t limit, int eflags);
++static BinOpr expr_binop(LexState *ls, ExpDesc *v, uint32_t limit);
+ 
+ /* Parse unary expression. */
+-static void expr_unop(LexState *ls, ExpDesc *v, int eflags)
++static void expr_unop(LexState *ls, ExpDesc *v)
+ {
+   BCOp op;
+-  if (ls->tok == TK_not || ls->tok == '!') {
++  if (ls->tok == TK_not) {
+     op = BC_NOT;
+   } else if (ls->tok == '-') {
+     op = BC_UNM;
+   } else if (ls->tok == '#') {
+     op = BC_LEN;
+-  } else if (ls->tok == '~') {
+-    op = BC_BNOT;
+   } else {
+-    expr_simple(ls, v, eflags);
++    expr_simple(ls, v);
+     return;
+   }
+   lj_lex_next(ls);
+-  expr_binop(ls, v, UNARY_PRIORITY, eflags);
++  expr_binop(ls, v, UNARY_PRIORITY);
+   bcemit_unop(ls->fs, op, v);
+ }
+ 
+ /* Parse binary expressions with priority higher than the limit. */
+-static BinOpr expr_binop(LexState *ls, ExpDesc *v, uint32_t limit, int eflags)
++static BinOpr expr_binop(LexState *ls, ExpDesc *v, uint32_t limit)
+ {
+-  BinOpr opr;
++  BinOpr op;
+   synlevel_begin(ls);
+-  expr_unop(ls, v, eflags);
+-  opr = token2binop(ls->tok);
+-  while (opr != OPR_NOBINOPR && priority[opr].left > limit) {
++  expr_unop(ls, v);
++  op = token2binop(ls->tok);
++  while (op != OPR_NOBINOPR && priority[op].left > limit) {
+     ExpDesc v2;
+     BinOpr nextop;
+     lj_lex_next(ls);
+-    bcemit_binop_left(ls->fs, opr, v);
++    bcemit_binop_left(ls->fs, op, v);
+     /* Parse binary expression with higher priority. */
+-    nextop = expr_binop(ls, &v2, priority[opr].right, eflags);
+-    bcemit_binop(ls->fs, opr, v, &v2);
+-    opr = nextop;
++    nextop = expr_binop(ls, &v2, priority[op].right);
++    bcemit_binop(ls->fs, op, v, &v2);
++    op = nextop;
+   }
+   synlevel_end(ls);
+-  return opr;  /* Return unconsumed binary operator (if any). */
++  return op;  /* Return unconsumed binary operator (if any). */
+ }
+ 
+ /* Parse expression. */
+-static void expr(LexState *ls, ExpDesc *v, int eflags)
++static void expr(LexState *ls, ExpDesc *v)
+ {
+-  expr_binop(ls, v, 0, eflags);  /* Priority 0: parse whole expression. */
+-  if (lex_opt(ls, '?')) {  /* Ternary ?: conditional operator. Right-assoc. */
+-    FuncState *fs = ls->fs;
+-    BCPos escapelist = NO_JMP, cond;
+-    BCReg reg;
+-    bcemit_branch_t(fs, v);
+-    cond = v->f;
+-    expr(ls, v, EXPR_F_NOCOLON);  /* Prevent method parsing. Use parentheses. */
+-    expr_tonextreg(fs, v);
+-    reg = v->u.s.info;
+-    jmp_append(fs, &escapelist, bcemit_jmp(fs));
+-    jmp_tohere(fs, cond);
+-    lex_check(ls, ':');
+-    bcreg_free(fs, reg);
+-    expr(ls, v, 0);
+-    expr_tonextreg(fs, v);
+-    jmp_tohere(fs, escapelist);
+-  }
++  expr_binop(ls, v, 0);  /* Priority 0: parse whole expression. */
+ }
+ 
+ /* Assign expression to the next register. */
+ static void expr_next(LexState *ls)
+ {
+   ExpDesc e;
+-  expr(ls, &e, 0);
++  expr(ls, &e);
+   expr_tonextreg(ls->fs, &e);
+ }
+ 
+@@ -2392,7 +2123,7 @@ static void expr_next(LexState *ls)
+ static BCPos expr_cond(LexState *ls)
+ {
+   ExpDesc v;
+-  expr(ls, &v, 0);
++  expr(ls, &v);
+   if (v.k == VKNIL) v.k = VKFALSE;
+   bcemit_branch_t(ls->fs, &v);
+   return v.f;
+@@ -2406,44 +2137,6 @@ typedef struct LHSVarList {
+   struct LHSVarList *prev;	/* Link to previous LHS variable. */
+ } LHSVarList;
+ 
+-/* Parse compound assignment. */
+-static int parse_compound(LexState *ls, ExpDesc *e)
+-{
+-  FuncState *fs;
+-  ExpDesc estore, v;
+-  BinOpr opr;
+-  if (!(e->k >= VLOCAL && e->k <= VINDEXED)) return 0;
+-  opr = token2binop(ls->tok);
+-  /* '^=' aka exponentiation assignment is deliberately omitted to avoid
+-  ** confusion with xor assignment in other computer languages.
+-  ** Use 'a ~= b' for xor assignment. The unequal operator is only valid
+-  ** in expression contexts and assignments are statements.
+-  */
+-  if (opr > OPR_NE || opr == OPR_POW) return 0;  /* ORDER OPR */
+-  var_assign(ls, e);
+-  if (opr == OPR_NE) {
+-    if (ls->tok != TK_ne) lj_lex_error(ls, '!', LJ_ERR_XTOKEN, "=");
+-    opr = OPR_BXOR;
+-  } else {  /* Can't use lex_check() here. Only allow '+=', not '+ ='. */
+-    if (ls->c != '=') err_token(ls, '=');
+-    lj_lex_next(ls);  /* Skip operator. */
+-  }
+-  lj_lex_next(ls);  /* Skip '=' or '~=' aka TOK_ne. */
+-  fs = ls->fs;
+-  estore = *e;
+-  if (e->k == VINDEXED) {  /* Preserve the base and key for the store. */
+-    BCReg freg = fs->freereg;
+-    expr_discharge(fs, e);
+-    fs->freereg = freg;  /* Undo bcreg_free of info and/or aux. */
+-  }
+-  if (opr == OPR_CONCAT) expr_tonextreg(fs, e); else expr_toanyreg(fs, e);
+-  expr(ls, &v, 0);
+-  bcemit_binop(fs, opr, e, &v);
+-  bcemit_store(fs, &estore, e);
+-  /* Don't bother to free VINDEXED info+aux. Done by parse_chunk(). */
+-  return 1;
+-}
+-
+ /* Eliminate write-after-read hazards for local variable assignment. */
+ static void assign_hazard(LexState *ls, LHSVarList *lh, const ExpDesc *v)
+ {
+@@ -2474,23 +2167,11 @@ static void assign_adjust(LexState *ls, BCReg nvars, BCReg nexps, ExpDesc *e)
+ {
+   FuncState *fs = ls->fs;
+   int32_t extra = (int32_t)nvars - (int32_t)nexps;
+-  if (e->k == VCALL || e->k == VCALLNAV) {
+-    BCInsLine *ilp = &fs->bcbase[e->u.s.info];
++  if (e->k == VCALL) {
+     extra++;  /* Compensate for the VCALL itself. */
+     if (extra < 0) extra = 0;
+-    setbc_b(&ilp->ins, extra+1);  /* Fixup call results. */
++    setbc_b(bcptr(fs, e), extra+1);  /* Fixup call results. */
+     if (extra > 1) bcreg_reserve(fs, (BCReg)extra-1);
+-    if (e->k == VCALLNAV) {  /* Safe navigation result. */
+-      BCPos base = e->u.s.aux;
+-      lj_assertFS((bc_op(ilp[0].ins) == BC_CALL ||
+-		   bc_op(ilp[0].ins) == BC_CALLM) &&
+-		  bc_op(ilp[1].ins) == BC_JMP &&
+-		  bc_op(ilp[2].ins) == BC_KPRI,
+-		  "expected CALL|CALLM, JMP, KPRI inside safe navigation");
+-      setbc_a(&ilp[1].ins, base + extra);  /* Fixup JMP nactvar. */
+-      if (extra > 1)  /* Need more nils. Case extra == 0 is harmless. */
+-	ilp[2].ins = BCINS_AD(BC_KNIL, base, base + extra-1);
+-    }
+   } else {
+     if (e->k != VVOID)
+       expr_tonextreg(fs, e);  /* Close last expression. */
+@@ -2509,11 +2190,10 @@ static void parse_assignment(LexState *ls, LHSVarList *lh, BCReg nvars)
+ {
+   ExpDesc e;
+   checkcond(ls, VLOCAL <= lh->v.k && lh->v.k <= VINDEXED, LJ_ERR_XSYNTAX);
+-  var_assign(ls, &lh->v);
+   if (lex_opt(ls, ',')) {  /* Collect LHS list and recurse upwards. */
+     LHSVarList vl;
+     vl.prev = lh;
+-    expr_primary(ls, &vl.v, EXPR_F_NONAV);
++    expr_primary(ls, &vl.v);
+     if (vl.v.k == VLOCAL)
+       assign_hazard(ls, lh, &vl.v);
+     checklimit(ls->fs, ls->level + nvars, LJ_MAX_XLEVEL, "variable names");
+@@ -2528,11 +2208,6 @@ static void parse_assignment(LexState *ls, LHSVarList *lh, BCReg nvars)
+ 	  ls->fs->freereg--;
+ 	  e.k = VRELOCABLE;
+ 	} else {  /* Multiple call results. */
+-	  lj_assertLS(bc_op(*bcptr(ls->fs, &e)) == BC_CALL ||
+-		      bc_op(*bcptr(ls->fs, &e)) == BC_CALLM ||
+-		      bc_op(*bcptr(ls->fs, &e)) == BC_KPRI,
+-		      "unexpected call expression bytecode %d in assignment",
+-		      bc_op(*bcptr(ls->fs, &e)));
+ 	  e.u.s.info = e.u.s.aux;  /* Base of call is not relocatable. */
+ 	  e.k = VNONRELOC;
+ 	}
+@@ -2552,30 +2227,22 @@ static void parse_call_assign(LexState *ls)
+ {
+   FuncState *fs = ls->fs;
+   LHSVarList vl;
+-  BCReg xpc = expr_primary_nav(ls, &vl.v, EXPR_F_NORES);
++  expr_primary(ls, &vl.v);
+   if (vl.v.k == VCALL) {  /* Function call statement. */
+     setbc_b(bcptr(fs, &vl.v), 1);  /* No results. */
+   } else {  /* Start of an assignment. */
+-    lj_assertFS(vl.v.k != VCALLNAV, "unexpected VCALLNAV in statement");
+-    /* Safe navigation is incompatible with parallel assignment. */
+-    checkcond(ls, xpc == NO_JMP || ls->tok != ',', LJ_ERR_XSYNTAX);
+-    if (!parse_compound(ls, &vl.v)) {
+-      vl.prev = NULL;
+-      parse_assignment(ls, &vl, 1);
+-    }
++    vl.prev = NULL;
++    parse_assignment(ls, &vl, 1);
+   }
+-  if (xpc != NO_JMP) jmp_tohere(fs, xpc);
+ }
+ 
+-/* Parse 'local' or 'const' statement. */
+-static void parse_local(LexState *ls, int vinfo)
++/* Parse 'local' statement. */
++static void parse_local(LexState *ls)
+ {
+-  lj_lex_next(ls);  /* Skip local or const. */
+   if (lex_opt(ls, TK_function)) {  /* Local function declaration. */
+     ExpDesc v, b;
+     FuncState *fs = ls->fs;
+-    MSize vidx = var_new(ls, 0, lex_str(ls));
+-    ls->vstack[vidx].info = (uint8_t)vinfo;
++    var_new(ls, 0, lex_str(ls));
+     expr_init(&v, VLOCAL, fs->freereg);
+     v.u.s.aux = fs->varmap[fs->freereg];
+     bcreg_reserve(fs, 1);
+@@ -2589,23 +2256,9 @@ static void parse_local(LexState *ls, int vinfo)
+   } else {  /* Local variable declaration. */
+     ExpDesc e;
+     BCReg nexps, nvars = 0;
+-    if (vinfo) {  /* Multiple consts need to be checked against each other. */
+-      VarIndex vhsave[LJ_VINDEX_HSIZE];
+-      memcpy(vhsave, ls->vhash, sizeof(vhsave));
+-      do {  /* Collect LHS. */
+-	MSize vidx = var_new(ls, nvars++, lex_str(ls));
+-	VarInfo *v = &ls->vstack[vidx];
+-	VarHash hash = var_hash(strref(v->name));
+-	v->prev = ls->vhash[hash];  /* Temporarily add to hash. */
+-	ls->vhash[hash] = vidx;
+-	v->info = (uint8_t)vinfo;
+-      } while (lex_opt(ls, ','));
+-      memcpy(ls->vhash, vhsave, sizeof(vhsave));  /* Restore hash anchors. */
+-    } else {
+-      do {  /* Collect LHS. */
+-	var_new(ls, nvars++, lex_str(ls));
+-      } while (lex_opt(ls, ','));
+-    }
++    do {  /* Collect LHS. */
++      var_new(ls, nvars++, lex_str(ls));
++    } while (lex_opt(ls, ','));
+     if (lex_opt(ls, '=')) {  /* Optional RHS. */
+       nexps = expr_list(ls, &e);
+     } else {  /* Or implicitly set to nil. */
+@@ -2624,14 +2277,14 @@ static void parse_func(LexState *ls, BCLine line)
+   ExpDesc v, b;
+   int needself = 0;
+   lj_lex_next(ls);  /* Skip 'function'. */
+-  var_lookup(ls, &v, lex_str(ls));  /* Parse function name. */
+-  while (lex_opt(ls, '.'))  /* Multiple dot-separated fields. */
++  /* Parse function name. */
++  var_lookup(ls, &v);
++  while (ls->tok == '.')  /* Multiple dot-separated fields. */
+     expr_field(ls, &v);
+-  if (lex_opt(ls, ':')) {  /* Optional colon to signify method call. */
++  if (ls->tok == ':') {  /* Optional colon to signify method call. */
+     needself = 1;
+     expr_field(ls, &v);
+   }
+-  var_assign(ls, &v);
+   parse_body(ls, &b, needself, line);
+   fs = ls->fs;
+   bcemit_store(fs, &v, &b);
+@@ -2652,25 +2305,19 @@ static int parse_isend(LexToken tok)
+ }
+ 
+ /* Parse 'return' statement. */
+-static void parse_return(LexState *ls, int eflags)
++static void parse_return(LexState *ls)
+ {
+   BCIns ins;
+   FuncState *fs = ls->fs;
++  lj_lex_next(ls);  /* Skip 'return'. */
+   fs->flags |= PROTO_HAS_RETURN;
+-  if (!(eflags & EXPR_F_RET1) && (parse_isend(ls->tok) || ls->tok == ';')) {
+-    ins = BCINS_AD(BC_RET0, 0, 1);  /* Bare return. */
++  if (parse_isend(ls->tok) || ls->tok == ';') {  /* Bare return. */
++    ins = BCINS_AD(BC_RET0, 0, 1);
+   } else {  /* Return with one or more values. */
+     ExpDesc e;  /* Receives the _last_ expression in the list. */
+-    BCReg nret;
+-    if ((eflags & EXPR_F_RET1)) {
+-      expr(ls, &e, eflags);
+-      nret = 1;
+-    } else {
+-      nret = expr_list(ls, &e);
+-    }
++    BCReg nret = expr_list(ls, &e);
+     if (nret == 1) {  /* Return one result. */
+-      /* Check for tail call. */
+-      if (e.k == VCALL) {
++      if (e.k == VCALL) {  /* Check for tail call. */
+ #ifdef LUAJIT_DISABLE_TAILCALL
+ 	goto notailcall;
+ #else
+@@ -2684,8 +2331,7 @@ static void parse_return(LexState *ls, int eflags)
+ 	ins = BCINS_AD(BC_RET1, expr_toanyreg(fs, &e), 2);
+       }
+     } else {
+-      if (e.k == VCALL) {
+-	/* Append all results from a call. */
++      if (e.k == VCALL) {  /* Append all results from a call. */
+       notailcall:
+ 	setbc_b(bcptr(fs, &e), 0);
+ 	ins = BCINS_AD(BC_RETM, fs->nactvar, e.u.s.aux - fs->nactvar);
+@@ -2707,13 +2353,6 @@ static void parse_break(LexState *ls)
+   gola_new(ls, NAME_BREAK, VSTACK_GOTO, bcemit_jmp(ls->fs));
+ }
+ 
+-/* Parse 'continue' statement. */
+-static void parse_continue(LexState *ls)
+-{
+-  ls->fs->bl->flags |= FSCOPE_CONT;
+-  gola_new(ls, NAME_CONT, VSTACK_GOTO, bcemit_jmp(ls->fs));
+-}
+-
+ /* Parse 'goto' statement. */
+ static void parse_goto(LexState *ls)
+ {
+@@ -2785,7 +2424,6 @@ static void parse_while(LexState *ls, BCLine line)
+   parse_block(ls);
+   jmp_patch(fs, bcemit_jmp(fs), start);
+   lex_match(ls, TK_end, TK_while, line);
+-  fscope_continue(fs, start);
+   fscope_end(fs);
+   jmp_tohere(fs, condexit);
+   jmp_patchins(fs, loop, fs->pc);
+@@ -2804,7 +2442,6 @@ static void parse_repeat(LexState *ls, BCLine line)
+   bcemit_AD(fs, BC_LOOP, fs->nactvar, 0);
+   parse_chunk(ls);
+   lex_match(ls, TK_until, TK_repeat, line);
+-  fscope_continue(fs, fs->pc);
+   condexit = expr_cond(ls);  /* Parse condition (still inside inner scope). */
+   if (!(bl2.flags & FSCOPE_UPVAL)) {  /* No upvalues? Just end inner scope. */
+     fscope_end(fs);
+@@ -2850,7 +2487,6 @@ static void parse_for_num(LexState *ls, GCstr *varname, BCLine line)
+   bcreg_reserve(fs, 1);
+   parse_block(ls);
+   fscope_end(fs);
+-  fscope_continue(fs, fs->pc);
+   /* Perform loop inversion. Loop control instructions are at the end. */
+   loopend = bcemit_AJ(fs, BC_FORL, base, NO_JMP);
+   fs->bcbase[loopend].line = line;  /* Fix line for control ins. */
+@@ -2926,7 +2562,6 @@ static void parse_for_iter(LexState *ls, GCstr *indexname)
+   fscope_end(fs);
+   /* Perform loop inversion. Loop control instructions are at the end. */
+   jmp_patchins(fs, loop, fs->pc);
+-  fscope_continue(fs, fs->pc);
+   bcemit_ABC(fs, isnext ? BC_ITERN : BC_ITERC, base, nvars-3+1, 2+1);
+   loopend = bcemit_AJ(fs, BC_ITERL, base, NO_JMP);
+   fs->bcbase[loopend-1].line = line;  /* Fix line for control ins. */
+@@ -3016,28 +2651,16 @@ static int parse_stmt(LexState *ls)
+     parse_func(ls, line);
+     break;
+   case TK_local:
+-    parse_local(ls, 0);
+-    break;
+-  case TK_const: {
+-    LexToken tokx = lj_lex_lookahead(ls);
+-    if (!(lex_isname(tokx) || tokx == TK_function))
+-      goto assign;  /* Soft keyword. */
+-    parse_local(ls, VSTACK_CONST);
++    lj_lex_next(ls);
++    parse_local(ls);
+     break;
+-  }
+   case TK_return:
+-    lj_lex_next(ls);
+-    parse_return(ls, 0);
++    parse_return(ls);
+     return 1;  /* Must be last. */
+   case TK_break:
+     lj_lex_next(ls);
+     parse_break(ls);
+     return !LJ_52;  /* Must be last in Lua 5.1. */
+-  case TK_continue:
+-    if (!parse_isend(lj_lex_lookahead(ls))) goto assign;  /* Soft keyword. */
+-    lj_lex_next(ls);
+-    parse_continue(ls);
+-    return 1;  /* Must be last. */
+ #if LJ_52
+   case ';':
+     lj_lex_next(ls);
+@@ -3047,14 +2670,13 @@ static int parse_stmt(LexState *ls)
+     parse_label(ls);
+     break;
+   case TK_goto:
+-    if (LJ_52 || lex_isname(lj_lex_lookahead(ls))) {  /* 5.1 soft keyword. */
++    if (LJ_52 || lj_lex_lookahead(ls) == TK_name) {
+       lj_lex_next(ls);
+       parse_goto(ls);
+       break;
+     }
+     /* fallthrough */
+   default:
+-  assign:
+     parse_call_assign(ls);
+     break;
+   }
+@@ -3092,7 +2714,6 @@ GCproto *lj_parse(LexState *ls)
+   setstrV(L, L->top, ls->chunkname);  /* Anchor chunkname string. */
+   incr_top(L);
+   ls->level = 0;
+-  memset(ls->vhash, 0xff, sizeof(ls->vhash));
+   fs_init(ls, &fs);
+   fs.linedefined = 0;
+   fs.numparams = 0;
+diff --git a/src/lj_record.c b/src/lj_record.c
+index 6afe2035..8a123a61 100644
+--- a/src/lj_record.c
++++ b/src/lj_record.c
+@@ -17,7 +17,6 @@
+ #include "lj_frame.h"
+ #if LJ_HASFFI
+ #include "lj_ctype.h"
+-#include "lj_crecord.h"
+ #endif
+ #include "lj_bc.h"
+ #include "lj_ff.h"
+@@ -2506,45 +2505,6 @@ void lj_record_ins(jit_State *J)
+       rc = rec_mm_arith(J, &ix, MM_pow);
+     break;
+ 
+-  /* -- Bit operators ----------------------------------------------------- */
+-
+-  case BC_BNOT:
+-#if LJ_HASFFI
+-    if (tref_iscdata(rc)) {
+-      rc = recff_bit64_bitop(J, rc, 0, rcv, NULL, IR_BNOT);
+-      break;
+-    }
+-#endif
+-    rc = lj_opt_narrow_tobit(J, rc);
+-    rc = emitir(IRTI(IR_BNOT), rc, 0);
+-    break;
+-
+-  case BC_BAND: case BC_BOR: case BC_BXOR:
+-#if LJ_HASFFI
+-    if (tref_iscdata(rb) || tref_iscdata(rc)) {
+-      rc = recff_bit64_bitop(J, rb, rc, rbv, rcv, (int)op - (int)BC_BAND + (int)IR_BAND);
+-      break;
+-    }
+-#endif
+-  recbit:
+-    rb = lj_opt_narrow_tobit(J, rb);
+-    rc = lj_opt_narrow_tobit(J, rc);
+-    rc = emitir(IRTI((int)op - (int)BC_BAND + (int)IR_BAND), rb, rc);
+-    break;
+-
+-  case BC_BSHL: case BC_BSHR: case BC_BSAR:
+-#if LJ_HASFFI
+-    {
+-      TRef xrb = rb, xrc = rc;
+-      if (recff_bit64_shift(J, &xrb, &xrc, rbv, rcv, (int)op - (int)BC_BSHL + (int)IR_BSHL)) {
+-	rc = xrb;
+-	break;
+-      }
+-      rc = xrc;  /* Shift amount may have been converted. */
+-    }
+-#endif
+-    goto recbit;
+-
+   /* -- Miscellaneous ops ------------------------------------------------- */
+ 
+   case BC_CAT:
+diff --git a/src/vm_arm.dasc b/src/vm_arm.dasc
+index d9b2bf66..d67dbffc 100644
+--- a/src/vm_arm.dasc
++++ b/src/vm_arm.dasc
+@@ -848,26 +848,6 @@ static void build_subroutines(BuildCtx *ctx)
+ #else
+   |  b ->vmeta_binop			// Binop call for compatibility.
+ #endif
+-  |
+-  |//-- Bit operator metamethods -------------------------------------------
+-  |
+-  |->vmeta_bnot:
+-  |  add CARG3, BASE, RC
+-  |  mov CARG4, CARG3
+-  |  b >1
+-  |
+-  |->vmeta_bitop:
+-  |  add CARG3, BASE, RB
+-  |   add CARG4, BASE, RC
+-  |1:
+-  |  decode_OP OP, INS
+-  |   add CARG2, BASE, RA
+-  |    str BASE, L->base
+-  |   mov CARG1, L
+-  |    str PC, SAVE_PC
+-  |  str OP, ARG5
+-  |  bl extern lj_meta_bitop  // (lua_State *L, TValue *ra,*rb,*rc, BCReg op)
+-  |  b ->cont_nop
+   |
+   |//-- Call metamethod ----------------------------------------------------
+   |
+@@ -3396,61 +3376,6 @@ static void build_ins(BuildCtx *ctx, BCOp op, int defop)
+     |   ins_next3
+     break;
+ 
+-  /* -- Bit ops ----------------------------------------------------------- */
+-
+-  case BC_BNOT:
+-    |  // RA = dst, RC = src
+-    |  lsl RC, RC, #3
+-    |  ldrd CARG12, [BASE, RC]
+-    |  checktp CARG1, LJ_TISNUM
+-    |  bne ->vmeta_bnot
+-    |  mvn CARG1, CARG1
+-    |  mvn CARG2, #~LJ_TISNUM
+-    |   ins_next1
+-    |   ins_next2
+-    |  strd CARG12, [BASE, RA]
+-    |   ins_next3
+-    break;
+-
+-    |.macro ins_bitop, ins, shop
+-    |  decode_RB8 RB, INS
+-    |   decode_RC8 RC, INS
+-    |  // RA = dst*8, RB = src1*8, RC = src2*8
+-    |  ldrd CARG12, [BASE, RB]
+-    |   ldrd CARG34, [BASE, RC]
+-    |  checktp CARG2, LJ_TISNUM
+-    |   checktpeq CARG4, LJ_TISNUM
+-    |  bne ->vmeta_bitop
+-    |.if shop == 1
+-    |  and CARG3, CARG3, #31
+-    |.endif
+-    |  ins CARG1, CARG1, CARG3
+-    |  mvn CARG2, #~LJ_TISNUM
+-    |   ins_next1
+-    |   ins_next2
+-    |  strd CARG12, [BASE, RA]
+-    |   ins_next3
+-    |.endmacro
+-
+-  case BC_BAND:
+-    |  ins_bitop and, 0
+-    break;
+-  case BC_BOR:
+-    |  ins_bitop orr, 0
+-    break;
+-  case BC_BXOR:
+-    |  ins_bitop eor, 0
+-    break;
+-  case BC_BSHL:
+-    |  ins_bitop lsl, 1
+-    break;
+-  case BC_BSHR:
+-    |  ins_bitop lsr, 1
+-    break;
+-  case BC_BSAR:
+-    |  ins_bitop asr, 1
+-    break;
+-
+   /* -- Constant ops ------------------------------------------------------ */
+ 
+   case BC_KSTR:
+diff --git a/src/vm_arm64.dasc b/src/vm_arm64.dasc
+index 60452fe5..be8b76a7 100644
+--- a/src/vm_arm64.dasc
++++ b/src/vm_arm64.dasc
+@@ -920,25 +920,6 @@ static void build_subroutines(BuildCtx *ctx)
+ #else
+   |  b ->vmeta_binop			// Binop call for compatibility.
+ #endif
+-  |
+-  |//-- Bit operator metamethods -------------------------------------------
+-  |
+-  |->vmeta_bnot:
+-  |  add CARG3, BASE, RC, lsl #3
+-  |  mov CARG4, CARG3
+-  |  b >1
+-  |
+-  |->vmeta_bitop:
+-  |  add CARG3, BASE, RB, lsl #3
+-  |   add CARG4, BASE, RC, lsl #3
+-  |1:
+-  |  uxtb CARG5w, INSw
+-  |   add CARG2, BASE, RA, lsl #3
+-  |    str BASE, L->base
+-  |   mov CARG1, L
+-  |    str PC, SAVE_PC
+-  |  bl extern lj_meta_bitop  // (lua_State *L, TValue *ra,*rb,*rc, BCReg op)
+-  |  b ->cont_nop
+   |
+   |//-- Call metamethod ----------------------------------------------------
+   |
+@@ -2897,51 +2878,6 @@ static void build_ins(BuildCtx *ctx, BCOp op, int defop)
+     |  ins_next
+     break;
+ 
+-  /* -- Bit ops ----------------------------------------------------------- */
+-
+-  case BC_BNOT:
+-    |  // RA = dst, RC = src
+-    |  ldr CARG1, [BASE, RC, lsl #3]
+-    |  checkint CARG1, ->vmeta_bnot
+-    |  mvn CARG1w, CARG1w
+-    |  add_TISNUM CARG1, CARG1
+-    |  str CARG1, [BASE, RA, lsl #3]
+-    |  ins_next
+-    break;
+-
+-    |.macro ins_bitop, ins
+-    |  decode_RB RB, INS
+-    |   and RC, RC, #255
+-    |  // RA = dst, RB = src1, RC = src2
+-    |  ldr CARG1, [BASE, RB, lsl #3]
+-    |   ldr CARG2, [BASE, RC, lsl #3]
+-    |  checkint CARG1, ->vmeta_bitop
+-    |   checkint CARG2, ->vmeta_bitop
+-    |  ins CARG1w, CARG1w, CARG2w
+-    |  add_TISNUM CARG1, CARG1
+-    |  str CARG1, [BASE, RA, lsl #3]
+-    |  ins_next
+-    |.endmacro
+-
+-  case BC_BAND:
+-    |  ins_bitop and
+-    break;
+-  case BC_BOR:
+-    |  ins_bitop orr
+-    break;
+-  case BC_BXOR:
+-    |  ins_bitop eor
+-    break;
+-  case BC_BSHL:
+-    |  ins_bitop lsl
+-    break;
+-  case BC_BSHR:
+-    |  ins_bitop lsr
+-    break;
+-  case BC_BSAR:
+-    |  ins_bitop asr
+-    break;
+-
+   /* -- Constant ops ------------------------------------------------------ */
+ 
+   case BC_KSTR:
+diff --git a/src/vm_mips.dasc b/src/vm_mips.dasc
+index 40e15e88..9a39edd6 100644
+--- a/src/vm_mips.dasc
++++ b/src/vm_mips.dasc
+@@ -981,25 +981,6 @@ static void build_subroutines(BuildCtx *ctx)
+   |  b ->vmeta_binop			// Binop call for compatibility.
+   |.  nop
+ #endif
+-  |
+-  |//-- Bit operator metamethods -------------------------------------------
+-  |
+-  |->vmeta_bnot:
+-  |  move RC, RB
+-  |
+-  |->vmeta_bitop:
+-  |  load_got lj_meta_bitop
+-  |  decode_OP1 TMP0, INS
+-  |   sw BASE, L->base
+-  |  move CARG2, RA
+-  |   sw PC, SAVE_PC
+-  |  move CARG3, RB
+-  |  move CARG4, RC
+-  |  sw TMP0, ARG5
+-  |  call_intern lj_meta_bitop  // (lua_State *L, TValue *ra,*rb,*rc, BCReg op)
+-  |.  move CARG1, L
+-  |  b ->cont_nop
+-  |.  nop
+   |
+   |//-- Call metamethod ----------------------------------------------------
+   |
+@@ -3905,62 +3886,6 @@ static void build_ins(BuildCtx *ctx, BCOp op, int defop)
+     |  ins_next2
+     break;
+ 
+-  /* -- Bit ops ----------------------------------------------------------- */
+-
+-  case BC_BNOT:
+-    |  // RA = dst*8, RD = src*8
+-    |  addu RB, BASE, RD
+-    |  lw TMP0, HI(RB)
+-    |   lw CRET1, LO(RB)
+-    |  bne TMP0, TISNUM, ->vmeta_bnot
+-    |.  addu RA, BASE, RA
+-    |  not CRET1, CRET1
+-    |  ins_next1
+-    |  sw TISNUM, HI(RA)
+-    |   sw CRET1, LO(RA)
+-    |  ins_next2
+-    break;
+-
+-    |.macro ins_bitop, ins
+-    |  // RA = dst*8, RB = src1*8, RC = src2*8
+-    |  decode_RB8a RB, INS
+-    |  decode_RB8b RB
+-    |   decode_RDtoRC8 RC, RD
+-    |  addu RB, BASE, RB
+-    |   addu RC, BASE, RC
+-    |  lw TMP0, HI(RB)
+-    |   lw TMP1, HI(RC)
+-    |    lw CRET1, LO(RB)
+-    |  bne TMP0, TISNUM, ->vmeta_bitop
+-    |.  addu RA, BASE, RA
+-    |    lw CRET2, LO(RC)
+-    |   bne TMP1, TISNUM, ->vmeta_bitop
+-    |.   ins CRET1, CRET1, CRET2
+-    |  ins_next1
+-    |  sw TISNUM, HI(RA)
+-    |   sw CRET1, LO(RA)
+-    |  ins_next2
+-    |.endmacro
+-
+-  case BC_BAND:
+-    |  ins_bitop and
+-    break;
+-  case BC_BOR:
+-    |  ins_bitop or
+-    break;
+-  case BC_BXOR:
+-    |  ins_bitop xor
+-    break;
+-  case BC_BSHL:
+-    |  ins_bitop sllv
+-    break;
+-  case BC_BSHR:
+-    |  ins_bitop srlv
+-    break;
+-  case BC_BSAR:
+-    |  ins_bitop srav
+-    break;
+-
+   /* -- Constant ops ------------------------------------------------------ */
+ 
+   case BC_KSTR:
+diff --git a/src/vm_mips64.dasc b/src/vm_mips64.dasc
+index e4a710b4..41587e14 100644
+--- a/src/vm_mips64.dasc
++++ b/src/vm_mips64.dasc
+@@ -1027,24 +1027,6 @@ static void build_subroutines(BuildCtx *ctx)
+   |  b ->vmeta_binop			// Binop call for compatibility.
+   |.  nop
+ #endif
+-  |
+-  |//-- Bit operator metamethods -------------------------------------------
+-  |
+-  |->vmeta_bnot:
+-  |  move RC, RB
+-  |
+-  |->vmeta_bitop:
+-  |  load_got lj_meta_bitop
+-  |   sd BASE, L->base
+-  |  move CARG2, RA
+-  |   sd PC, SAVE_PC
+-  |  move CARG3, RB
+-  |  move CARG4, RC
+-  |  decode_OP1 CARG5, INS	// CARG5 == RB.
+-  |  call_intern lj_meta_bitop  // (lua_State *L, TValue *ra,*rb,*rc, BCReg op)
+-  |.  move CARG1, L
+-  |  b ->cont_nop
+-  |.  nop
+   |
+   |//-- Call metamethod ----------------------------------------------------
+   |
+@@ -4131,65 +4113,6 @@ static void build_ins(BuildCtx *ctx, BCOp op, int defop)
+     |  ins_next2
+     break;
+ 
+-  /* -- Bit ops ----------------------------------------------------------- */
+-
+-  case BC_BNOT:
+-    |  // RA = dst*8, RD = src*8
+-    |  daddu RB, BASE, RD
+-    |  ld CRET1, 0(RB)
+-    |  gettp TMP0, CRET1
+-    |  bne TMP0, TISNUM, ->vmeta_bnot
+-    |.  daddu RA, BASE, RA
+-    |  not CRET1, CRET1
+-    |  zextw CRET1, CRET1
+-    |  settp CRET1, TISNUM
+-    |  ins_next1
+-    |  sd CRET1, 0(RA)
+-    |  ins_next2
+-    break;
+-
+-    |.macro ins_bitop, ins
+-    |  // RA = dst*8, RB = table*8, RC = key*8
+-    |  decode_RB8a RB, INS
+-    |  decode_RB8b RB
+-    |   decode_RDtoRC8 RC, RD
+-    |  daddu RB, BASE, RB
+-    |   daddu RC, BASE, RC
+-    |  ld CRET1, 0(RB)
+-    |   ld CRET2, 0(RC)
+-    |  gettp TMP0, CRET1
+-    |  daddu RA, BASE, RA
+-    |  bne TMP0, TISNUM, ->vmeta_bitop
+-    |.  gettp TMP1, CRET2
+-    |  sextw CRET1, CRET1
+-    |   bne TMP1, TISNUM, ->vmeta_bitop
+-    |.   ins CRET1, CRET1, CRET2
+-    |  zextw CRET1, CRET1
+-    |  settp CRET1, TISNUM
+-    |  ins_next1
+-    |  sd CRET1, 0(RA)
+-    |  ins_next2
+-    |.endmacro
+-
+-  case BC_BAND:
+-    |  ins_bitop and
+-    break;
+-  case BC_BOR:
+-    |  ins_bitop or
+-    break;
+-  case BC_BXOR:
+-    |  ins_bitop xor
+-    break;
+-  case BC_BSHL:
+-    |  ins_bitop sllv
+-    break;
+-  case BC_BSHR:
+-    |  ins_bitop srlv
+-    break;
+-  case BC_BSAR:
+-    |  ins_bitop srav
+-    break;
+-
+   /* -- Constant ops ------------------------------------------------------ */
+ 
+   case BC_KSTR:
+diff --git a/src/vm_ppc.dasc b/src/vm_ppc.dasc
+index 8d257fdf..440bf1c4 100644
+--- a/src/vm_ppc.dasc
++++ b/src/vm_ppc.dasc
+@@ -1268,25 +1268,6 @@ static void build_subroutines(BuildCtx *ctx)
+ #else
+   |  b ->vmeta_binop			// Binop call for compatibility.
+ #endif
+-  |
+-  |//-- Bit operator metamethods -------------------------------------------
+-  |
+-  |->vmeta_bnot:
+-  |  mr CARG3, RD
+-  |  mr CARG4, RD
+-  |  b >1
+-  |
+-  |->vmeta_bitop:
+-  |  mr CARG3, RB
+-  |  mr CARG4, RC
+-  |1:
+-  |  add CARG2, BASE, RA
+-  |   stp BASE, L->base
+-  |  mr CARG1, L
+-  |   stw PC, SAVE_PC
+-  |  decode_OP1 CARG5, INS		// Caveat: CARG5 overlaps INS.
+-  |  bl extern lj_meta_bitop  // (lua_State *L, TValue *ra,*rb,*rc, BCReg op)
+-  |  b ->cont_nop
+   |
+   |//-- Call metamethod ----------------------------------------------------
+   |
+@@ -4376,87 +4357,6 @@ static void build_ins(BuildCtx *ctx, BCOp op, int defop)
+     |  ins_next2
+     break;
+ 
+-  /* -- Bit ops ----------------------------------------------------------- */
+-
+-  case BC_BNOT:
+-    |  lwzux CARG1, RD, BASE
+-    |.if DUALNUM
+-    |  lwz CARG2, 4(RD)
+-    |  checknum cr0, CARG1
+-    |  bne ->vmeta_bnot
+-    |.else
+-    |  lfd FARG1, 0(RD)
+-    |  checknum cr0, CARG1
+-    |  bge ->vmeta_bnot
+-    |  fadd FARG1, FARG1, TOBIT
+-    |  stfd FARG1, TMPD
+-    |  lwz CARG2, TMPD_LO
+-    |.endif
+-    |  not CARG2, CARG2
+-    |7:
+-    |.if DUALNUM
+-    |  ins_next1
+-    |  stwux TISNUM, RA, BASE
+-    |  stw CARG2, 4(RA)
+-    |.else
+-    |  tonum_u FARG1, CARG2
+-    |  ins_next1
+-    |  stfdx FARG1, BASE, RA
+-    |.endif
+-    |  ins_next2
+-    break;
+-
+-    |.macro ins_bitop, ins, shmod
+-    |  // RA = dst*8, RB = src1*8, RC = src2*8
+-    |  lwzux CARG1, RB, BASE
+-    |   lwzux CARG3, RC, BASE
+-    |.if DUALNUM
+-    |  lwz CARG2, 4(RB)
+-    |   lwz CARG4, 4(RC)
+-    |  checknum cr0, CARG1
+-    |   checknum cr1, CARG3
+-    |  bne ->vmeta_bitop
+-    |   bne cr1, ->vmeta_bitop
+-    |.else
+-    |  lfd FARG1, 0(RB)
+-    |   lfd FARG2, 0(RC)
+-    |  checknum cr0, CARG1
+-    |   checknum cr1, CARG3
+-    |  bge ->vmeta_bitop
+-    |   bge cr1, ->vmeta_bitop
+-    |  fadd FARG1, FARG1, TOBIT
+-    |   fadd FARG2, FARG2, TOBIT
+-    |  stfd FARG1, TMPD
+-    |  lwz CARG2, TMPD_LO
+-    |   stfd FARG2, TMPD
+-    |   lwz CARG4, TMPD_LO
+-    |.endif
+-    |.if shmod == 1
+-    |  rlwinm CARG4, CARG4, 0, 27, 31
+-    |.endif
+-    |  ins CARG2, CARG2, CARG4
+-    |  b <7
+-    |.endmacro
+-
+-  case BC_BAND:
+-    |  ins_bitop and, 0
+-    break;
+-  case BC_BOR:
+-    |  ins_bitop or, 0
+-    break;
+-  case BC_BXOR:
+-    |  ins_bitop xor, 0
+-    break;
+-  case BC_BSHL:
+-    |  ins_bitop slw, 1
+-    break;
+-  case BC_BSHR:
+-    |  ins_bitop srw, 1
+-    break;
+-  case BC_BSAR:
+-    |  ins_bitop sraw, 1
+-    break;
+-
+   /* -- Constant ops ------------------------------------------------------ */
+ 
+   case BC_KSTR:
+diff --git a/src/vm_x64.dasc b/src/vm_x64.dasc
+index 2c18acd6..bd480cbb 100644
+--- a/src/vm_x64.dasc
++++ b/src/vm_x64.dasc
+@@ -1092,47 +1092,6 @@ static void build_subroutines(BuildCtx *ctx)
+ #else
+   |  jmp ->vmeta_binop			// Binop call for compatibility.
+ #endif
+-  |
+-  |//-- Bit operator metamethods -------------------------------------------
+-  |
+-  |->vmeta_bnot:
+-  |  mov RB, RA
+-  |  lea RC, [BASE+RD*8]
+-  |  mov RA, RC
+-  |  jmp >2
+-  |
+-  |// Caveat: ra=RB rb=RC rc=RA.
+-  |->vmeta_bitop:
+-  |.if DUALNUM
+-  |  movzx RCd, PC_RB
+-  |  movzx RAd, PC_RC
+-  |.endif
+-  |  lea RC, [BASE+RC*8]
+-  |  lea RA, [BASE+RA*8]
+-  |2:
+-  |.if X64WIN
+-  |  mov CARG3, RC
+-  |  mov CARG4, RA
+-  |  lea RA, [BASE+RB*8]
+-  |  movzx RC, PC_OP
+-  |  mov ARG5, RC
+-  |  mov L:RB, SAVE_L
+-  |  mov L:RB->base, BASE		// Caveat: CARG2d == BASE.
+-  |  mov CARG2, RA
+-  |  mov CARG1, L:RB			// Caveat: CARG1d == RA.
+-  |.else
+-  |  lea CARG2, [BASE+RB*8]
+-  |  // CARG4 == RA.
+-  |  movzx CARG5, PC_OP
+-  |  mov L:CARG1, SAVE_L
+-  |  mov L:CARG1->base, BASE		// Caveat: CARG3d == BASE.
+-  |  mov CARG3, RC
+-  |  mov L:RB, L:CARG1
+-  |.endif
+-  |  mov SAVE_PC, PC
+-  |  call extern lj_meta_bitop // (lua_State *L, TValue *ra,*rb,*rc, BCReg op)
+-  |  mov BASE, L:RB->base
+-  |  jmp ->cont_nop
+   |
+   |//-- Call metamethod ----------------------------------------------------
+   |
+@@ -3457,7 +3416,7 @@ static void build_ins(BuildCtx *ctx, BCOp op, int defop)
+     |.if DUALNUM
+     |  ins_arithdn intins
+     |.else
+-    |  ins_arith sseins
++    |  ins_arith, sseins
+     |.endif
+     |.endmacro
+ 
+@@ -3517,88 +3476,6 @@ static void build_ins(BuildCtx *ctx, BCOp op, int defop)
+     |  ins_next
+     break;
+ 
+-  /* -- Bit ops ----------------------------------------------------------- */
+-
+-  case BC_BNOT:
+-    |  ins_AD  // RA = dst, RD = src
+-    |.if DUALNUM
+-    |  mov RB, [BASE+RD*8]
+-    |  checkint RB, ->vmeta_bnot
+-    |  not RBd
+-    |  setint RB
+-    |  mov [BASE+RA*8], RB
+-    |  ins_next
+-    |.else
+-    |  checknumtp [BASE+RD*8], ->vmeta_bnot
+-    |  movsd xmm0, qword [BASE+RD*8]
+-    |  sseconst_tobit xmm1, RB
+-    |  addsd xmm0, xmm1
+-    |  movd RBd, xmm0
+-    |  not RBd
+-    |  cvtsi2sd xmm0, RBd
+-    |  movsd qword [BASE+RA*8], xmm0
+-    |  ins_next
+-    |.endif
+-    break;
+-
+-    |.macro ins_bitop, ins, shift
+-    |  ins_A  // Really ins_ABC. RB = dst, RC = src1, RA = src2
+-    |  // Swap registers around to avoid reloading RA.
+-    |  mov RB, RA
+-    |  movzx RAd, RCL	// Really src2 (C).
+-    |  movzx RCd, RCH	// Really src1 (B).
+-    |.if DUALNUM
+-    |  mov RA, [BASE+RA*8]
+-    |  mov RC, [BASE+RC*8]
+-    |  checkint RA, ->vmeta_bitop
+-    |  checkint RC, ->vmeta_bitop
+-    |.if shift == 1
+-    |  ins RCd, cl		// Assumes RA is ecx.
+-    |.else
+-    |  ins RCd, RAd
+-    |.endif
+-    |  setint RC
+-    |  mov [BASE+RB*8], RC
+-    |.else
+-    |  checknumtp [BASE+RA*8], ->vmeta_bitop
+-    |  checknumtp [BASE+RC*8], ->vmeta_bitop
+-    |  movsd xmm0, qword [BASE+RA*8]
+-    |  movsd xmm1, qword [BASE+RC*8]
+-    |  sseconst_tobit xmm2, RC
+-    |  addsd xmm0, xmm2
+-    |  addsd xmm1, xmm2
+-    |  movd RAd, xmm0
+-    |  movd RCd, xmm1
+-    |.if shift == 1
+-    |  ins RCd, cl		// Assumes RA is ecx.
+-    |.else
+-    |  ins RCd, RAd
+-    |.endif
+-    |  cvtsi2sd xmm0, RCd
+-    |  movsd qword [BASE+RB*8], xmm0
+-    |.endif
+-    |  ins_next
+-    |.endmacro
+-
+-  case BC_BAND:
+-    |  ins_bitop and, 0
+-    break;
+-  case BC_BOR:
+-    |  ins_bitop or, 0
+-    break;
+-  case BC_BXOR:
+-    |  ins_bitop xor, 0
+-    break;
+-  case BC_BSHL:
+-    |  ins_bitop shl, 1
+-    break;
+-  case BC_BSHR:
+-    |  ins_bitop shr, 1
+-    break;
+-  case BC_BSAR:
+-    |  ins_bitop sar, 1
+-    break;
+-
+   /* -- Constant ops ------------------------------------------------------ */
+ 
+   case BC_KSTR:
+diff --git a/src/vm_x86.dasc b/src/vm_x86.dasc
+index 50becd46..d5e3717b 100644
+--- a/src/vm_x86.dasc
++++ b/src/vm_x86.dasc
+@@ -1337,53 +1337,6 @@ static void build_subroutines(BuildCtx *ctx)
+ #else
+   |  jmp ->vmeta_binop			// Binop call for compatibility.
+ #endif
+-  |
+-  |//-- Bit operator metamethods -------------------------------------------
+-  |
+-  |->vmeta_bnot:
+-  |  mov RB, RA
+-  |  lea RC, [BASE+RD*8]
+-  |  mov RA, RC
+-  |  jmp >2
+-  |
+-  |// Caveat: ra=RB rb=RC rc=RA.
+-  |->vmeta_bitop:
+-  |  lea RC, [BASE+RC*8]
+-  |  lea RA, [BASE+RA*8]
+-  |2:
+-  |.if X64WIN
+-  |  mov CARG3d, RC
+-  |  mov CARG4d, RA
+-  |  lea RA, [BASE+RB*8]
+-  |  movzx RC, PC_OP
+-  |  mov ARG5d, RC
+-  |  mov L:RB, SAVE_L
+-  |  mov L:RB->base, BASE		// Caveat: CARG2d == BASE.
+-  |  mov CARG2d, RA
+-  |  mov CARG1d, L:RB			// Caveat: CARG1d == RA.
+-  |.elif X64
+-  |  lea CARG2, [BASE+RB*8]
+-  |  // CARG4d == RA.
+-  |  movzx CARG5d, PC_OP
+-  |  mov L:CARG1d, SAVE_L
+-  |  mov L:CARG1d->base, BASE		// Caveat: CARG3d == BASE.
+-  |  mov CARG3d, RC
+-  |  mov L:RB, L:CARG1d
+-  |.else
+-  |  lea RB, [BASE+RB*8]
+-  |  mov ARG3, RC
+-  |  movzx RC, PC_OP
+-  |  mov ARG2, RB
+-  |  mov L:RB, SAVE_L
+-  |  mov ARG4, RA
+-  |  mov ARG5, RC
+-  |  mov ARG1, L:RB
+-  |  mov L:RB->base, BASE
+-  |.endif
+-  |  mov SAVE_PC, PC
+-  |  call extern lj_meta_bitop	// (lua_State *L, TValue *ra,*rb,*rc, BCReg op)
+-  |  mov BASE, L:RB->base
+-  |  jmp ->cont_nop
+   |
+   |//-- Call metamethod ----------------------------------------------------
+   |
+@@ -4099,7 +4052,7 @@ static void build_ins(BuildCtx *ctx, BCOp op, int defop)
+     |.if DUALNUM
+     |  ins_arithdn intins
+     |.else
+-    |  ins_arith sseins
++    |  ins_arith, sseins
+     |.endif
+     |.endmacro
+ 
+@@ -4185,89 +4138,6 @@ static void build_ins(BuildCtx *ctx, BCOp op, int defop)
+     |  ins_next
+     break;
+ 
+-  /* -- Bit ops ----------------------------------------------------------- */
+-
+-  case BC_BNOT:
+-    |  ins_AD	// RA = dst, RD = src
+-    |.if DUALNUM
+-    |  checkint RD, ->vmeta_bnot
+-    |  mov RB, [BASE+RD*8]
+-    |  not RB
+-    |  mov dword [BASE+RA*8+4], LJ_TISNUM
+-    |  mov dword [BASE+RA*8], RB
+-    |  ins_next
+-    |.else
+-    |  checknum RD, ->vmeta_bnot
+-    |  movsd xmm0, qword [BASE+RD*8]
+-    |  sseconst_tobit xmm1, RBa
+-    |  addsd xmm0, xmm1
+-    |  movd RB, xmm0
+-    |  not RB
+-    |  cvtsi2sd xmm0, RB
+-    |  movsd qword [BASE+RA*8], xmm0
+-    |  ins_next
+-    |.endif
+-    break;
+-
+-    |.macro ins_bitop, ins, shift
+-    |  ins_A  // Really ins_ABC. RB = dst, RC = src1, RA = src2
+-    |  // Swap registers around to avoid reloading RA.
+-    |  mov RB, RA
+-    |  movzx RA, RCL	// Really src2 (C).
+-    |  movzx RC, RCH	// Really src1 (B).
+-    |.if DUALNUM
+-    |  checkint RA, ->vmeta_bitop
+-    |  checkint RC, ->vmeta_bitop
+-    |.if shift == 1
+-    |  mov RA, [BASE+RA*8]
+-    |  mov RC, [BASE+RC*8]
+-    |  ins RC, cl		// Assumes RA is ecx.
+-    |.else
+-    |  mov RC, [BASE+RC*8]
+-    |  ins RC, [BASE+RA*8]
+-    |.endif
+-    |  mov dword [BASE+RB*8+4], LJ_TISNUM
+-    |  mov dword [BASE+RB*8], RC
+-    |.else
+-    |  checknum RA, ->vmeta_bitop
+-    |  checknum RC, ->vmeta_bitop
+-    |  movsd xmm0, qword [BASE+RA*8]
+-    |  movsd xmm1, qword [BASE+RC*8]
+-    |  sseconst_tobit xmm2, RCa
+-    |  addsd xmm0, xmm2
+-    |  addsd xmm1, xmm2
+-    |  movd RA, xmm0
+-    |  movd RC, xmm1
+-    |.if shift == 1
+-    |  ins RC, cl		// Assumes RA is ecx.
+-    |.else
+-    |  ins RC, RA
+-    |.endif
+-    |  cvtsi2sd xmm0, RC
+-    |  movsd qword [BASE+RB*8], xmm0
+-    |.endif
+-    |  ins_next
+-    |.endmacro
+-
+-  case BC_BAND:
+-    |  ins_bitop and, 0
+-    break;
+-  case BC_BOR:
+-    |  ins_bitop or, 0
+-    break;
+-  case BC_BXOR:
+-    |  ins_bitop xor, 0
+-    break;
+-  case BC_BSHL:
+-    |  ins_bitop shl, 1
+-    break;
+-  case BC_BSHR:
+-    |  ins_bitop shr, 1
+-    break;
+-  case BC_BSAR:
+-    |  ins_bitop sar, 1
+-    break;
+-
+   /* -- Constant ops ------------------------------------------------------ */
+ 
+   case BC_KSTR:
+-- 
+2.50.1 (Apple Git-155)
+
