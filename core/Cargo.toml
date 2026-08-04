@@ -14,22 +14,22 @@ publish = false
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-bp3d-util = { version = "2.2.0", features = ["simple-error", "format", "string"] }
-bp3d-debug = "1.0.2"
+bp3d-util = { version = "2.3.0", features = ["simple-error", "format", "string"] }
+bp3d-debug = "1.0.3"
 bp3d-os = { version = "2.3.1", features = [], optional = true }
-time = { version = "0.3.41", features = ["formatting"], optional = true }
-itertools = { version = "0.14.0" }
+time = { version = "0.3.55", features = ["formatting"], optional = true }
+itertools = { version = "0.15.0" }
 bp3d-lua-codegen = { version = "1.0.0-rc.1.0.0", path = "../codegen", optional = true }
 
 [target.'cfg(windows)'.dependencies]
-windows-sys = { version = "0.59.0", features = ["Win32_System_Threading", "Win32_System_Kernel", "Win32_System_Diagnostics", "Win32_System_Diagnostics_Debug"], optional = true }
+windows-sys = { version = "0.61.2", features = ["Win32_System_Threading", "Win32_System_Kernel", "Win32_System_Diagnostics", "Win32_System_Diagnostics_Debug"], optional = true }
 
 [target.'cfg(unix)'.dependencies]
 libc = { version = "0.2.170", optional = true }
 
 [dev-dependencies]
 bp3d-lua-codegen = { version = "1.0.0-rc.1.0.0", path = "../codegen" }
-trybuild = "1.0.110"
+trybuild = "1.0.120"
 
 [build-dependencies]
 bp3d-lua-build = { version = "1.0.0-rc.1.0.0", path = "../build" }
