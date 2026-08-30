@@ -1,0 +1,105 @@
+{
+    name: "completion",
+    enums: [
+        {
+            name: "Type",
+            variants: {
+                "Function": 0,
+                "Attribute": 1,
+                "Subtree": 2
+            }
+        }
+    ],
+    structs: [
+        {
+            name: "Header",
+            fields: [
+                {
+                    name: "type",
+                    raw: {
+                        type: "unsigned",
+                        bits: 8
+                    },
+                    view: {
+                        type: "enum",
+                        name: "Type"
+                    }
+                }
+            ]
+        }
+    ],
+    messages: [
+        {
+            name: "Item",
+            fields: [
+                {
+                    name: "hdr",
+                    item_type: "Header"
+                },
+                {
+                    name: "name",
+                    value: {
+                        type: "string"
+                    }
+                }
+            ]
+        },
+        {
+            name: "Path",
+            fields: [
+                {
+                    name: "path",
+                    value: {
+                        type: "string"
+                    }
+                }
+            ]
+        },
+        {
+            name: "List",
+            fields: [
+                {
+                    name: "path",
+                    value: {
+                        type: "string"
+                    }
+                },
+                {
+                    name: "items",
+                    value: {
+                        type: "list",
+                        max_len: 255,
+                        item_type: "Item",
+                        nested: true
+                    }
+                }
+            ]
+        },
+        {
+            name: "AddUpdate",
+            fields: [
+                {
+                    name: "items",
+                    value: {
+                        type: "list",
+                        max_len: 255,
+                        item_type: "List"
+                    }
+                }
+            ]
+        },
+        {
+            name: "Delete",
+            fields: [
+                {
+                    name: "items",
+                    value: {
+                        type: "list",
+                        max_len: 255,
+                        item_type: "Path"
+                    }
+                }
+            ]
+        }
+    ]
+}

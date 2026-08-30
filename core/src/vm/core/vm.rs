@@ -1,0 +1,203 @@
+// Copyright (c) 2025, BlockProject 3D
+//
+// All rights reserved.
+//
+// Redistribution and use in source and binary forms, with or without modification,
+// are permitted provided that the following conditions are met:
+//
+//     * Redistributions of source code must retain the above copyright notice,
+//       this list of conditions and the following disclaimer.
+//     * Redistributions in binary form must reproduce the above copyright notice,
+//       this list of conditions and the following disclaimer in the documentation
+//       and/or other materials provided with the distribution.
+//     * Neither the name of BlockProject 3D nor the names of its contributors
+//       may be used to endorse or promote products derived from this software
+//       without specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+// "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+// LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+// A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
+// CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+// EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+// PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+// PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+// LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+// NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+// SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+use crate::ffi::lua::{
+    lua_getfield, lua_gettop, lua_isyieldable, lua_pushnil, lua_remove, lua_setfield, lua_settop,
+    State, ThreadStatus, GLOBALSINDEX, REGISTRYINDEX,
+};
+use crate::util::core::AnyStr;
+use crate::vm::core::debug::DebugRegistry;
+use crate::vm::core::util::{handle_syntax_error, pcall, push_error_handler};
+use crate::vm::core::{Load, LoadString};
+use crate::vm::error::Error;
+use crate::vm::thread::core::Thread;
+use crate::vm::userdata::core::Registry;
+use crate::vm::userdata::{NameConvert, UserData};
+use crate::vm::value::types::Function;
+use crate::vm::value::{FromLua, IntoLua};
+use bp3d_debug::{info, warning};
+
+#[repr(transparent)]
+pub struct Vm {
+    l: State,
+}
+
+impl Vm {
+    /// Constructs a [Vm] by wrapping an existing lua [State].
+    ///
+    /// # Arguments
+    ///
+    /// * `l`: the lua [State] to wrap.
+    ///
+    /// # Safety
+    ///
+    /// The given lua [State] must have been created from a [RootVm]. It is considered UB to wrap
+    /// a lua VM allocated outside bp3d-lua. It is also considered UB to wrap a VM which has been
+    /// allocated with a different set of patches.
+    #[inline(always)]
+    pub unsafe fn from_raw(l: State) -> Self {
+        Self { l }
+    }
+
+    pub fn scope<R: 'static, F: FnOnce(&Vm) -> crate::vm::Result<R>>(
+        &self,
+        f: F,
+    ) -> crate::vm::Result<R> {
+        let top = self.top();
+        let r = f(self);
+        unsafe { lua_settop(self.l, top) };
+        r
+    }
+
+    pub fn register_userdata<T: UserData>(&self, case: impl NameConvert) -> crate::vm::Result<()> {
+        info!("Adding userdata type {:?}", T::CLASS_NAME);
+        DebugRegistry::add::<T, _>(self);
+        let reg = unsafe { Registry::<T, _>::new(self, case) }.map_err(Error::UserData)?;
+        let res = T::register(&reg).map_err(Error::UserData);
+        match res {
+            Ok(_) => Ok(()),
+            Err(e) => {
+                warning!(
+                    "Failed to register userdata type {:?}: {}",
+                    T::CLASS_NAME,
+                    e
+                );
+                unsafe {
+                    lua_pushnil(self.l);
+                    lua_setfield(self.l, REGISTRYINDEX, T::FULL_TYPE.as_ptr());
+                }
+                Err(e)
+            }
+        }
+    }
+
+    /// Returns the absolute stack index for the given index.
+    #[inline(always)]
+    pub fn get_absolute_index(&self, index: i32) -> i32 {
+        if index < 0 {
+            unsafe { lua_gettop(self.l) + index + 1 }
+        } else {
+            index
+        }
+    }
+
+    /// Returns the top of the lua stack.
+    #[inline(always)]
+    pub fn top(&self) -> i32 {
+        unsafe { lua_gettop(self.l) }
+    }
+
+    /// Clears the lua stack.
+    #[inline(always)]
+    pub fn clear(&mut self) {
+        unsafe {
+            lua_settop(self.l, 0);
+        }
+    }
+
+    #[inline(always)]
+    pub fn as_ptr(&self) -> State {
+        self.l
+    }
+
+    pub fn set_global(&self, name: impl AnyStr, value: impl IntoLua) -> crate::vm::Result<()> {
+        value.into_lua(self);
+        unsafe {
+            lua_setfield(self.as_ptr(), GLOBALSINDEX, name.to_str()?.as_ptr());
+        }
+        Ok(())
+    }
+
+    pub fn get_global<'a, R: FromLua<'a>>(&'a self, name: impl AnyStr) -> crate::vm::Result<R> {
+        unsafe {
+            lua_getfield(self.as_ptr(), GLOBALSINDEX, name.to_str()?.as_ptr());
+        }
+        R::from_lua(self, -1)
+    }
+
+    pub fn run_code<'a, R: FromLua<'a>>(&'a self, code: impl LoadString) -> crate::vm::Result<R> {
+        let l = self.as_ptr();
+        unsafe {
+            // Push error handler and the get the stack position of it.
+            let handler_pos = push_error_handler(l);
+            // Push the lua code.
+            let res = code.load_string(l);
+            if res != ThreadStatus::Ok {
+                lua_remove(l, handler_pos);
+            }
+            handle_syntax_error(self, res)?;
+            pcall(self, 0, R::num_values() as _, handler_pos)?;
+        }
+        // Read and return the result of the function from the stack.
+        FromLua::from_lua(self, -(R::num_values() as i32))
+    }
+
+    pub fn load_code(&self, code: impl LoadString) -> crate::vm::Result<Function<'_>> {
+        let l = self.as_ptr();
+        unsafe {
+            // Push the lua code.
+            let res = code.load_string(l);
+            handle_syntax_error(self, res)?;
+            Ok(FromLua::from_lua_unchecked(self, -1))
+        }
+    }
+
+    pub fn run<'a, R: FromLua<'a>>(&'a self, obj: impl Load) -> crate::vm::Result<R> {
+        let l = self.as_ptr();
+        let handler_pos = unsafe { push_error_handler(l) };
+        let res = obj.load(l);
+        unsafe {
+            if res != ThreadStatus::Ok {
+                lua_remove(l, handler_pos);
+            }
+            handle_syntax_error(self, res)?;
+            pcall(self, 0, R::num_values() as _, handler_pos)?;
+        }
+        // Read and return the result of the function from the stack.
+        FromLua::from_lua(self, -(R::num_values() as i32))
+    }
+
+    pub fn load(&self, obj: impl Load) -> crate::vm::Result<Function<'_>> {
+        let l = self.as_ptr();
+        let res = obj.load(l);
+        unsafe {
+            handle_syntax_error(self, res)?;
+            Ok(FromLua::from_lua_unchecked(self, -1))
+        }
+    }
+
+    /// Attempts to turn this Vm into a lua [Thread] if it is yieldable, otherwise returns None.
+    pub fn as_thread(&self) -> Option<Thread<'_>> {
+        let yieldable = unsafe { lua_isyieldable(self.as_ptr()) };
+        if yieldable == 1 {
+            Some(unsafe { Thread::from_raw(self.as_ptr()) })
+        } else {
+            None
+        }
+    }
+}

@@ -1,0 +1,11 @@
+[package]
+name = "bp3d-lua-shell-proto"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[dependencies]
+bp3d-proto = "1.0.0-rc.5.1.0"
+
+[build-dependencies]
+bp3d-protoc = { version = "1.0.0-rc.5.0.1", features = ["api-rust"] }

@@ -1,0 +1,64 @@
+// Copyright (c) 2026, BlockProject 3D
+//
+// All rights reserved.
+//
+// Redistribution and use in source and binary forms, with or without modification,
+// are permitted provided that the following conditions are met:
+//
+//     * Redistributions of source code must retain the above copyright notice,
+//       this list of conditions and the following disclaimer.
+//     * Redistributions in binary form must reproduce the above copyright notice,
+//       this list of conditions and the following disclaimer in the documentation
+//       and/or other materials provided with the distribution.
+//     * Neither the name of BlockProject 3D nor the names of its contributors
+//       may be used to endorse or promote products derived from this software
+//       without specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+// "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+// LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+// A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
+// CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+// EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+// PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+// PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+// LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+// NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+// SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+pub mod chroot;
+mod file;
+mod interface;
+mod lib;
+mod path;
+
+use crate::libs::files::file::FileWrapper;
+use crate::libs::files::path::PathWrapper;
+use crate::libs::Lib;
+use crate::util::Namespace;
+use crate::vm::function::types::RFunction;
+pub use interface::{SandboxPath, SandboxPathBuf};
+
+pub struct Files;
+
+impl Lib for Files {
+    const NAMESPACE: &'static str = "bp3d.files";
+
+    fn load(&self, namespace: &mut Namespace) -> crate::vm::Result<()> {
+        namespace.add_userdata::<PathWrapper>(c"Path", crate::vm::userdata::case::Camel)?;
+        namespace.add_userdata::<FileWrapper>(c"File", crate::vm::userdata::case::Camel)?;
+        namespace.add([
+            ("readText", RFunction::wrap(lib::read_text)),
+            ("writeText", RFunction::wrap(lib::write_text)),
+            ("copyFile", RFunction::wrap(lib::copy_file)),
+            ("symlink", RFunction::wrap(lib::symlink)),
+            ("exists", RFunction::wrap(lib::exists)),
+            ("list", RFunction::wrap(lib::list)),
+            ("createDir", RFunction::wrap(lib::create_dir)),
+            ("deleteDir", RFunction::wrap(lib::delete_dir)),
+            ("access", RFunction::wrap(lib::lua_access)),
+            ("delete", RFunction::wrap(lib::delete)),
+            ("rename", RFunction::wrap(lib::rename))
+        ])
+    }
+}

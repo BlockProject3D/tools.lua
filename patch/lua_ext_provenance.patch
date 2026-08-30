@@ -1,0 +1,31 @@
+diff --git a/src/lj_obj.h b/src/lj_obj.h
+index 855727bf..351cbcb7 100644
+--- a/src/lj_obj.h
++++ b/src/lj_obj.h
+@@ -700,6 +700,7 @@ struct lua_State {
+   GCRef env;		/* Thread environment (table of globals). */
+   void *cframe;		/* End of C stack frame chain. */
+   MSize stacksize;	/* True stack size (incl. LJ_STACK_EXTRA). */
++  uint64_t provenance;
+ };
+ 
+ #define G(L)			(mref(L->glref, global_State))
+diff --git a/src/lj_state.c b/src/lj_state.c
+index d8fc545a..99fdb804 100644
+--- a/src/lj_state.c
++++ b/src/lj_state.c
+@@ -264,6 +264,7 @@ LUA_API lua_State *lua_newstate(lua_Alloc allocf, void *allocd)
+   memset(GG, 0, sizeof(GG_State));
+   L = &GG->L;
+   g = &GG->g;
++  L->provenance = prng.u[0];
+   L->gct = ~LJ_TTHREAD;
+   L->marked = LJ_GC_WHITE0 | LJ_GC_FIXED | LJ_GC_SFIXED;  /* Prevent free. */
+   L->dummy_ffid = FF_C;
+@@ -380,3 +381,6 @@ void LJ_FASTCALL lj_state_free(global_State *g, lua_State *L)
+   lj_mem_freet(g, L);
+ }
+ 
++LUA_API uint64_t lua_ext_getprovenance(lua_State *L) {
++  return L->provenance;
++}

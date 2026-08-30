@@ -1,0 +1,77 @@
+diff --git a/src/lj_lex.c b/src/lj_lex.c
+index a986aeb8..a8427739 100644
+--- a/src/lj_lex.c
++++ b/src/lj_lex.c
+@@ -397,7 +397,6 @@ static LexToken lex_scan(LexState *ls, TValue *tv)
+ /* Setup lexer state. */
+ int lj_lex_setup(lua_State *L, LexState *ls)
+ {
+-  int header = 0;
+   ls->L = L;
+   ls->fs = NULL;
+   ls->pe = ls->p = NULL;
+@@ -413,33 +412,6 @@ int lj_lex_setup(lua_State *L, LexState *ls)
+   ls->endmark = 0;
+   ls->fr2 = LJ_FR2;  /* Generate native bytecode by default. */
+   lex_next(ls);  /* Read-ahead first char. */
+-  if (ls->c == 0xef && ls->p + 2 <= ls->pe && (uint8_t)ls->p[0] == 0xbb &&
+-      (uint8_t)ls->p[1] == 0xbf) {  /* Skip UTF-8 BOM (if buffered). */
+-    ls->p += 2;
+-    lex_next(ls);
+-    header = 1;
+-  }
+-  if (ls->c == '#') {  /* Skip POSIX #! header line. */
+-    do {
+-      lex_next(ls);
+-      if (ls->c == LEX_EOF) return 0;
+-    } while (!lex_iseol(ls));
+-    lex_newline(ls);
+-    header = 1;
+-  }
+-  if (ls->c == LUA_SIGNATURE[0]) {  /* Bytecode dump. */
+-    if (header) {
+-      /*
+-      ** Loading bytecode with an extra header is disabled for security
+-      ** reasons. This may circumvent the usual check for bytecode vs.
+-      ** Lua code by looking at the first char. Since this is a potential
+-      ** security violation no attempt is made to echo the chunkname either.
+-      */
+-      setstrV(L, L->top++, lj_err_str(L, LJ_ERR_BCBAD));
+-      lj_err_throw(L, LUA_ERRSYNTAX);
+-    }
+-    return 1;
+-  }
+   return 0;
+ }
+ 
+diff --git a/src/lj_load.c b/src/lj_load.c
+index 828bf8ae..7b7f1478 100644
+--- a/src/lj_load.c
++++ b/src/lj_load.c
+@@ -30,24 +30,10 @@ static TValue *cpparser(lua_State *L, lua_CFunction dummy, void *ud)
+   LexState *ls = (LexState *)ud;
+   GCproto *pt;
+   GCfunc *fn;
+-  int bc;
+   UNUSED(dummy);
+   cframe_errfunc(L->cframe) = -1;  /* Inherit error function. */
+-  bc = lj_lex_setup(L, ls);
+-  if (ls->mode) {
+-    int xmode = 1;
+-    const char *mode = ls->mode;
+-    char c;
+-    while ((c = *mode++)) {
+-      if (c == (bc ? 'b' : 't')) xmode = 0;
+-      if (c == (LJ_FR2 ? 'W' : 'X')) ls->fr2 = !LJ_FR2;
+-    }
+-    if (xmode) {
+-      setstrV(L, L->top++, lj_err_str(L, LJ_ERR_XMODE));
+-      lj_err_throw(L, LUA_ERRSYNTAX);
+-    }
+-  }
+-  pt = bc ? lj_bcread(ls) : lj_parse(ls);
++  (void)lj_lex_setup(L, ls);
++  pt = lj_parse(ls);
+   if (ls->fr2 == LJ_FR2) {
+     fn = lj_func_newL_empty(L, pt, tabref(L->env));
+     /* Don't combine above/below into one statement. */

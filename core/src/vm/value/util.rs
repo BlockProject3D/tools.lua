@@ -1,0 +1,146 @@
+// Copyright (c) 2025, BlockProject 3D
+//
+// All rights reserved.
+//
+// Redistribution and use in source and binary forms, with or without modification,
+// are permitted provided that the following conditions are met:
+//
+//     * Redistributions of source code must retain the above copyright notice,
+//       this list of conditions and the following disclaimer.
+//     * Redistributions in binary form must reproduce the above copyright notice,
+//       this list of conditions and the following disclaimer in the documentation
+//       and/or other materials provided with the distribution.
+//     * Neither the name of BlockProject 3D nor the names of its contributors
+//       may be used to endorse or promote products derived from this software
+//       without specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+// "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+// LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+// A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
+// CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+// EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+// PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+// PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+// LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+// NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+// SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+use crate::ffi::lua::{
+    lua_getmetatable, lua_gettop, lua_pushnil, lua_pushvalue, lua_replace, lua_settop, lua_type,
+    Type,
+};
+use crate::vm::error::{Error, TypeError};
+use crate::vm::table::Table;
+use crate::vm::value::IntoLua;
+use crate::vm::Vm;
+
+/// Ensures the given lua value at index is of a specified type.
+#[inline(always)]
+pub fn check_type_equals(vm: &Vm, index: i32, expected: Type) -> crate::vm::Result<()> {
+    let ty = unsafe { lua_type(vm.as_ptr(), index) };
+    if ty == expected {
+        //FIXME: likely branch
+        Ok(())
+    } else {
+        Err(Error::Type(TypeError {
+            expected,
+            actual: ty,
+        }))
+    }
+}
+
+/// Ensures the given lua value at index is at the top of the stack.
+/// If the value at index is not at the top of the stack, this function moves it to the top and
+/// replaces the original index by a nil value.
+#[inline(always)]
+pub fn move_value_top(vm: &Vm, index: i32) {
+    let index = vm.get_absolute_index(index);
+    if index != vm.top() {
+        let l = vm.as_ptr();
+        unsafe {
+            lua_pushvalue(l, index);
+            lua_pushnil(l);
+            lua_replace(l, index); // Replace the value at index by a nil.
+        }
+    }
+}
+
+/// Ensures a single value is pushed onto the lua stack, this function automatically reverts the
+/// stack if value pushed more than 1 element onto the stack.
+///
+/// # Arguments
+///
+/// * `vm`: the vm to operate on.
+/// * `value`: the value to be placed on the lua stack.
+pub fn check_push_single(vm: &Vm, value: impl IntoLua) -> crate::vm::Result<()> {
+    let nums = value.into_lua(vm);
+    if nums != 1 {
+        // Clear the stack.
+        unsafe { lua_settop(vm.as_ptr(), -(nums as i32) - 1) };
+        return Err(Error::MultiValue);
+    }
+    Ok(())
+}
+
+/// Attempts to retrieve the metatable attached to the object at index `index`.
+///
+/// If no metatable is found, this function automatically pops the value if needed and returns
+/// [None].
+///
+/// # Arguments
+///
+/// * `vm`: the [Vm] instance to extract the metatable from.
+/// * `index`: the object index inside the `vm` [Vm].
+///
+/// returns: Option<Table>
+///
+/// # Safety
+///
+/// This should never be used to pass the metatable of a [userdata](crate::vm::userdata) type to
+/// Lua or even modify the returned metatable. If any of these are not maintained this is UB.
+pub unsafe fn check_get_metatable(vm: &Vm, index: i32) -> Option<Table<'_>> {
+    unsafe { lua_getmetatable(vm.as_ptr(), index) };
+    let ty = unsafe { lua_type(vm.as_ptr(), -1) };
+    if ty == Type::Table {
+        return Some(unsafe { Table::from_raw(vm, vm.top()) });
+    }
+    if ty != Type::None {
+        // A none type is special and implies no value was pushed on the stack.
+        unsafe { lua_settop(vm.as_ptr(), -2) }; // Pops the value from the stack.
+    }
+    None
+}
+
+/// Pushes the value at `index` to the top of the stack if both [Vm] objects points to the exact
+/// same State.
+///
+/// # Arguments
+///
+/// * `src_vm`: the source [Vm] object.
+/// * `dst_vm`: the target [Vm] object.
+/// * `index`: the index on source [Vm].
+pub fn check_push_value(src_vm: &Vm, dst_vm: &Vm, index: i32) -> u16 {
+    assert!(src_vm.as_ptr() == dst_vm.as_ptr());
+    unsafe { lua_pushvalue(src_vm.as_ptr(), index) };
+    1
+}
+
+/// Pushes the value at `index` to the top of the stack if both [Vm] objects points to the exact
+/// same State and if index is not already at the top of the stack. If `index` is already at the
+/// top of the stack, this function doesn't perform any operations on the Lua stack identified by
+/// `dst_vm`.
+///
+/// # Arguments
+///
+/// * `src_vm`: the source [Vm] object.
+/// * `dst_vm`: the target [Vm] object.
+/// * `index`: the index on source [Vm]. Must be absolute.
+pub fn check_value_top(src_vm: &Vm, dst_vm: &Vm, index: i32) -> u16 {
+    assert!(src_vm.as_ptr() == dst_vm.as_ptr());
+    let top = unsafe { lua_gettop(src_vm.as_ptr()) };
+    if top != index {
+        unsafe { lua_pushvalue(src_vm.as_ptr(), index) };
+    }
+    1
+}
