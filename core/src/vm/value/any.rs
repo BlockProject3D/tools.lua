@@ -154,7 +154,7 @@ unsafe impl IntoLua for Any<'_> {
             AnyValue::Buffer(v) => v.into_lua(vm),
             AnyValue::Function(v) => v.into_lua(vm),
             AnyValue::Table(v) => v.into_lua(vm),
-            AnyValue::UserData(_) => 0,
+            AnyValue::UserData(v) => v.into_lua(vm),
             AnyValue::Thread(_) => 0,
             AnyValue::Int64(v) => v.into_lua(vm),
             AnyValue::UInt64(v) => v.into_lua(vm),

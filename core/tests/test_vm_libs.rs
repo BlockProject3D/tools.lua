@@ -28,10 +28,12 @@
 
 #![cfg(all(feature = "root-vm", feature = "libs", feature = "module"))]
 
+use bp3d_lua::libs::files::Files;
 use bp3d_lua::libs::lua::{Lua, Module};
 use bp3d_lua::libs::util::Util;
 use bp3d_lua::libs::Lib;
 use bp3d_lua::module::VERSION;
+use bp3d_lua::vm::core::load::Script;
 use bp3d_lua::vm::RootVm;
 
 #[test]
@@ -353,4 +355,12 @@ fn test_vm_lib_util_num() {
         .run_code::<&str>(c"return bp3d.util.num.toustring(bp3d.util.num.UINT64_MAX)")
         .unwrap();
     assert_eq!(val, "18446744073709551615");
+}
+
+#[test]
+fn test_vm_lib_util_table_update() {
+    let mut vm = RootVm::new();
+    Util.register(&mut vm).unwrap();
+    Files.register(&mut vm).unwrap();
+    vm.run::<()>(Script::from_path("tests/lua/util_table_update.lua").unwrap()).unwrap();
 }
